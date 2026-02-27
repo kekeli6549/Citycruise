@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation, Link, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation, Link, Navigate, useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { LayoutDashboard, BookOpen, Award, X, Menu, LogOut, ChevronRight, User } from 'lucide-react'; // Added User icon here
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import Features from './components/Features';
@@ -8,6 +10,11 @@ import Contact from './components/Contact';
 import Login from './components/Login';
 import Signup from './components/Signup';
 import Dashboard from './pages/Dashboard';
+import CoursesPage from './pages/CoursesPage';
+import Checkout from './pages/Checkout';
+import CoursePlayer from './pages/CoursePlayer';
+import ExamPage from './pages/ExamPage';
+import ExamsHub from './pages/ExamsHub'; // Added the missing import
 import { useAuthStore } from './context/authStore';
 
 const ScrollToTop = () => {
@@ -21,27 +28,121 @@ const ProtectedRoute = ({ children }) => {
   return isAuthenticated ? children : <Navigate to="/login" replace />;
 };
 
-// Sub-component to handle conditional UI layout
-const AppLayout = ({ darkMode, setDarkMode }) => {
+const Sidebar = ({ isOpen, setIsOpen }) => {
   const location = useLocation();
-  const isDashboard = location.pathname === '/dashboard';
+  const { logout, user } = useAuthStore();
+
+  const menuItems = [
+    { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
+    { name: 'Courses', path: '/courses', icon: BookOpen },
+    { name: 'Exams', path: '/exams', icon: Award }, // Cleaned up duplicate
+  ];
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          <motion.div 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            onClick={() => setIsOpen(false)}
+            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100]"
+          />
+          <motion.div 
+            initial={{ x: '-100%' }} animate={{ x: 0 }} exit={{ x: '-100%' }}
+            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            className="fixed left-0 top-0 h-full w-80 bg-white dark:bg-brand-dark z-[101] shadow-2xl border-r border-slate-100 dark:border-slate-800 p-8 flex flex-col"
+          >
+            <div className="flex justify-between items-center mb-12">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-brand-blue rounded-lg flex items-center justify-center text-white font-bold">C</div>
+                <span className="font-heading font-bold dark:text-white uppercase tracking-tighter">Navigator</span>
+              </div>
+              <button onClick={() => setIsOpen(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors dark:text-white">
+                <X size={20} />
+              </button>
+            </div>
+
+            <nav className="flex-1 space-y-2">
+              {menuItems.map((item) => (
+                <Link 
+                  key={item.path} 
+                  to={item.path} 
+                  onClick={() => setIsOpen(false)}
+                  className={`flex items-center justify-between p-4 rounded-2xl transition-all group ${location.pathname === item.path ? 'bg-brand-blue text-white shadow-lg shadow-brand-blue/20' : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-900'}`}
+                >
+                  <div className="flex items-center gap-4">
+                    <item.icon size={20} />
+                    <span className="font-heading font-bold text-sm uppercase tracking-widest">{item.name}</span>
+                  </div>
+                  <div className={`transition-transform ${location.pathname === item.path ? 'translate-x-0' : '-translate-x-2 opacity-0 group-hover:translate-x-0 group-hover:opacity-100'}`}>
+                    <ChevronRight size={14} />
+                  </div>
+                </Link>
+              ))}
+            </nav>
+
+            <div className="mt-auto pt-8 border-t border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-4 mb-8 px-2">
+                <div className="w-10 h-10 rounded-full bg-brand-blue/10 flex items-center justify-center overflow-hidden border border-brand-blue/20">
+                  {user?.profilePic ? <img src={user.profilePic} className="w-full h-full object-cover" alt="Profile" /> : <User size={18} className="text-brand-blue" />}
+                </div>
+                <div>
+                  <p className="text-xs font-heading font-bold dark:text-white uppercase tracking-tight">{user?.firstName || 'Innovator'}</p>
+                  <p className="text-[9px] font-mono text-slate-400 uppercase">Premium Member</p>
+                </div>
+              </div>
+              <button onClick={logout} className="w-full flex items-center justify-center gap-3 p-4 rounded-2xl border border-red-100 dark:border-red-900/30 text-red-500 font-bold text-[10px] uppercase tracking-widest hover:bg-red-50 dark:hover:bg-red-900/10 transition-all">
+                <LogOut size={14} /> End Session
+              </button>
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  );
+};
+
+const AppLayout = ({ darkMode, setDarkMode }) => {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const location = useLocation();
+  
+  // Minimal UI for dashboard-related views
+  const isMinimalUI = ['/dashboard', '/checkout', '/course', '/exam', '/courses', '/exams'].some(path => 
+    location.pathname.startsWith(path)
+  );
 
   return (
     <div className="relative min-h-screen bg-white dark:bg-brand-dark transition-colors duration-500">
-      {/* Only show Navbar on public pages */}
-      {!isDashboard && <Navbar darkMode={darkMode} setDarkMode={setDarkMode} />}
+      {!isMinimalUI && <Navbar darkMode={darkMode} setDarkMode={setDarkMode} />}
       
-      <div className={!isDashboard ? "pt-20" : ""}>
+      {isMinimalUI && (
+        <button 
+          onClick={() => setIsSidebarOpen(true)}
+          className="fixed top-5 left-8 z-[60] p-3 bg-white dark:bg-brand-dark border border-slate-100 dark:border-slate-800 rounded-xl shadow-xl hover:scale-110 transition-all text-slate-600 dark:text-white"
+        >
+          <Menu size={20} />
+        </button>
+      )}
+
+      <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
+      
+      <div className={!isMinimalUI ? "pt-20" : ""}>
         <Routes>
           <Route path="/" element={<><Hero /><Features /><Mentors /><Contact /></>} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          
+          {/* Protected Routes */}
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/courses" element={<ProtectedRoute><CoursesPage /></ProtectedRoute>} />
+          <Route path="/checkout/:courseId" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
+          <Route path="/course/:courseId" element={<ProtectedRoute><CoursePlayer /></ProtectedRoute>} />
+          <Route path="/exam/:courseId" element={<ProtectedRoute><ExamPage /></ProtectedRoute>} />
+          <Route path="/exams" element={<ProtectedRoute><ExamsHub /></ProtectedRoute>} />
         </Routes>
       </div>
 
-      {/* Only show Footer on public pages */}
-      {!isDashboard && (
+      {!isMinimalUI && (
         <footer className="bg-white dark:bg-[#0B0F1A] border-t border-slate-100 dark:border-slate-800 pt-20 pb-10">
           <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-4 gap-12 mb-16">
             <div className="md:col-span-1">
@@ -50,20 +151,6 @@ const AppLayout = ({ darkMode, setDarkMode }) => {
                 <span className="text-slate-900 dark:text-white font-heading text-lg font-bold tracking-tight">City Cruise</span>
               </div>
               <p className="text-slate-500 text-sm leading-relaxed font-body">Empowering the African Diaspora through elite mentorship.</p>
-            </div>
-            <div>
-              <h4 className="font-mono text-[10px] font-bold uppercase tracking-widest text-brand-blue mb-6">Platform</h4>
-              <ul className="space-y-4 text-sm text-slate-500 font-body">
-                <li><a href="#expertise">Expertise</a></li>
-                <li><Link to="/signup">Admissions</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-mono text-[10px] font-bold uppercase tracking-widest text-brand-blue mb-6">Stay Connected</h4>
-              <div className="flex flex-col gap-4">
-                <input type="email" placeholder="EMAIL ADDRESS" className="bg-slate-50 dark:bg-slate-900 border border-slate-100 px-4 py-3 rounded-xl text-[10px] font-mono outline-none" />
-                <button className="bg-brand-blue text-white py-3 rounded-xl font-bold uppercase text-[9px] tracking-widest">Subscribe</button>
-              </div>
             </div>
           </div>
         </footer>
