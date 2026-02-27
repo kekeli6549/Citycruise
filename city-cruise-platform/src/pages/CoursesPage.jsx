@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Search, SlidersHorizontal, PlayCircle, Star, Users, ArrowUpRight, SearchX } from 'lucide-react';
+import { Search, SlidersHorizontal, PlayCircle, Star, Users, ArrowUpRight, SearchX, ChevronDown, Check } from 'lucide-react';
 
 const CoursesPage = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState("Alphabetical"); // Alphabetical, Most Viewed
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [occupation, setOccupation] = useState("All");
 
   const occupations = ["All", "Finance", "Leadership", "Technology", "Design"];
+  const filterOptions = ["Alphabetical", "Most Viewed"];
 
   const courses = [
     { id: "1", title: "Global Strategy & Leadership", views: 1240, category: "Leadership", instructor: "Dr. Arinze K.", duration: "12 hrs", price: 499, img: "bg-blue-600/10" },
@@ -29,7 +31,7 @@ const CoursesPage = () => {
     });
 
   return (
-    <div className="min-h-screen bg-white dark:bg-brand-dark p-6 md:p-12 lg:pl-32">
+    <div className="min-h-screen bg-white dark:bg-brand-dark p-6 md:p-12">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <header className="mb-16">
@@ -40,7 +42,7 @@ const CoursesPage = () => {
         </header>
 
         {/* Filter Bar */}
-        <div className="bg-slate-50 dark:bg-slate-900/40 p-4 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 flex flex-col lg:flex-row gap-6 items-center mb-12 backdrop-blur-xl">
+        <div className="bg-slate-50 dark:bg-slate-900/40 p-4 rounded-[2rem] md:rounded-[2.5rem] border border-slate-100 dark:border-slate-800 flex flex-col lg:flex-row gap-6 items-center mb-12 backdrop-blur-xl relative z-40">
           <div className="relative flex-1 w-full">
             <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
             <input 
@@ -52,29 +54,66 @@ const CoursesPage = () => {
             />
           </div>
 
-          <div className="flex flex-wrap items-center gap-4 w-full lg:w-auto">
-            <div className="flex items-center gap-2 bg-white dark:bg-brand-dark px-4 py-2 rounded-xl border border-slate-100 dark:border-slate-800">
-              <SlidersHorizontal size={14} className="text-brand-blue" />
-              <select 
-                value={filter} 
-                onChange={(e) => setFilter(e.target.value)}
-                className="bg-transparent outline-none text-xs font-bold uppercase tracking-widest text-slate-600 dark:text-slate-300"
-              >
-                <option>Alphabetical</option>
-                <option>Most Viewed</option>
-              </select>
-            </div>
-
-            <div className="flex gap-2">
-              {occupations.map(occ => (
-                <button
-                  key={occ}
-                  onClick={() => setOccupation(occ)}
-                  className={`px-5 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${occupation === occ ? 'bg-brand-blue text-white shadow-lg' : 'bg-white dark:bg-brand-dark text-slate-400 border border-slate-100 dark:border-slate-800'}`}
+          <div className="flex flex-col md:flex-row items-center gap-4 w-full lg:w-auto">
+            <div className="flex items-center gap-4 w-full md:w-auto">
+              {/* Custom Premium Dropdown */}
+              <div className="relative shrink-0">
+                <button 
+                  onClick={() => setIsFilterOpen(!isFilterOpen)}
+                  className="flex items-center gap-3 bg-white dark:bg-brand-dark px-5 py-3 rounded-xl border border-slate-100 dark:border-slate-800 transition-all hover:border-brand-blue/30 active:scale-95"
                 >
-                  {occ}
+                  <SlidersHorizontal size={14} className="text-brand-blue" />
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-slate-600 dark:text-slate-300 min-w-[100px] text-left">
+                    {filter}
+                  </span>
+                  <ChevronDown size={14} className={`text-slate-400 transition-transform duration-300 ${isFilterOpen ? 'rotate-180' : ''}`} />
                 </button>
-              ))}
+
+                <AnimatePresence>
+                  {isFilterOpen && (
+                    <>
+                      <div className="fixed inset-0 z-10" onClick={() => setIsFilterOpen(false)} />
+                      <motion.div 
+                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                        className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-2xl z-20 overflow-hidden p-2"
+                      >
+                        {filterOptions.map((opt) => (
+                          <button
+                            key={opt}
+                            onClick={() => {
+                              setFilter(opt);
+                              setIsFilterOpen(false);
+                            }}
+                            className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-colors ${
+                              filter === opt 
+                                ? 'bg-brand-blue/10 text-brand-blue' 
+                                : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white'
+                            }`}
+                          >
+                            {opt}
+                            {filter === opt && <Check size={12} />}
+                          </button>
+                        ))}
+                      </motion.div>
+                    </>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* Occupation Filters - Scrollable on Mobile */}
+              <div className="flex gap-2 overflow-x-auto no-scrollbar py-1 w-full md:w-auto">
+                {occupations.map(occ => (
+                  <button
+                    key={occ}
+                    onClick={() => setOccupation(occ)}
+                    className={`px-5 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap shrink-0 ${occupation === occ ? 'bg-brand-blue text-white shadow-lg' : 'bg-white dark:bg-brand-dark text-slate-400 border border-slate-100 dark:border-slate-800'}`}
+                  >
+                    {occ}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
