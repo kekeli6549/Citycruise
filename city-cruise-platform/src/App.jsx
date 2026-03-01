@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation, Link, Navigate, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation, Navigate, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LayoutDashboard, BookOpen, Award, X, Menu, LogOut, ChevronRight, User, ArrowLeft } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Award, X, Menu, LogOut, ChevronRight, User } from 'lucide-react';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import Features from './components/Features';
@@ -15,6 +15,8 @@ import Checkout from './pages/Checkout';
 import CoursePlayer from './pages/CoursePlayer';
 import ExamPage from './pages/ExamPage';
 import ExamsHub from './pages/ExamsHub';
+import AdminDashboard from './pages/AdminDashboard'; 
+import AdminLogin from './pages/AdminLogin'; // Added Admin Login
 import { useAuthStore } from './context/authStore';
 
 const ScrollToTop = () => {
@@ -31,7 +33,6 @@ const ProtectedRoute = ({ children }) => {
 const Sidebar = ({ isOpen, setIsOpen }) => {
   const location = useLocation();
   const { logout, user } = useAuthStore();
-
   const menuItems = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
     { name: 'Courses', path: '/courses', icon: BookOpen },
@@ -49,26 +50,17 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
           <X size={20} />
         </button>
       </div>
-
       <nav className="flex-1 space-y-2">
         {menuItems.map((item) => (
-          <Link 
-            key={item.path} 
-            to={item.path} 
-            onClick={() => setIsOpen(false)}
-            className={`flex items-center justify-between p-4 rounded-2xl transition-all group ${location.pathname === item.path ? 'bg-brand-blue text-white shadow-lg shadow-brand-blue/20' : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-900'}`}
-          >
+          <Link key={item.path} to={item.path} onClick={() => setIsOpen(false)} className={`flex items-center justify-between p-4 rounded-2xl transition-all group ${location.pathname === item.path ? 'bg-brand-blue text-white shadow-lg shadow-brand-blue/20' : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-900'}`}>
             <div className="flex items-center gap-4">
               <item.icon size={20} />
               <span className="font-heading font-bold text-sm uppercase tracking-widest">{item.name}</span>
             </div>
-            <div className={`transition-transform ${location.pathname === item.path ? 'translate-x-0' : '-translate-x-2 opacity-0 group-hover:translate-x-0 group-hover:opacity-100'}`}>
-              <ChevronRight size={14} />
-            </div>
+            <div className={`transition-transform ${location.pathname === item.path ? 'translate-x-0' : '-translate-x-2 opacity-0 group-hover:translate-x-0 group-hover:opacity-100'}`}><ChevronRight size={14} /></div>
           </Link>
         ))}
       </nav>
-
       <div className="mt-auto pt-8 border-t border-slate-100 dark:border-slate-800">
         <div className="flex items-center gap-4 mb-8 px-2">
           <div className="w-10 h-10 rounded-full bg-brand-blue/10 flex items-center justify-center overflow-hidden border border-brand-blue/20">
@@ -79,9 +71,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
             <p className="text-[9px] font-mono text-slate-400 uppercase">Premium Member</p>
           </div>
         </div>
-        <button onClick={logout} className="w-full flex items-center justify-center gap-3 p-4 rounded-2xl border border-red-100 dark:border-red-900/30 text-red-500 font-bold text-[10px] uppercase tracking-widest hover:bg-red-50 dark:hover:bg-red-900/10 transition-all">
-          <LogOut size={14} /> End Session
-        </button>
+        <button onClick={logout} className="w-full flex items-center justify-center gap-3 p-4 rounded-2xl border border-red-100 dark:border-red-900/30 text-red-500 font-bold text-[10px] uppercase tracking-widest hover:bg-red-50 dark:hover:bg-red-900/10 transition-all"><LogOut size={14} /> End Session</button>
       </div>
     </div>
   );
@@ -91,20 +81,11 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       <aside className="hidden lg:block fixed left-0 top-0 h-full w-80 bg-white dark:bg-brand-dark border-r border-slate-100 dark:border-slate-800 z-[50]">
         <SidebarContent />
       </aside>
-
       <AnimatePresence>
         {isOpen && (
           <>
-            <motion.div 
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              onClick={() => setIsOpen(false)}
-              className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] lg:hidden"
-            />
-            <motion.div 
-              initial={{ x: '-100%' }} animate={{ x: 0 }} exit={{ x: '-100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed left-0 top-0 h-full w-80 bg-white dark:bg-brand-dark z-[101] shadow-2xl border-r border-slate-100 dark:border-slate-800 lg:hidden"
-            >
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsOpen(false)} className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] lg:hidden" />
+            <motion.div initial={{ x: '-100%' }} animate={{ x: 0 }} exit={{ x: '-100%' }} transition={{ type: 'spring', damping: 25, stiffness: 200 }} className="fixed left-0 top-0 h-full w-80 bg-white dark:bg-brand-dark z-[101] shadow-2xl border-r border-slate-100 dark:border-slate-800 lg:hidden">
               <SidebarContent />
             </motion.div>
           </>
@@ -117,31 +98,21 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
 const AppLayout = ({ darkMode, setDarkMode }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const location = useLocation();
-  const navigate = useNavigate();
   
-  const isMinimalUI = ['/dashboard', '/checkout', '/course', '/exam', '/courses', '/exams'].some(path => 
-    location.pathname.startsWith(path)
-  );
-
+  const isMinimalUI = ['/dashboard', '/checkout', '/course', '/exam', '/courses', '/exams'].some(path => location.pathname.startsWith(path));
+  const isAdminArea = location.pathname.startsWith('/admin');
   const isFocusMode = location.pathname.startsWith('/exam/') || location.pathname.startsWith('/checkout/');
   const isRightAlignNav = ['/courses', '/exams'].some(path => location.pathname.startsWith(path));
 
   return (
     <div className="relative min-h-screen bg-white dark:bg-brand-dark transition-colors duration-500">
-      {!isMinimalUI && <Navbar darkMode={darkMode} setDarkMode={setDarkMode} />}
+      {/* Show student Nav only if not in Minimal UI and NOT in Admin area */}
+      {!isMinimalUI && !isAdminArea && <Navbar darkMode={darkMode} setDarkMode={setDarkMode} />}
       
-      {/* FIXED HAMBURGER:
-          Stays in one place regardless of scroll.
-          Right-aligned for Courses/Exams to keep UI clean.
-      */}
-      {isMinimalUI && !isFocusMode && (
+      {/* Student Hamburger Logic */}
+      {isMinimalUI && !isFocusMode && !isAdminArea && (
         <>
-          <button 
-            onClick={() => setIsSidebarOpen(true)}
-            className={`lg:hidden fixed top-6 z-[120] p-3.5 bg-white/80 dark:bg-brand-dark/80 backdrop-blur-lg border border-slate-100 dark:border-slate-800 rounded-2xl shadow-2xl text-slate-600 dark:text-white transition-all active:scale-95 ${
-              isRightAlignNav ? 'right-6' : 'left-6'
-            }`}
-          >
+          <button onClick={() => setIsSidebarOpen(true)} className={`lg:hidden fixed top-6 z-[120] p-3.5 bg-white/80 dark:bg-brand-dark/80 backdrop-blur-lg border border-slate-100 dark:border-slate-800 rounded-2xl shadow-2xl text-slate-600 dark:text-white transition-all active:scale-95 ${isRightAlignNav ? 'right-6' : 'left-6'}`}>
             <Menu size={22} />
           </button>
           <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
@@ -150,8 +121,8 @@ const AppLayout = ({ darkMode, setDarkMode }) => {
 
       {/* Main Content Area */}
       <div className={`${
-        !isMinimalUI ? "pt-20" : 
-        isFocusMode ? "pl-0" : 
+        (!isMinimalUI && !isAdminArea) ? "pt-20" : 
+        (isFocusMode || isAdminArea) ? "pl-0" : 
         "lg:pl-80"
       }`}>
         <Routes>
@@ -165,10 +136,14 @@ const AppLayout = ({ darkMode, setDarkMode }) => {
           <Route path="/course/:courseId" element={<ProtectedRoute><CoursePlayer /></ProtectedRoute>} />
           <Route path="/exam/:courseId" element={<ProtectedRoute><ExamPage /></ProtectedRoute>} />
           <Route path="/exams" element={<ProtectedRoute><ExamsHub /></ProtectedRoute>} />
+
+          {/* ADMIN ROUTES */}
+          <Route path="/admin/login" element={<AdminLogin />} />
+          <Route path="/admin/dashboard" element={<AdminDashboard />} />
         </Routes>
       </div>
 
-      {!isMinimalUI && (
+      {!isMinimalUI && !isAdminArea && (
         <footer className="bg-white dark:bg-[#0B0F1A] border-t border-slate-100 dark:border-slate-800 pt-20 pb-10">
           <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-4 gap-12 mb-16">
             <div className="md:col-span-1">
