@@ -2,15 +2,27 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ShieldCheck, ArrowRight } from 'lucide-react';
+import { useAuthStore } from '../context/authStore'; // Imported to link session
 
 const AdminLogin = () => {
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
+  const { login } = useAuthStore(); // Grab login function from store
 
   const handleLogin = (e) => {
     e.preventDefault();
+    
     // Simple bypass for frontend watching
     if (password === 'admin123') {
+      // Log in as an admin in the global state
+      login({
+        firstName: 'System',
+        lastName: 'Admin',
+        role: 'admin',
+        email: 'admin@citycruise.com',
+        profilePic: null
+      });
+      
       navigate('/admin/dashboard');
     } else {
       alert('Unauthorized access.');
@@ -39,6 +51,7 @@ const AdminLogin = () => {
               placeholder="Admin ID" 
               className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm outline-none focus:ring-2 ring-slate-200 transition-all"
               defaultValue="root_admin"
+              readOnly
             />
           </div>
           <div>

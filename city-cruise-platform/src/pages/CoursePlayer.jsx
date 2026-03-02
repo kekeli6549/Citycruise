@@ -15,6 +15,12 @@ const CoursePlayer = () => {
     { id: 3, title: "High-Performance Team Dynamics", duration: "18:10" }
   ];
 
+  const isCompleted = completedCourses.includes(courseId);
+
+  const handleFinishCourse = () => {
+    completeCourse(courseId);
+  };
+
   return (
     <div className="min-h-screen bg-white dark:bg-brand-dark flex flex-col">
       <div className="border-b border-slate-100 dark:border-slate-800 p-6 flex justify-between items-center">
@@ -22,10 +28,21 @@ const CoursePlayer = () => {
           <ChevronLeft size={18}/> Hub
         </button>
         <span className="font-mono text-[10px] uppercase tracking-widest text-slate-400">Lesson {activeLesson} of {lessons.length}</span>
-        {completedCourses.includes(courseId) ? (
-          <button onClick={() => navigate(`/exam/${courseId}`)} className="bg-emerald-500 text-white px-6 py-2 rounded-full font-bold text-[10px] uppercase tracking-widest">Take Exam</button>
+        
+        {isCompleted ? (
+          <button 
+            onClick={() => navigate(`/exam/${courseId}`)} 
+            className="flex items-center gap-2 bg-emerald-500 text-white px-6 py-2.5 rounded-full font-bold text-[10px] uppercase tracking-widest shadow-lg shadow-emerald-500/20 active:scale-95 transition-all"
+          >
+            <Award size={14} /> Take Exam
+          </button>
         ) : (
-          <button onClick={() => completeCourse(courseId)} className="bg-brand-blue text-white px-6 py-2 rounded-full font-bold text-[10px] uppercase tracking-widest">Finish Lesson</button>
+          <button 
+            onClick={handleFinishCourse} 
+            className="bg-brand-blue text-white px-6 py-2.5 rounded-full font-bold text-[10px] uppercase tracking-widest shadow-lg shadow-brand-blue/20 active:scale-95 transition-all"
+          >
+            Complete Curriculum
+          </button>
         )}
       </div>
 
@@ -44,7 +61,7 @@ const CoursePlayer = () => {
               <div 
                 key={lesson.id} 
                 onClick={() => setActiveLesson(lesson.id)}
-                className={`p-4 rounded-2xl border cursor-pointer transition-all ${activeLesson === lesson.id ? 'border-brand-blue bg-brand-blue/5' : 'border-slate-100 dark:border-slate-800'}`}
+                className={`p-4 rounded-2xl border cursor-pointer transition-all ${activeLesson === lesson.id ? 'border-brand-blue bg-brand-blue/5' : 'border-slate-100 dark:border-slate-800 hover:border-brand-blue/30'}`}
               >
                 <div className="flex items-center gap-4">
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center ${activeLesson === lesson.id ? 'bg-brand-blue text-white' : 'bg-slate-50 dark:bg-slate-900 text-slate-400'}`}>
@@ -58,10 +75,20 @@ const CoursePlayer = () => {
               </div>
             ))}
           </div>
+          
+          {isCompleted && (
+            <div className="mt-8 p-6 bg-emerald-500/5 border border-emerald-500/20 rounded-3xl">
+              <div className="flex items-center gap-3 mb-2 text-emerald-500">
+                <CheckCircle size={18} />
+                <p className="text-xs font-bold uppercase tracking-widest">Progress Verified</p>
+              </div>
+              <p className="text-slate-500 text-[10px] leading-relaxed font-body">You have completed all materials. Final assessment is now unlocked.</p>
+            </div>
+          )}
         </div>
       </div>
     </div>
-  );
+  ); 
 };
 
 export default CoursePlayer;

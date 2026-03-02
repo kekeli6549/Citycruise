@@ -2,25 +2,21 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Users, BookOpen, TrendingUp, Activity, 
-  Plus, LayoutGrid, ClipboardCheck, Settings 
+  Plus, LayoutGrid, ClipboardCheck, Settings, SearchX 
 } from 'lucide-react';
+import { useAuthStore } from '../context/authStore';
 import AdminUserManagement from './AdminUserManagement';
 import AdminCourseManager from './AdminCourseManager';
 import AdminExamBuilder from './AdminExamBuilder';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
+  const activityLog = useAuthStore(state => state.activityLog);
 
   const stats = [
     { label: "Total Students", value: "1,284", icon: Users, trend: "+12%", color: "text-blue-600" },
     { label: "Course Revenue", value: "$42,500", icon: TrendingUp, trend: "+8%", color: "text-emerald-600" },
     { label: "Active Lessons", value: "156", icon: BookOpen, trend: "Stable", color: "text-purple-600" },
-  ];
-
-  const recentActivity = [
-    { id: 1, user: "Kwame Mensah", action: "Completed", target: "Global Strategy", time: "2 mins ago" },
-    { id: 2, user: "Amara Oke", action: "Purchased", target: "UI/UX for Fintech", time: "15 mins ago" },
-    { id: 3, user: "Zaidu Yusuf", action: "Failed Exam", target: "Finance Mastery", time: "1 hr ago" },
   ];
 
   const tabs = [
@@ -87,17 +83,17 @@ const AdminDashboard = () => {
               <div className="lg:col-span-2 bg-white rounded-[32px] border border-slate-200 shadow-sm overflow-hidden">
                 <div className="p-8 border-b border-slate-100 flex justify-between items-center">
                   <h3 className="font-bold text-slate-900 flex items-center gap-3">
-                    <div className="w-2 h-2 bg-brand-blue rounded-full animate-pulse" />
+                    <div className={`w-2 h-2 rounded-full ${activityLog.length > 0 ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`} />
                     Live Ecosystem Activity
                   </h3>
-                  <button className="text-[10px] font-bold uppercase tracking-widest text-brand-blue hover:bg-blue-50 px-4 py-2 rounded-lg transition-all">Full Log</button>
+                  <button className="text-[10px] font-bold uppercase tracking-widest text-brand-blue hover:bg-blue-50 px-4 py-2 rounded-lg transition-all">Export Log</button>
                 </div>
-                <div className="divide-y divide-slate-50 px-4">
-                  {recentActivity.map((log) => (
+                <div className="divide-y divide-slate-50 px-4 min-h-[300px]">
+                  {activityLog.length > 0 ? activityLog.map((log) => (
                     <div key={log.id} className="p-5 flex items-center justify-between hover:bg-slate-50/80 rounded-2xl transition-all">
                       <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-600 font-bold text-sm border border-white shadow-sm">
-                          {log.user.charAt(0)}
+                        <div className="w-12 h-12 rounded-2xl bg-slate-900 flex items-center justify-center text-white font-bold text-sm shadow-sm">
+                          {log.user?.charAt(0) || 'U'}
                         </div>
                         <div>
                           <p className="text-sm font-bold text-slate-800">{log.user}</p>
@@ -108,7 +104,12 @@ const AdminDashboard = () => {
                       </div>
                       <span className="text-[10px] font-mono font-medium text-slate-400 bg-slate-100 px-3 py-1 rounded-full">{log.time}</span>
                     </div>
-                  ))}
+                  )) : (
+                    <div className="flex flex-col items-center justify-center py-20 opacity-30">
+                      <SearchX size={40} className="mb-4" />
+                      <p className="text-xs font-bold uppercase tracking-widest">No Recent Activity</p>
+                    </div>
+                  )}
                 </div>
               </div>
 

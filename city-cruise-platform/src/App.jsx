@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation, Navigate, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LayoutDashboard, BookOpen, Award, X, Menu, LogOut, ChevronRight, User } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Award, X, Menu, LogOut, ChevronRight, User, ShieldCheck } from 'lucide-react';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import Features from './components/Features';
@@ -16,7 +16,7 @@ import CoursePlayer from './pages/CoursePlayer';
 import ExamPage from './pages/ExamPage';
 import ExamsHub from './pages/ExamsHub';
 import AdminDashboard from './pages/AdminDashboard'; 
-import AdminLogin from './pages/AdminLogin'; // Added Admin Login
+import AdminLogin from './pages/AdminLogin'; 
 import { useAuthStore } from './context/authStore';
 
 const ScrollToTop = () => {
@@ -25,9 +25,18 @@ const ScrollToTop = () => {
   return null;
 };
 
+// STUDENT ROUTE GUARD
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated } = useAuthStore();
   return isAuthenticated ? children : <Navigate to="/login" replace />;
+};
+
+// ADMIN ROUTE GUARD
+const AdminRoute = ({ children }) => {
+  const { isAuthenticated, user } = useAuthStore();
+  // Check if authenticated AND if the user object has the isAdmin flag
+  const isAdmin = isAuthenticated && user?.role === 'admin'; 
+  return isAdmin ? children : <Navigate to="/admin/login" replace />;
 };
 
 const Sidebar = ({ isOpen, setIsOpen }) => {
@@ -106,10 +115,8 @@ const AppLayout = ({ darkMode, setDarkMode }) => {
 
   return (
     <div className="relative min-h-screen bg-white dark:bg-brand-dark transition-colors duration-500">
-      {/* Show student Nav only if not in Minimal UI and NOT in Admin area */}
       {!isMinimalUI && !isAdminArea && <Navbar darkMode={darkMode} setDarkMode={setDarkMode} />}
       
-      {/* Student Hamburger Logic */}
       {isMinimalUI && !isFocusMode && !isAdminArea && (
         <>
           <button onClick={() => setIsSidebarOpen(true)} className={`lg:hidden fixed top-6 z-[120] p-3.5 bg-white/80 dark:bg-brand-dark/80 backdrop-blur-lg border border-slate-100 dark:border-slate-800 rounded-2xl shadow-2xl text-slate-600 dark:text-white transition-all active:scale-95 ${isRightAlignNav ? 'right-6' : 'left-6'}`}>
@@ -119,7 +126,6 @@ const AppLayout = ({ darkMode, setDarkMode }) => {
         </>
       )}
 
-      {/* Main Content Area */}
       <div className={`${
         (!isMinimalUI && !isAdminArea) ? "pt-20" : 
         (isFocusMode || isAdminArea) ? "pl-0" : 
@@ -130,6 +136,7 @@ const AppLayout = ({ darkMode, setDarkMode }) => {
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           
+          {/* PROTECTED STUDENT ROUTES */}
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/courses" element={<ProtectedRoute><CoursesPage /></ProtectedRoute>} />
           <Route path="/checkout/:courseId" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
@@ -137,9 +144,9 @@ const AppLayout = ({ darkMode, setDarkMode }) => {
           <Route path="/exam/:courseId" element={<ProtectedRoute><ExamPage /></ProtectedRoute>} />
           <Route path="/exams" element={<ProtectedRoute><ExamsHub /></ProtectedRoute>} />
 
-          {/* ADMIN ROUTES */}
+          {/* PROTECTED ADMIN ROUTES */}
           <Route path="/admin/login" element={<AdminLogin />} />
-          <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/admin/dashboard" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
         </Routes>
       </div>
 

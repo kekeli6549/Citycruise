@@ -2,26 +2,27 @@ import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../context/authStore';
+import { coursesData } from '../data/coursesData';
+import CertificateGenerator, { downloadCertificate } from '../components/CertificateGenerator';
 import { 
   PlayCircle, Clock, Award, BookOpen, User, X, 
   LogOut, ChevronRight, Camera, KeyRound, Sparkles, 
-  FileText, RefreshCcw 
+  FileText, RefreshCcw, ClipboardCheck, Download 
 } from 'lucide-react';
 
 const Dashboard = () => {
-  const { user, logout, login } = useAuthStore();
+  const { user, logout, login, certificates } = useAuthStore();
   const navigate = useNavigate();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   
   const [editName, setEditName] = useState(user?.firstName || '');
   const [profileImage, setProfileImage] = useState(null);
   const fileInputRef = useRef(null);
+  const certificateRef = useRef(null);
+  const [selectedCourseForCert, setSelectedCourseForCert] = useState(null);
 
-  const courses = [
-    { id: "1", title: "Global Strategy & Leadership", progress: 100, examScore: 88, status: "passed", duration: "12 hrs", lessons: 24, description: "Master international markets and high-performance team building." },
-    { id: "2", title: "International Finance Mastery", progress: 100, examScore: 45, status: "failed", duration: "18 hrs", lessons: 32, description: "Advanced capital management for the modern global professional." },
-    { id: "3", title: "UI/UX for Fintech Platforms", progress: 0, status: "ongoing", duration: "10 hrs", lessons: 18, description: "Designing secure, high-trust financial interfaces." },
-  ];
+  const courses = coursesData;
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
@@ -38,11 +39,25 @@ const Dashboard = () => {
     setIsProfileOpen(false);
   };
 
+  const handleDownload = async (course) => {
+    setSelectedCourseForCert(course);
+    setIsDownloading(true);
+    // Give React a millisecond to render the hidden certificate component
+    setTimeout(async () => {
+      await downloadCertificate(certificateRef, course.title);
+      setIsDownloading(false);
+    }, 500);
+  };
+
   return (
     <div className="min-h-screen bg-white dark:bg-brand-dark flex flex-col">
-      {/* NAVBAR: Maintained pl-20 to ensure the static hamburger menu 
-          on mobile has its own dedicated space and doesn't collide with the logo/text.
-      */}
+      {/* Hidden Certificate Engine */}
+      <CertificateGenerator 
+        user={user} 
+        course={selectedCourseForCert} 
+        certificateRef={certificateRef} 
+      />
+
       <nav className="pl-20 pr-6 md:px-12 py-8 flex justify-between items-center bg-transparent">
         <div>
           <p className="text-slate-400 font-mono text-[9px] uppercase tracking-[0.4em]">Navigator / Member Hub</p>
@@ -77,12 +92,11 @@ const Dashboard = () => {
           </motion.h1>
         </header>
 
-        {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mb-20">
           {[
             { label: "Mastery Progress", val: "03", icon: BookOpen, color: "text-blue-500" },
             { label: "Learning Hours", val: "24.5", icon: Clock, color: "text-purple-500" },
-            { label: "Global Badges", val: courses.filter(c => c.status === 'passed').length.toString().padStart(2, '0'), icon: Award, color: "text-amber-500" },
+            { label: "Global Badges", val: certificates?.length.toString().padStart(2, '0') || "00", icon: Award, color: "text-amber-500" },
           ].map((stat, i) => (
             <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} className="bg-slate-50/50 dark:bg-slate-900/40 p-8 rounded-[2rem] border border-slate-100 dark:border-slate-800/50 backdrop-blur-sm group hover:border-brand-blue/30 transition-colors">
               <stat.icon className={`${stat.color} mb-6 group-hover:scale-110 transition-transform`} size={28} />
@@ -92,41 +106,52 @@ const Dashboard = () => {
           ))}
         </div>
 
-        {/* Courses Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {courses.map((course, idx) => (
-            <motion.div key={course.id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 + (idx * 0.1) }} className="group bg-white dark:bg-slate-900/40 rounded-[2.5rem] overflow-hidden border border-slate-100 dark:border-slate-800/60 flex flex-col md:flex-row shadow-sm hover:shadow-2xl transition-all duration-500">
-              <div className="w-full md:w-56 h-48 md:h-auto bg-slate-100 dark:bg-slate-800 flex items-center justify-center relative shrink-0">
-                {course.status === 'passed' ? <Award className="text-amber-500" size={56} /> : <PlayCircle className="text-brand-blue" size={56} />}
-              </div>
-              <div className="p-8 flex-1 flex flex-col justify-between">
-                <div>
-                  <h3 className="text-xl font-heading font-bold text-slate-900 dark:text-white mb-3 group-hover:text-brand-blue transition-colors">{course.title}</h3>
-                  <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed mb-6">{course.description}</p>
+          {courses.map((course, idx) => {
+            const hasPassed = certificates?.includes(course.id);
+            
+            return (
+              <motion.div key={course.id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 + (idx * 0.1) }} className="group bg-white dark:bg-slate-900/40 rounded-[2.5rem] overflow-hidden border border-slate-100 dark:border-slate-800/60 flex flex-col md:flex-row shadow-sm hover:shadow-2xl transition-all duration-500">
+                <div className="w-full md:w-56 h-48 md:h-auto bg-slate-100 dark:bg-slate-800 flex items-center justify-center relative shrink-0">
+                  {hasPassed ? <Award className="text-amber-500" size={56} /> : <PlayCircle className="text-brand-blue" size={56} />}
                 </div>
-                
-                <div className="flex gap-2">
-                  {course.status === 'passed' && (
-                    <button className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-emerald-100 transition-colors">
-                      <FileText size={14} /> Print Certificate
-                    </button>
-                  )}
-                  {course.status === 'failed' && (
-                    <button onClick={() => navigate(`/exam/${course.id}`)} className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-red-100 transition-colors">
-                      <RefreshCcw size={14} /> Retake Exam
-                    </button>
-                  )}
-                  {course.status === 'ongoing' && (
-                    <button onClick={() => navigate(`/course/${course.id}`)} className="px-6 py-2 bg-slate-900 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-brand-blue transition-colors">Resume</button>
-                  )}
+                <div className="p-8 flex-1 flex flex-col justify-between">
+                  <div>
+                    <h3 className="text-xl font-heading font-bold text-slate-900 dark:text-white mb-3 group-hover:text-brand-blue transition-colors">{course.title}</h3>
+                    <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed mb-6 line-clamp-2">{course.description}</p>
+                  </div>
+                  
+                  <div className="flex flex-wrap gap-2">
+                    {hasPassed && (
+                      <button 
+                        onClick={() => handleDownload(course)}
+                        disabled={isDownloading}
+                        className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-emerald-100 transition-colors disabled:opacity-50"
+                      >
+                        {isDownloading ? <RefreshCcw size={14} className="animate-spin" /> : <FileText size={14} />}
+                        {isDownloading ? 'Generating...' : 'Print Certificate'}
+                      </button>
+                    )}
+
+                    {/* Show Retake only if failed (optional logic based on your store) */}
+                    
+                    {course.progress === 100 && !hasPassed && (
+                      <button onClick={() => navigate(`/exam/${course.id}`)} className="flex items-center gap-2 px-6 py-2 bg-brand-blue text-white rounded-xl text-[10px] font-bold uppercase tracking-widest hover:shadow-lg hover:shadow-brand-blue/20 transition-all">
+                        <ClipboardCheck size={14} /> Take Final Assessment
+                      </button>
+                    )}
+
+                    {course.progress < 100 && (
+                      <button onClick={() => navigate(`/course/${course.id}`)} className="px-6 py-2 bg-slate-900 dark:bg-brand-blue text-white rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-brand-blue transition-colors">Resume</button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </motion.div>
-          ))}
+              </motion.div>
+            );
+          })}
         </div>
       </main>
 
-      {/* FULLY STYLED PROFILE MODAL */}
       <AnimatePresence>
         {isProfileOpen && (
           <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
@@ -144,7 +169,6 @@ const Dashboard = () => {
               </button>
               
               <div className="flex flex-col items-center mb-8">
-                {/* Image Upload Area */}
                 <div className="relative group cursor-pointer" onClick={() => fileInputRef.current.click()}>
                   <div className="w-24 h-24 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center overflow-hidden border-4 border-white dark:border-slate-800 shadow-xl">
                     {profileImage ? (
@@ -175,7 +199,6 @@ const Dashboard = () => {
                   />
                 </div>
 
-                {/* Restored Security Section */}
                 <div className="pt-2">
                   <div className="flex items-center gap-2 mb-4 text-slate-400">
                     <KeyRound size={12} /> 

@@ -3,11 +3,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Plus, Trash2, CheckCircle2, HelpCircle, 
   FileText, AlignLeft, Layers, Save, X, 
-  GripVertical, ChevronRight, Award, AlertCircle, Check
+  GripVertical, ChevronRight, Award, AlertCircle, Check, Send
 } from 'lucide-react';
+import { coursesData } from '../data/coursesData'; // Ensure path is correct
 
 const AdminExamBuilder = () => {
-  const [view, setView] = useState('builder'); // 'builder' or 'grading'
+  const [view, setView] = useState('builder'); 
+  const [selectedCourseId, setSelectedCourseId] = useState(coursesData[0].id);
   const [questions, setQuestions] = useState([
     { id: 1, type: 'objective', text: 'What is the primary goal of Global Strategy?', options: ['Profit', 'Expansion', 'Sustainability', 'All of above'], correct: 3 },
     { id: 2, type: 'theory', text: 'Explain the impact of Diaspora investment on local emerging markets.', points: 20 }
@@ -15,15 +17,10 @@ const AdminExamBuilder = () => {
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [isGapModalOpen, setIsGapModalOpen] = useState(false);
 
-  // Mock data for Pending Submissions
   const [pendingSubmissions, setPendingSubmissions] = useState([
     { id: 'sub_1', student: 'Kwame Mensah', course: 'Global Strategy', date: 'Feb 28, 2026', theoryAnswers: [{ qId: 2, text: 'The diaspora provides critical seed capital...' }], objScore: 70 },
   ]);
   const [gradingScore, setGradingScore] = useState("");
-
-  const coursesWithoutExams = [
-    { id: "3", title: "UI/UX for Fintech Platforms" }
-  ];
 
   const addQuestion = (type) => {
     const newQ = type === 'objective' 
@@ -41,6 +38,18 @@ const AdminExamBuilder = () => {
     }
   };
 
+  const handlePublishExam = () => {
+    const targetCourse = coursesData.find(c => c.id === selectedCourseId);
+    if (targetCourse) {
+      targetCourse.exam = {
+        examId: `EXAM-${Date.now()}`,
+        questions: [...questions],
+        publishedAt: new Date().toISOString()
+      };
+      alert(`Success: Exam published to ${targetCourse.title}`);
+    }
+  };
+
   const finalizeGrade = (subId) => {
     const totalScore = pendingSubmissions.find(s => s.id === subId).objScore + parseInt(gradingScore || 0);
     const pass = totalScore >= 85;
@@ -51,7 +60,6 @@ const AdminExamBuilder = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header Controls */}
       <div className="flex justify-between items-center bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
         <div className="flex gap-2">
            <button onClick={() => setView('builder')} className={`px-5 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${view === 'builder' ? 'bg-brand-blue text-white shadow-lg shadow-brand-blue/20' : 'text-slate-500 hover:bg-slate-50'}`}>Builder</button>
@@ -60,6 +68,25 @@ const AdminExamBuilder = () => {
              {pendingSubmissions.length > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[8px] flex items-center justify-center rounded-full border-2 border-white">{pendingSubmissions.length}</span>}
            </button>
         </div>
+        
+        {/* Course Assignment Dropdown */}
+        {view === 'builder' && (
+          <div className="flex items-center gap-3">
+            <select 
+              value={selectedCourseId} 
+              onChange={(e) => setSelectedCourseId(e.target.value)}
+              className="p-2.5 bg-slate-50 border border-slate-100 rounded-xl text-[10px] font-bold uppercase tracking-widest outline-none text-slate-600"
+            >
+              {coursesData.map(c => (
+                <option key={c.id} value={c.id}>{c.title}</option>
+              ))}
+            </select>
+            <button onClick={handlePublishExam} className="flex items-center gap-2 px-5 py-2.5 bg-emerald-500 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20">
+               <Send size={14} /> Publish Exam
+            </button>
+          </div>
+        )}
+
         <button onClick={() => setIsGapModalOpen(true)} className="flex items-center gap-2 px-5 py-2.5 bg-amber-50 text-amber-700 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-amber-100 transition-all border border-amber-100">
            <AlertCircle size={14} /> Course Gaps
         </button>
@@ -68,7 +95,6 @@ const AdminExamBuilder = () => {
       <AnimatePresence mode="wait">
         {view === 'builder' ? (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="flex flex-col lg:flex-row h-[70vh] bg-white rounded-[32px] border border-slate-200 overflow-hidden shadow-sm">
-            {/* LEFT: Question Navigator */}
             <div className="w-full lg:w-80 border-r border-slate-100 flex flex-col bg-slate-50/30">
               <div className="p-6 border-b border-slate-100 bg-white">
                 <h3 className="font-bold text-slate-900 flex items-center gap-2">
@@ -93,7 +119,6 @@ const AdminExamBuilder = () => {
               </div>
             </div>
 
-            {/* RIGHT: Editor Canvas */}
             <div className="flex-1 overflow-y-auto bg-white p-10">
               {questions[selectedIdx] ? (
                 <div className="max-w-2xl mx-auto space-y-10">
@@ -163,29 +188,6 @@ const AdminExamBuilder = () => {
               </div>
             ))}
           </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Course Gap Modal */}
-      <AnimatePresence>
-        {isGapModalOpen && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsGapModalOpen(false)} className="absolute inset-0 bg-slate-950/40 backdrop-blur-md" />
-            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative bg-white w-full max-w-md rounded-[32px] p-8 shadow-2xl">
-              <h3 className="text-2xl font-bold text-slate-900 mb-6">Unassigned Exams</h3>
-              <div className="space-y-3">
-                {coursesWithoutExams.map(c => (
-                  <div key={c.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl group hover:bg-brand-blue/5 transition-colors">
-                    <div>
-                      <p className="text-sm font-bold text-slate-900">{c.title}</p>
-                      <p className="text-[10px] text-red-400 font-bold uppercase">No Assessment Linked</p>
-                    </div>
-                    <button onClick={() => { setIsGapModalOpen(false); setView('builder'); }} className="p-2 bg-white rounded-xl shadow-sm text-brand-blue opacity-0 group-hover:opacity-100 transition-all"><Plus size={18}/></button>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-          </div>
         )}
       </AnimatePresence>
     </div>

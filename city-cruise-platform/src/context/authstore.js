@@ -6,21 +6,73 @@ export const useAuthStore = create(
     (set) => ({
       user: null,
       isAuthenticated: false,
-      purchasedCourses: [], // IDs of courses bought
-      completedCourses: [], // IDs of courses finished
-      login: (userData) => set({ user: userData, isAuthenticated: true }),
-      logout: () => set({ user: null, isAuthenticated: false }),
-      purchaseCourse: (courseId) => 
-        set((state) => ({ 
-          purchasedCourses: [...new Set([...state.purchasedCourses, courseId])] 
-        })),
-      completeCourse: (courseId) => 
-        set((state) => ({ 
-          completedCourses: [...new Set([...state.completedCourses, courseId])] 
-        })),
+      purchasedCourses: [], 
+      completedCourses: [], 
+      certificates: [], // Stores passed exam IDs
+      activityLog: [], // The "Live Ecosystem" feed
+
+      login: (userData) => set({ 
+        user: userData, 
+        isAuthenticated: true 
+      }),
+      
+      logout: () => set({ 
+        user: null, 
+        isAuthenticated: false,
+        purchasedCourses: [],
+        completedCourses: [],
+        certificates: [],
+        activityLog: []
+      }),
+
+      purchaseCourse: (courseId) => set((state) => {
+        const newLog = {
+          id: Date.now(),
+          user: `${state.user?.firstName} ${state.user?.lastName}`,
+          action: "Purchased",
+          target: courseId,
+          time: "Just now"
+        };
+        return { 
+          purchasedCourses: [...new Set([...state.purchasedCourses, courseId])],
+          activityLog: [newLog, ...state.activityLog].slice(0, 50)
+        };
+      }),
+
+      completeCourse: (courseId) => set((state) => {
+        const newLog = {
+          id: Date.now(),
+          user: `${state.user?.firstName} ${state.user?.lastName}`,
+          action: "Completed",
+          target: courseId,
+          time: "Just now"
+        };
+        return { 
+          completedCourses: [...new Set([...state.completedCourses, courseId])],
+          activityLog: [newLog, ...state.activityLog].slice(0, 50)
+        };
+      }),
+
+      // New: Record Exam Results
+      recordExamResult: (courseId, title, passed, score) => set((state) => {
+        const newLog = {
+          id: Date.now(),
+          user: `${state.user?.firstName} ${state.user?.lastName}`,
+          action: passed ? "Passed Exam" : "Failed Exam",
+          target: title,
+          time: "Just now"
+        };
+        
+        const updatedCertificates = passed 
+          ? [...new Set([...state.certificates, courseId])] 
+          : state.certificates;
+
+        return {
+          certificates: updatedCertificates,
+          activityLog: [newLog, ...state.activityLog].slice(0, 50)
+        };
+      })
     }),
-    { 
-      name: 'city-cruise-auth' 
-    }
+    { name: 'city-cruise-auth' }
   )
 );
