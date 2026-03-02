@@ -4,41 +4,45 @@ export const coursesData = [
     title: "Global Strategy & Leadership",
     price: 499,
     duration: "12 hrs",
-    lessons: 24,
-    progress: 100, // Added for testing the certificate UI
     category: "Strategy",
     description: "Master international markets and high-performance team building.",
-    videoPreview: "https://sample-videos.com/video123.mp4",
+    intro: "Lead with authority in the global diaspora marketplace.",
+    image: null,
     img: "bg-blue-600/10",
-    views: 1240,
-    exam: { questions: [{}, {}, {}] } // Mock exam object
+    students: 1240,
+    status: "Published",
+    lessons: [
+      { 
+        id: 1, 
+        title: "Industry Overview & Fundamentals", 
+        duration: "15:20", 
+        summary: "An deep dive into market entry strategies and foundational diaspora economics.",
+        videoUrl: "https://sample-videos.com/video123.mp4",
+        resources: [{ name: "Market_Analysis_2026.pdf", size: "12MB" }]
+      },
+      { 
+        id: 2, 
+        title: "Strategic Resource Allocation", 
+        duration: "22:45", 
+        summary: "Learn how to distribute capital and talent effectively across borders.",
+        videoUrl: "https://sample-videos.com/video456.mp4",
+        resources: [{ name: "Resource_Sheet.xlsx", size: "4MB" }]
+      }
+    ],
+    exam: { questions: [{}, {}, {}] } 
   },
   {
     id: "fin-202",
     title: "International Finance Mastery",
     price: 599,
     duration: "18 hrs",
-    lessons: 32,
-    progress: 45, // Example of in-progress
     category: "Finance",
     description: "Advanced capital management for the modern global professional.",
-    videoPreview: "https://sample-videos.com/video456.mp4",
+    intro: "Unlock the secrets of international capital flows.",
     img: "bg-emerald-600/10",
-    views: 2100,
-    exam: null
-  },
-  {
-    id: "ux-303",
-    title: "UI/UX for Fintech Platforms",
-    price: 399,
-    duration: "10 hrs",
-    lessons: 18,
-    progress: 0, // Not started
-    category: "Design",
-    description: "Designing secure, high-trust financial interfaces.",
-    videoPreview: "https://sample-videos.com/video789.mp4",
-    img: "bg-purple-600/10",
-    views: 980,
+    students: 2100,
+    status: "Published",
+    lessons: [],
     exam: null
   }
 ];
