@@ -21,7 +21,7 @@ export const useAdminStore = create(
           objScore: 70 
         },
       ],
-      gradedNotifications: [], // NEW: Stores results for the student to "discover"
+      gradedNotifications: [], 
       revenue: 42500,
 
       toggleUserStatus: (id) => set((state) => ({
@@ -34,6 +34,7 @@ export const useAdminStore = create(
         pendingSubmissions: [submission, ...state.pendingSubmissions]
       })),
 
+      // ACTION: Used by Admin to finalize a grade
       finalizeGrading: (subId, additionalPoints, authStoreAction) => {
         const state = get();
         const submission = state.pendingSubmissions.find(s => s.id === subId);
@@ -46,7 +47,6 @@ export const useAdminStore = create(
           authStoreAction(submission.courseId, submission.course, passed, finalScore);
         }
 
-        // Push to notification queue for the student
         const newNotification = {
           id: Date.now(),
           studentId: submission.studentId,
@@ -65,6 +65,7 @@ export const useAdminStore = create(
         return { finalScore, passed };
       },
 
+      // ACTION: Specifically for the Student Dashboard to clear the pop-up
       clearNotification: (notifId) => set((state) => ({
         gradedNotifications: state.gradedNotifications.filter(n => n.id !== notifId)
       })),

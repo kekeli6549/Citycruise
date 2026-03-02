@@ -50,7 +50,7 @@ const AdminExamBuilder = () => {
     const points = parseInt(gradingScore);
     const submission = pendingSubmissions.find(s => s.id === subId);
     
-    // Calculate Final Score (Objective + Admin Awarded Theory)
+    // This triggers the store logic we updated earlier
     const result = finalizeGrading(subId, points, recordExamResult);
     
     if (result && submission) {
@@ -130,8 +130,8 @@ const AdminExamBuilder = () => {
                     </div>
                   ) : (
                     <div className="p-8 border-2 border-dashed border-slate-100 rounded-[32px] bg-slate-50/30">
-                       <div className="flex items-center gap-4 mb-4 text-slate-400"><AlignLeft size={24} /><p className="text-xs italic font-medium">Theory questions require manual grading by the board of directors.</p></div>
-                       <input type="number" className="w-32 p-3 bg-white border border-slate-200 rounded-xl font-bold" value={questions[selectedIdx].points || 0} onChange={(e) => { const u = [...questions]; u[selectedIdx].points = parseInt(e.target.value); setQuestions(u); }} />
+                        <div className="flex items-center gap-4 mb-4 text-slate-400"><AlignLeft size={24} /><p className="text-xs italic font-medium">Theory questions require manual grading by the board of directors.</p></div>
+                        <input type="number" className="w-32 p-3 bg-white border border-slate-200 rounded-xl font-bold" value={questions[selectedIdx].points || 0} onChange={(e) => { const u = [...questions]; u[selectedIdx].points = parseInt(e.target.value); setQuestions(u); }} />
                     </div>
                   )}
                 </div>

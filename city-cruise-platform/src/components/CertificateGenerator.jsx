@@ -3,51 +3,67 @@ import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { Award, ShieldCheck, Globe, Zap } from 'lucide-react';
 
+/**
+ * Logic to capture the certificate DOM and convert it to a high-quality PDF.
+ * We use scale: 3 for retina-level clarity.
+ */
 export const downloadCertificate = async (certificateRef, courseTitle) => {
   if (!certificateRef.current) return;
 
-  const canvas = await html2canvas(certificateRef.current, {
-    scale: 3, 
-    useCORS: true,
-    backgroundColor: '#ffffff'
-  });
+  try {
+    const canvas = await html2canvas(certificateRef.current, {
+      scale: 3, // High resolution for professional printing
+      useCORS: true,
+      backgroundColor: '#ffffff',
+      logging: false,
+      allowTaint: true,
+    });
 
-  const imgData = canvas.toDataURL('image/png');
-  const pdf = new jsPDF({
-    orientation: 'landscape',
-    unit: 'px',
-    format: [canvas.width, canvas.height]
-  });
+    const imgData = canvas.toDataURL('image/png', 1.0);
+    
+    // We create the PDF in landscape to match the 1123x794px proportions
+    const pdf = new jsPDF({
+      orientation: 'landscape',
+      unit: 'px',
+      format: [canvas.width, canvas.height]
+    });
 
-  pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
-  pdf.save(`Certificate-${courseTitle.replace(/\s+/g, '-')}.pdf`);
+    pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+    pdf.save(`Rootle-Certificate-${courseTitle.replace(/\s+/g, '-')}.pdf`);
+  } catch (error) {
+    console.error("Certificate Generation Error:", error);
+    alert("There was an issue generating your certificate. Please try again.");
+  }
 };
 
 const CertificateGenerator = ({ user, course, certificateRef }) => {
   if (!course || !user) return null;
 
-  // UseMemo prevents random data changes on re-renders
+  // UseMemo prevents random data changes on re-renders for consistency
   const date = useMemo(() => new Date().toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
     day: 'numeric'
   }), []);
 
+  // Generate a unique Diaspora-styled Serial ID
   const serialNumber = useMemo(() => 
-    `RT-${course.id.toUpperCase().substring(0, 4)}-${Math.floor(1000 + Math.random() * 9000)}`
+    `RT-${course.id?.toUpperCase().substring(0, 4) || 'CERT'}-${Math.floor(1000 + Math.random() * 9000)}`
   , [course.id]);
 
   return (
-    <div className="fixed left-[-9999px] top-0 shadow-none">
+    <div className="fixed left-[-9999px] top-0 shadow-none pointer-events-none">
       <div 
         ref={certificateRef}
         className="w-[1123px] h-[794px] bg-white p-1 relative overflow-hidden font-sans border-[20px] border-slate-50"
         style={{ color: '#0f172a' }}
       >
+        {/* Background Decorative Elements */}
         <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-brand-blue/5 rounded-full blur-3xl" />
         <div className="absolute bottom-[-10%] left-[-10%] w-[400px] h-[400px] bg-brand-blue/5 rounded-full blur-3xl" />
 
         <div className="h-full w-full border border-slate-200 p-16 flex flex-col justify-between relative z-10">
+          {/* Header Section */}
           <div className="flex justify-between items-start">
             <div>
               <div className="flex items-center gap-2 mb-2">
@@ -64,6 +80,7 @@ const CertificateGenerator = ({ user, course, certificateRef }) => {
             </div>
           </div>
 
+          {/* Main Body */}
           <div className="text-center space-y-8">
             <div className="space-y-2">
               <h4 className="text-[12px] font-mono uppercase tracking-[0.5em] text-brand-blue font-bold">Certificate of Excellence</h4>
@@ -83,6 +100,7 @@ const CertificateGenerator = ({ user, course, certificateRef }) => {
             </div>
           </div>
 
+          {/* Footer Section / Signatures */}
           <div className="flex justify-between items-end">
             <div className="space-y-4">
               <div className="flex items-center gap-6">

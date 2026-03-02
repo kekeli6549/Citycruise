@@ -34,7 +34,6 @@ const ProtectedRoute = ({ children }) => {
 // ADMIN ROUTE GUARD
 const AdminRoute = ({ children }) => {
   const { isAuthenticated, user } = useAuthStore();
-  // Check if authenticated AND if the user object has the isAdmin flag
   const isAdmin = isAuthenticated && user?.role === 'admin'; 
   return isAdmin ? children : <Navigate to="/admin/login" replace />;
 };

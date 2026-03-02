@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../context/authStore';
-import { useAdminStore } from '../context/adminStore'; // Added to listen for grades
+import { useAdminStore } from '../context/adminStore'; 
 import { coursesData } from '../data/coursesData';
 import CertificateGenerator, { downloadCertificate } from '../components/CertificateGenerator';
 import { 
@@ -14,7 +14,7 @@ import {
 
 const Dashboard = () => {
   const { user, logout, login, certificates } = useAuthStore();
-  const { gradedNotifications, clearNotification } = useAdminStore(); // Grade listener
+  const { gradedNotifications, clearNotification } = useAdminStore(); 
   const navigate = useNavigate();
   
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -29,7 +29,6 @@ const Dashboard = () => {
 
   const courses = coursesData;
 
-  // Listen for new grades from the Board
   useEffect(() => {
     const myResult = gradedNotifications.find(n => n.studentId === user?.id && !n.viewed);
     if (myResult) {
@@ -60,16 +59,20 @@ const Dashboard = () => {
   };
 
   const handleDownload = async (course) => {
+    if (!course) return;
     setSelectedCourseForCert(course);
     setIsDownloading(true);
+    
+    // Small timeout to allow the hidden CertificateGenerator to update with the new course data
     setTimeout(async () => {
       await downloadCertificate(certificateRef, course.title);
       setIsDownloading(false);
-    }, 500);
+    }, 600);
   };
 
   return (
     <div className="min-h-screen bg-white dark:bg-brand-dark flex flex-col">
+      {/* Hidden high-res certificate for PDF generation */}
       <CertificateGenerator 
         user={user} 
         course={selectedCourseForCert} 
@@ -86,7 +89,6 @@ const Dashboard = () => {
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
               className="bg-white dark:bg-slate-900 w-full max-w-md rounded-[3rem] p-10 shadow-2xl border border-white/20 text-center relative overflow-hidden"
             >
-              {/* Background Glow */}
               <div className={`absolute top-0 left-0 w-full h-2 ${activeNotification.passed ? 'bg-emerald-500' : 'bg-red-500'}`} />
               
               <div className={`w-20 h-20 rounded-3xl mx-auto mb-6 flex items-center justify-center ${activeNotification.passed ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-500'}`}>
@@ -108,7 +110,7 @@ const Dashboard = () => {
                   <button 
                     onClick={() => {
                       const courseObj = courses.find(c => c.id === activeNotification.courseId);
-                      handleDownload(courseObj || { title: activeNotification.courseName });
+                      handleDownload(courseObj || { title: activeNotification.courseName, id: activeNotification.courseId });
                       handleDismissNotification();
                     }}
                     className="w-full py-4 bg-brand-blue text-white rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-xl shadow-brand-blue/20 hover:scale-[1.02] transition-transform"
@@ -208,8 +210,12 @@ const Dashboard = () => {
                         disabled={isDownloading}
                         className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-emerald-100 transition-colors disabled:opacity-50"
                       >
-                        {isDownloading ? <RefreshCcw size={14} className="animate-spin" /> : <FileText size={14} />}
-                        {isDownloading ? 'Generating...' : 'Print Certificate'}
+                        {isDownloading && selectedCourseForCert?.id === course.id ? (
+                          <RefreshCcw size={14} className="animate-spin" />
+                        ) : (
+                          <FileText size={14} />
+                        )}
+                        {isDownloading && selectedCourseForCert?.id === course.id ? 'Generating...' : 'Print Certificate'}
                       </button>
                     )}
 

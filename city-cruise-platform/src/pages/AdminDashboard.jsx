@@ -4,7 +4,7 @@ import {
   Users, BookOpen, TrendingUp, LayoutGrid, ClipboardCheck, SearchX 
 } from 'lucide-react';
 import { useAuthStore } from '../context/authStore';
-import { useAdminStore } from '../context/adminStore'; // New Import
+import { useAdminStore } from '../context/adminStore'; 
 import AdminUserManagement from './AdminUserManagement';
 import AdminCourseManager from './AdminCourseManager';
 import AdminExamBuilder from './AdminExamBuilder';
@@ -12,7 +12,7 @@ import AdminExamBuilder from './AdminExamBuilder';
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const activityLog = useAuthStore(state => state.activityLog);
-  const { students, revenue, pendingSubmissions } = useAdminStore(); // Live Data
+  const { students, revenue, pendingSubmissions } = useAdminStore(); 
 
   const stats = [
     { label: "Total Students", value: students.length.toLocaleString(), icon: Users, trend: "+12%", color: "text-blue-600" },
