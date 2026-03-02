@@ -2,24 +2,24 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Plus, Trash2, CheckCircle2, HelpCircle, 
-  FileText, AlignLeft, Layers, Save, X, 
-  GripVertical, ChevronRight, Award, AlertCircle, Check, Send
+  FileText, AlignLeft, Layers, AlertCircle, Send
 } from 'lucide-react';
-import { coursesData } from '../data/coursesData'; // Ensure path is correct
+import { useCourseStore } from '../context/courseStore';
+import { useAdminStore } from '../context/adminStore'; 
+import { useAuthStore } from '../context/authStore'; 
 
 const AdminExamBuilder = () => {
+  const { courses, updateCourse, updateSubmissionStatus } = useCourseStore();
+  const { pendingSubmissions, finalizeGrading } = useAdminStore();
+  const recordExamResult = useAuthStore(state => state.recordExamResult);
+
   const [view, setView] = useState('builder'); 
-  const [selectedCourseId, setSelectedCourseId] = useState(coursesData[0].id);
+  const [selectedCourseId, setSelectedCourseId] = useState(courses[0]?.id);
   const [questions, setQuestions] = useState([
     { id: 1, type: 'objective', text: 'What is the primary goal of Global Strategy?', options: ['Profit', 'Expansion', 'Sustainability', 'All of above'], correct: 3 },
     { id: 2, type: 'theory', text: 'Explain the impact of Diaspora investment on local emerging markets.', points: 20 }
   ]);
   const [selectedIdx, setSelectedIdx] = useState(0);
-  const [isGapModalOpen, setIsGapModalOpen] = useState(false);
-
-  const [pendingSubmissions, setPendingSubmissions] = useState([
-    { id: 'sub_1', student: 'Kwame Mensah', course: 'Global Strategy', date: 'Feb 28, 2026', theoryAnswers: [{ qId: 2, text: 'The diaspora provides critical seed capital...' }], objScore: 70 },
-  ]);
   const [gradingScore, setGradingScore] = useState("");
 
   const addQuestion = (type) => {
@@ -30,32 +30,40 @@ const AdminExamBuilder = () => {
     setSelectedIdx(questions.length);
   };
 
-  const removeQuestion = (id) => {
-    const filtered = questions.filter(q => q.id !== id);
-    setQuestions(filtered);
-    if (selectedIdx >= filtered.length) {
-      setSelectedIdx(Math.max(0, filtered.length - 1));
-    }
-  };
-
   const handlePublishExam = () => {
-    const targetCourse = coursesData.find(c => c.id === selectedCourseId);
+    const targetCourse = courses.find(c => c.id === selectedCourseId);
     if (targetCourse) {
-      targetCourse.exam = {
-        examId: `EXAM-${Date.now()}`,
-        questions: [...questions],
-        publishedAt: new Date().toISOString()
-      };
+      updateCourse(selectedCourseId, {
+        exam: {
+          examId: `EXAM-${Date.now()}`,
+          questions: [...questions],
+          publishedAt: new Date().toISOString()
+        }
+      });
       alert(`Success: Exam published to ${targetCourse.title}`);
     }
   };
 
-  const finalizeGrade = (subId) => {
-    const totalScore = pendingSubmissions.find(s => s.id === subId).objScore + parseInt(gradingScore || 0);
-    const pass = totalScore >= 85;
-    alert(`Final Score: ${totalScore}%. Student will receive ${pass ? 'Certificate' : 'Retake Option'}.`);
-    setPendingSubmissions(pendingSubmissions.filter(s => s.id !== subId));
-    setGradingScore("");
+  const handleFinalizeGrade = (subId) => {
+    if (!gradingScore) return alert("Please assign a theory score first.");
+    
+    const points = parseInt(gradingScore);
+    const submission = pendingSubmissions.find(s => s.id === subId);
+    
+    // Calculate Final Score (Objective + Admin Awarded Theory)
+    const result = finalizeGrading(subId, points, recordExamResult);
+    
+    if (result && submission) {
+      // Update the submission status in the course store to 'Graded'
+      updateSubmissionStatus(submission.courseId, subId, { 
+        status: 'Graded', 
+        finalScore: result.finalScore,
+        passed: result.passed 
+      });
+
+      alert(`Grading Complete: ${result.finalScore}% - ${result.passed ? 'PASSED (Certificate Issued)' : 'FAILED'}`);
+      setGradingScore("");
+    }
   };
 
   return (
@@ -63,56 +71,37 @@ const AdminExamBuilder = () => {
       <div className="flex justify-between items-center bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
         <div className="flex gap-2">
            <button onClick={() => setView('builder')} className={`px-5 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${view === 'builder' ? 'bg-brand-blue text-white shadow-lg shadow-brand-blue/20' : 'text-slate-500 hover:bg-slate-50'}`}>Builder</button>
-           <button onClick={() => setView('grading')} className={`px-5 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all relative ${view === 'grading' ? 'bg-brand-blue text-white shadow-lg shadow-brand-blue/20' : 'text-slate-500 hover:bg-slate-50'}`}>
+           <button onClick={() => setView('grading')} className={`px-5 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest relative transition-all ${view === 'grading' ? 'bg-brand-blue text-white shadow-lg shadow-brand-blue/20' : 'text-slate-500 hover:bg-slate-50'}`}>
              Pending Grading
              {pendingSubmissions.length > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[8px] flex items-center justify-center rounded-full border-2 border-white">{pendingSubmissions.length}</span>}
            </button>
         </div>
         
-        {/* Course Assignment Dropdown */}
         {view === 'builder' && (
           <div className="flex items-center gap-3">
-            <select 
-              value={selectedCourseId} 
-              onChange={(e) => setSelectedCourseId(e.target.value)}
-              className="p-2.5 bg-slate-50 border border-slate-100 rounded-xl text-[10px] font-bold uppercase tracking-widest outline-none text-slate-600"
-            >
-              {coursesData.map(c => (
-                <option key={c.id} value={c.id}>{c.title}</option>
-              ))}
+            <select value={selectedCourseId} onChange={(e) => setSelectedCourseId(e.target.value)} className="p-2.5 bg-slate-50 border border-slate-100 rounded-xl text-[10px] font-bold uppercase tracking-widest outline-none text-slate-600">
+              {courses.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
             </select>
-            <button onClick={handlePublishExam} className="flex items-center gap-2 px-5 py-2.5 bg-emerald-500 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20">
-               <Send size={14} /> Publish Exam
-            </button>
+            <button onClick={handlePublishExam} className="flex items-center gap-2 px-5 py-2.5 bg-emerald-500 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20"><Send size={14} /> Publish Exam</button>
           </div>
         )}
 
-        <button onClick={() => setIsGapModalOpen(true)} className="flex items-center gap-2 px-5 py-2.5 bg-amber-50 text-amber-700 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-amber-100 transition-all border border-amber-100">
-           <AlertCircle size={14} /> Course Gaps
-        </button>
+        <button className="flex items-center gap-2 px-5 py-2.5 bg-amber-50 text-amber-700 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-amber-100 transition-all border border-amber-100"><AlertCircle size={14} /> Course Gaps</button>
       </div>
 
       <AnimatePresence mode="wait">
         {view === 'builder' ? (
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="flex flex-col lg:flex-row h-[70vh] bg-white rounded-[32px] border border-slate-200 overflow-hidden shadow-sm">
+          <motion.div key="builder" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="flex flex-col lg:flex-row h-[70vh] bg-white rounded-[32px] border border-slate-200 overflow-hidden shadow-sm">
             <div className="w-full lg:w-80 border-r border-slate-100 flex flex-col bg-slate-50/30">
-              <div className="p-6 border-b border-slate-100 bg-white">
-                <h3 className="font-bold text-slate-900 flex items-center gap-2">
-                  <Layers size={18} className="text-brand-blue" /> Exam Schema
-                </h3>
-              </div>
-              
+              <div className="p-6 border-b border-slate-100 bg-white"><h3 className="font-bold text-slate-900 flex items-center gap-2"><Layers size={18} className="text-brand-blue" /> Exam Schema</h3></div>
               <div className="flex-1 overflow-y-auto p-4 space-y-2">
                 {questions.map((q, i) => (
                   <button key={q.id} onClick={() => setSelectedIdx(i)} className={`w-full flex items-center gap-3 p-4 rounded-2xl transition-all border ${selectedIdx === i ? 'bg-white border-brand-blue shadow-sm ring-1 ring-brand-blue/10' : 'bg-transparent border-transparent text-slate-500 hover:bg-slate-100'}`}>
-                    <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${q.type === 'objective' ? 'bg-blue-50 text-blue-600' : 'bg-purple-50 text-purple-600'}`}>
-                      {q.type === 'objective' ? <CheckCircle2 size={12} /> : <FileText size={12} />}
-                    </div>
-                    <span className="text-xs font-bold truncate">Q{i + 1}: {q.text || 'Untitled Question'}</span>
+                    <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${q.type === 'objective' ? 'bg-blue-50 text-blue-600' : 'bg-purple-50 text-purple-600'}`}>{q.type === 'objective' ? <CheckCircle2 size={12} /> : <FileText size={12} />}</div>
+                    <span className="text-xs font-bold truncate">Q{i + 1}: {q.text || 'Untitled'}</span>
                   </button>
                 ))}
               </div>
-
               <div className="p-4 bg-white border-t border-slate-100 grid grid-cols-2 gap-2">
                 <button onClick={() => addQuestion('objective')} className="p-3 bg-slate-900 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2"><Plus size={14} /> Objective</button>
                 <button onClick={() => addQuestion('theory')} className="p-3 border border-slate-200 text-slate-600 rounded-xl text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-slate-50"><Plus size={14} /> Theory</button>
@@ -122,50 +111,36 @@ const AdminExamBuilder = () => {
             <div className="flex-1 overflow-y-auto bg-white p-10">
               {questions[selectedIdx] ? (
                 <div className="max-w-2xl mx-auto space-y-10">
-                  <div className="flex justify-between items-center">
-                    <span className="px-4 py-1.5 bg-slate-100 rounded-full text-[10px] font-bold uppercase tracking-widest text-slate-500">{questions[selectedIdx].type} Question Configuration</span>
-                    <button onClick={() => removeQuestion(questions[selectedIdx].id)} className="text-red-400 hover:text-red-600 transition-colors"><Trash2 size={18} /></button>
-                  </div>
+                  <div className="flex justify-between items-center"><span className="px-4 py-1.5 bg-slate-100 rounded-full text-[10px] font-bold uppercase tracking-widest text-slate-500">{questions[selectedIdx].type} Configuration</span><button onClick={() => { const f = questions.filter(q => q.id !== questions[selectedIdx].id); setQuestions(f); setSelectedIdx(0); }} className="text-red-400 hover:text-red-600"><Trash2 size={18} /></button></div>
                   <div className="space-y-4">
                     <label className="text-sm font-bold text-slate-900">Question Prompt</label>
-                    <textarea className="w-full p-6 bg-slate-50 border-none rounded-[24px] text-lg focus:ring-2 ring-brand-blue/10 outline-none placeholder:text-slate-300 min-h-[150px]" placeholder="Ask something profound..." value={questions[selectedIdx].text} onChange={(e) => { const updated = [...questions]; updated[selectedIdx].text = e.target.value; setQuestions(updated); }} />
+                    <textarea className="w-full p-6 bg-slate-50 border-none rounded-[24px] text-lg focus:ring-2 ring-brand-blue/10 outline-none min-h-[150px]" value={questions[selectedIdx].text} onChange={(e) => { const u = [...questions]; u[selectedIdx].text = e.target.value; setQuestions(u); }} />
                   </div>
                   {questions[selectedIdx].type === 'objective' ? (
                     <div className="space-y-4">
-                      <label className="text-sm font-bold text-slate-900">Answer Options</label>
+                      <label className="text-sm font-bold text-slate-900">Options</label>
                       <div className="grid gap-3">
-                        {questions[selectedIdx].options.map((opt, optIdx) => (
-                          <div key={optIdx} className="flex gap-3 group">
-                            <button onClick={() => { const updated = [...questions]; updated[selectedIdx].correct = optIdx; setQuestions(updated); }} className={`w-12 h-12 rounded-2xl flex items-center justify-center border-2 transition-all ${questions[selectedIdx].correct === optIdx ? 'bg-brand-blue border-brand-blue text-white shadow-lg' : 'border-slate-100 text-slate-300 hover:border-slate-200'}`}>{String.fromCharCode(65 + optIdx)}</button>
-                            <input type="text" value={opt} className="flex-1 p-4 bg-slate-50 border-none rounded-2xl text-sm focus:ring-2 ring-brand-blue/10 outline-none" placeholder={`Option ${optIdx + 1}`} onChange={(e) => { const updated = [...questions]; updated[selectedIdx].options[optIdx] = e.target.value; setQuestions(updated); }} />
+                        {questions[selectedIdx].options.map((opt, oIdx) => (
+                          <div key={oIdx} className="flex gap-3">
+                            <button onClick={() => { const u = [...questions]; u[selectedIdx].correct = oIdx; setQuestions(u); }} className={`w-12 h-12 rounded-2xl flex items-center justify-center border-2 ${questions[selectedIdx].correct === oIdx ? 'bg-brand-blue border-brand-blue text-white shadow-lg' : 'border-slate-100 text-slate-300'}`}>{String.fromCharCode(65 + oIdx)}</button>
+                            <input type="text" value={opt} className="flex-1 p-4 bg-slate-50 border-none rounded-2xl text-sm" onChange={(e) => { const u = [...questions]; u[selectedIdx].options[oIdx] = e.target.value; setQuestions(u); }} />
                           </div>
                         ))}
                       </div>
                     </div>
                   ) : (
                     <div className="p-8 border-2 border-dashed border-slate-100 rounded-[32px] bg-slate-50/30">
-                      <div className="flex items-center gap-4 mb-4 text-slate-400">
-                        <AlignLeft size={24} />
-                        <p className="text-xs italic font-medium">Theory questions require manual grading by the board of directors.</p>
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">Grading Weight (Points)</label>
-                        <input type="number" className="w-32 p-3 bg-white border border-slate-200 rounded-xl font-bold text-slate-900" value={questions[selectedIdx].points || 0} onChange={(e) => { const updated = [...questions]; updated[selectedIdx].points = parseInt(e.target.value); setQuestions(updated); }} />
-                      </div>
+                       <div className="flex items-center gap-4 mb-4 text-slate-400"><AlignLeft size={24} /><p className="text-xs italic font-medium">Theory questions require manual grading by the board of directors.</p></div>
+                       <input type="number" className="w-32 p-3 bg-white border border-slate-200 rounded-xl font-bold" value={questions[selectedIdx].points || 0} onChange={(e) => { const u = [...questions]; u[selectedIdx].points = parseInt(e.target.value); setQuestions(u); }} />
                     </div>
                   )}
                 </div>
-              ) : (
-                <div className="h-full flex flex-col items-center justify-center text-slate-300 space-y-4">
-                  <HelpCircle size={48} strokeWidth={1} />
-                  <p className="font-medium">Select or create a question to begin building.</p>
-                </div>
-              )}
+              ) : <div className="h-full flex flex-col items-center justify-center text-slate-300 space-y-4"><HelpCircle size={48} /><p>Select or create a question.</p></div>}
             </div>
           </motion.div>
         ) : (
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {pendingSubmissions.map(sub => (
+          <motion.div key="grading" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {pendingSubmissions.length > 0 ? pendingSubmissions.map(sub => (
               <div key={sub.id} className="bg-white p-8 rounded-[32px] border border-slate-200 shadow-sm space-y-6">
                 <div className="flex justify-between items-start">
                   <div>
@@ -176,17 +151,22 @@ const AdminExamBuilder = () => {
                 </div>
                 <div className="p-6 bg-slate-50 rounded-2xl">
                   <p className="text-[10px] font-bold text-slate-400 uppercase mb-3">Student's Response</p>
-                  <p className="text-sm text-slate-700 leading-relaxed italic">"{sub.theoryAnswers[0].text}"</p>
+                  <p className="text-sm text-slate-700 leading-relaxed italic">"{sub.theoryAnswers?.[0]?.text || "No response provided."}"</p>
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="flex-1">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase block mb-2">Award Theory Points (Max 30)</label>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase block mb-2">Award Theory Points</label>
                     <input type="number" value={gradingScore} onChange={(e) => setGradingScore(e.target.value)} className="w-full p-4 bg-slate-50 border-none rounded-xl text-sm" placeholder="e.g. 25" />
                   </div>
-                  <button onClick={() => finalizeGrade(sub.id)} className="h-[52px] px-8 bg-slate-900 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest self-end hover:bg-brand-blue transition-all">Submit Grade</button>
+                  <button onClick={() => handleFinalizeGrade(sub.id)} className="h-[52px] px-8 bg-slate-900 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest self-end hover:bg-brand-blue transition-all">Submit Grade</button>
                 </div>
               </div>
-            ))}
+            )) : (
+              <div className="col-span-full py-20 text-center opacity-30 flex flex-col items-center">
+                 <CheckCircle2 size={48} className="mb-4" />
+                 <p className="text-sm font-bold uppercase tracking-widest">No pending assessments to grade</p>
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

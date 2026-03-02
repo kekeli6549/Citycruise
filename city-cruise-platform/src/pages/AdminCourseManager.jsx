@@ -1,19 +1,18 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Edit2, Trash2, DollarSign, Image as ImageIcon, X, ChevronRight, Save, Power, Users } from 'lucide-react';
+import { Plus, Edit2, Trash2, DollarSign, Image as ImageIcon, X, ChevronRight, Save, Power, Users, ClipboardCheck } from 'lucide-react';
+import { useCourseStore } from '../context/courseStore';
 
 const AdminCourseManager = () => {
+  const { courses, toggleStatus, addCourse } = useCourseStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalStep, setModalStep] = useState(1);
-  const [courses, setCourses] = useState([
-    { id: 1, title: "Global Strategy & Leadership", status: "Published", students: 420, price: "$299", image: "https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&q=80&w=400" },
-    { id: 2, title: "UI/UX for Fintech", status: "Draft", students: 0, price: "$199", image: "https://images.unsplash.com/photo-1586717791821-3f44a563eb4c?auto=format&fit=crop&q=80&w=400" },
-  ]);
+  const [newCourseData, setNewCourseData] = useState({ title: '', description: '', price: '', category: 'Finance & Wealth' });
 
-  const toggleStatus = (id) => {
-    setCourses(courses.map(c => 
-      c.id === id ? { ...c, status: c.status === 'Published' ? 'Draft' : 'Published' } : c
-    ));
+  const handleCreateCourse = () => {
+    addCourse(newCourseData);
+    setIsModalOpen(false);
+    setModalStep(1);
   };
 
   return (
@@ -35,14 +34,25 @@ const AdminCourseManager = () => {
         {courses.map((course) => (
           <div key={course.id} className="bg-white rounded-[32px] border border-slate-200 shadow-sm overflow-hidden group hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-500">
             <div className="h-48 bg-slate-100 relative overflow-hidden">
-              <img src={course.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt="" />
+              {course.image ? (
+                <img src={course.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt="" />
+              ) : (
+                <div className={`w-full h-full ${course.img || 'bg-slate-200'} flex items-center justify-center`}>
+                   <ImageIcon className="text-slate-400" size={40} />
+                </div>
+              )}
               <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-              <div className="absolute top-4 left-4">
+              <div className="absolute top-4 left-4 flex gap-2">
                 <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest backdrop-blur-md shadow-lg ${
                   course.status === 'Published' ? 'bg-emerald-500 text-white' : 'bg-slate-900/80 text-white'
                 }`}>
                   {course.status}
                 </span>
+                {course.exam && (
+                   <span className="px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-amber-500 text-white shadow-lg flex items-center gap-1">
+                     <ClipboardCheck size={10} /> Exam Linked
+                   </span>
+                )}
               </div>
             </div>
             <div className="p-7">
@@ -52,7 +62,7 @@ const AdminCourseManager = () => {
                   <Users size={14} className="text-slate-400" />
                   <p className="text-xs font-bold text-slate-500">{course.students} Learners</p>
                 </div>
-                <p className="text-lg font-black text-slate-900">{course.price}</p>
+                <p className="text-lg font-black text-slate-900">${course.price}</p>
               </div>
               <div className="flex gap-3">
                 <button className="flex-1 flex items-center justify-center gap-2 py-3.5 bg-slate-50 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-100 transition-all">
@@ -93,11 +103,11 @@ const AdminCourseManager = () => {
                     <div className="grid gap-6">
                         <div className="space-y-3">
                             <label className="text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em]">Course Identity</label>
-                            <input type="text" placeholder="e.g. Masterclass in Diaspora Wealth" className="w-full p-5 bg-slate-50 border-2 border-transparent rounded-[24px] text-base font-medium focus:border-brand-blue/20 focus:bg-white outline-none transition-all" />
+                            <input type="text" value={newCourseData.title} onChange={(e) => setNewCourseData({...newCourseData, title: e.target.value})} placeholder="e.g. Masterclass in Diaspora Wealth" className="w-full p-5 bg-slate-50 border-2 border-transparent rounded-[24px] text-base font-medium focus:border-brand-blue/20 focus:bg-white outline-none transition-all" />
                         </div>
                         <div className="space-y-3">
                             <label className="text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em]">The Curriculum Vision</label>
-                            <textarea rows="4" placeholder="What transformation will the student undergo?" className="w-full p-5 bg-slate-50 border-2 border-transparent rounded-[24px] text-base font-medium focus:border-brand-blue/20 focus:bg-white outline-none transition-all" />
+                            <textarea rows="4" value={newCourseData.description} onChange={(e) => setNewCourseData({...newCourseData, description: e.target.value})} placeholder="What transformation will the student undergo?" className="w-full p-5 bg-slate-50 border-2 border-transparent rounded-[24px] text-base font-medium focus:border-brand-blue/20 focus:bg-white outline-none transition-all" />
                         </div>
                     </div>
                   </motion.div>
@@ -110,12 +120,12 @@ const AdminCourseManager = () => {
                         <label className="text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em]">Investment (USD)</label>
                         <div className="relative">
                           <DollarSign className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-                          <input type="number" placeholder="299" className="w-full pl-12 p-5 bg-slate-50 border-transparent border-2 rounded-[24px] focus:border-brand-blue/20 focus:bg-white outline-none" />
+                          <input type="number" value={newCourseData.price} onChange={(e) => setNewCourseData({...newCourseData, price: e.target.value})} placeholder="299" className="w-full pl-12 p-5 bg-slate-50 border-transparent border-2 rounded-[24px] focus:border-brand-blue/20 focus:bg-white outline-none" />
                         </div>
                       </div>
                       <div className="space-y-3">
                         <label className="text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em]">Discipline</label>
-                        <select className="w-full p-5 bg-slate-50 border-transparent border-2 rounded-[24px] focus:border-brand-blue/20 outline-none appearance-none font-bold">
+                        <select value={newCourseData.category} onChange={(e) => setNewCourseData({...newCourseData, category: e.target.value})} className="w-full p-5 bg-slate-50 border-transparent border-2 rounded-[24px] focus:border-brand-blue/20 outline-none appearance-none font-bold">
                           <option>Finance & Wealth</option>
                           <option>Tech Leadership</option>
                           <option>Creative Arts</option>
@@ -151,7 +161,7 @@ const AdminCourseManager = () => {
                     Next Phase <ChevronRight size={18} />
                   </button>
                 ) : (
-                  <button onClick={() => setIsModalOpen(false)} className="px-10 py-5 bg-brand-blue text-white rounded-2xl font-black text-xs uppercase tracking-widest flex items-center gap-3 shadow-2xl shadow-brand-blue/40 hover:scale-105 active:scale-95 transition-all">
+                  <button onClick={handleCreateCourse} className="px-10 py-5 bg-brand-blue text-white rounded-2xl font-black text-xs uppercase tracking-widest flex items-center gap-3 shadow-2xl shadow-brand-blue/40 hover:scale-105 active:scale-95 transition-all">
                     Deploy to Live <Save size={18} />
                   </button>
                 )}

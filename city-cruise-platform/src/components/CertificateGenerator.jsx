@@ -1,87 +1,124 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
-import { Award, ShieldCheck, Globe } from 'lucide-react';
-
-const CertificateGenerator = ({ user, course, certificateRef }) => {
-  return (
-    <div className="absolute left-[-9999px] top-0">
-      <div 
-        ref={certificateRef}
-        className="w-[1000px] h-[700px] bg-white p-16 relative flex flex-col items-center justify-between border-[20px] border-slate-50 overflow-hidden"
-        style={{ fontFamily: 'sans-serif' }}
-      >
-        {/* Decorative Background Elements */}
-        <div className="absolute top-[-100px] right-[-100px] w-80 h-80 bg-brand-blue/5 rounded-full" />
-        <div className="absolute bottom-[-50px] left-[-50px] w-60 h-60 bg-slate-100 rounded-full" />
-        
-        {/* Header */}
-        <div className="text-center z-10">
-          <div className="flex justify-center mb-6">
-            <div className="w-20 h-20 bg-brand-blue rounded-2xl flex items-center justify-center shadow-xl shadow-brand-blue/20">
-              <Award className="text-white" size={40} />
-            </div>
-          </div>
-          <p className="text-slate-400 font-mono text-[12px] uppercase tracking-[0.5em] mb-2">Official Certification of Mastery</p>
-          <div className="h-1 w-20 bg-brand-blue mx-auto rounded-full" />
-        </div>
-
-        {/* Recipient */}
-        <div className="text-center z-10">
-          <p className="text-slate-500 font-serif italic text-xl mb-4">This is to officially recognize that</p>
-          <h1 className="text-6xl font-black text-slate-900 tracking-tight mb-6">
-            {user?.firstName || 'Innovator'}
-          </h1>
-          <p className="max-w-2xl text-slate-500 leading-relaxed text-lg">
-            Has successfully completed the advanced curriculum and final assessment for
-          </p>
-          <h2 className="text-3xl font-bold text-brand-blue mt-4 uppercase tracking-tight">
-            {course?.title}
-          </h2>
-        </div>
-
-        {/* Footer / Validation */}
-        <div className="w-full flex justify-between items-end z-10">
-          <div className="text-left">
-            <p className="text-[10px] font-mono text-slate-400 uppercase tracking-widest mb-1">Issue Date</p>
-            <p className="font-bold text-slate-800">{new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
-          </div>
-          
-          <div className="flex flex-col items-center">
-            <div className="w-24 h-24 border-4 border-slate-100 rounded-full flex items-center justify-center mb-2">
-               <ShieldCheck size={48} className="text-slate-200" />
-            </div>
-            <p className="text-[9px] font-mono text-slate-300 uppercase tracking-tighter text-center">
-              Verified Ecosystem <br /> ID: {Math.random().toString(36).substr(2, 9).toUpperCase()}
-            </p>
-          </div>
-
-          <div className="text-right">
-            <p className="text-[10px] font-mono text-slate-400 uppercase tracking-widest mb-1">Curriculum Director</p>
-            <p className="font-serif italic text-xl text-slate-900 border-t border-slate-200 pt-2 px-4">City Cruise Global</p>
-          </div>
-        </div>
-
-        {/* Branding Watermark */}
-        <Globe className="absolute bottom-[-100px] right-[-100px] text-slate-50 opacity-50" size={400} />
-      </div>
-    </div>
-  );
-};
+import { Award, ShieldCheck, Globe, Zap } from 'lucide-react';
 
 export const downloadCertificate = async (certificateRef, courseTitle) => {
+  if (!certificateRef.current) return;
+
   const canvas = await html2canvas(certificateRef.current, {
-    scale: 2, // High resolution
+    scale: 3, 
     useCORS: true,
+    backgroundColor: '#ffffff'
   });
+
   const imgData = canvas.toDataURL('image/png');
   const pdf = new jsPDF({
     orientation: 'landscape',
     unit: 'px',
-    format: [1000, 700]
+    format: [canvas.width, canvas.height]
   });
-  pdf.addImage(imgData, 'PNG', 0, 0, 1000, 700);
+
+  pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
   pdf.save(`Certificate-${courseTitle.replace(/\s+/g, '-')}.pdf`);
+};
+
+const CertificateGenerator = ({ user, course, certificateRef }) => {
+  if (!course || !user) return null;
+
+  // UseMemo prevents random data changes on re-renders
+  const date = useMemo(() => new Date().toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  }), []);
+
+  const serialNumber = useMemo(() => 
+    `RT-${course.id.toUpperCase().substring(0, 4)}-${Math.floor(1000 + Math.random() * 9000)}`
+  , [course.id]);
+
+  return (
+    <div className="fixed left-[-9999px] top-0 shadow-none">
+      <div 
+        ref={certificateRef}
+        className="w-[1123px] h-[794px] bg-white p-1 relative overflow-hidden font-sans border-[20px] border-slate-50"
+        style={{ color: '#0f172a' }}
+      >
+        <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-brand-blue/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-[-10%] left-[-10%] w-[400px] h-[400px] bg-brand-blue/5 rounded-full blur-3xl" />
+
+        <div className="h-full w-full border border-slate-200 p-16 flex flex-col justify-between relative z-10">
+          <div className="flex justify-between items-start">
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 bg-brand-blue rounded-lg flex items-center justify-center">
+                  <Zap className="text-white" size={18} fill="currentColor" />
+                </div>
+                <span className="font-heading font-bold text-2xl tracking-tighter">ROOTLE</span>
+              </div>
+              <p className="text-[10px] font-mono uppercase tracking-[0.4em] text-slate-400">Professional Excellence Credentials</p>
+            </div>
+            <div className="text-right">
+              <p className="text-[10px] font-mono uppercase tracking-widest text-slate-400 mb-1">Serial ID</p>
+              <p className="font-bold text-sm font-mono">{serialNumber}</p>
+            </div>
+          </div>
+
+          <div className="text-center space-y-8">
+            <div className="space-y-2">
+              <h4 className="text-[12px] font-mono uppercase tracking-[0.5em] text-brand-blue font-bold">Certificate of Excellence</h4>
+              <p className="text-slate-500 font-serif italic text-lg">This elite credential is officially granted to</p>
+            </div>
+
+            <h1 className="text-7xl font-heading font-bold text-slate-900 tracking-tight py-4">
+              {user.firstName} {user.lastName || ''}
+            </h1>
+
+            <div className="max-w-2xl mx-auto border-t border-b border-slate-100 py-8">
+              <p className="text-slate-500 leading-relaxed font-body text-lg">
+                For the successful completion and mastery of the <br />
+                <span className="text-slate-900 font-bold uppercase tracking-wide text-xl">"{course.title}"</span> <br />
+                curriculum, demonstrating exceptional proficiency in professional standards and leadership.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex justify-between items-end">
+            <div className="space-y-4">
+              <div className="flex items-center gap-6">
+                <div>
+                  <p className="text-[10px] font-mono uppercase tracking-widest text-slate-400 mb-2">Date Issued</p>
+                  <p className="font-bold border-b border-slate-900 pb-1">{date}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-mono uppercase tracking-widest text-slate-400 mb-2">Accreditation</p>
+                  <div className="flex items-center gap-1 text-emerald-600 font-bold">
+                    <ShieldCheck size={14} />
+                    <span className="text-xs uppercase tracking-tighter">Verified Member</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="relative flex flex-col items-center">
+              <div className="absolute top-[-80px] w-24 h-24 border-2 border-brand-blue/20 rounded-full flex items-center justify-center">
+                <div className="w-20 h-20 bg-brand-blue/5 border border-brand-blue rounded-full flex items-center justify-center animate-[spin_10s_linear_infinite]">
+                   <Globe className="text-brand-blue/20" size={40} />
+                </div>
+                <Award className="absolute text-brand-blue" size={32} />
+              </div>
+              
+              <div className="mt-4 text-center">
+                <p className="font-serif italic text-2xl text-slate-800 mb-1">Rootle Board</p>
+                <div className="w-40 h-px bg-slate-900 mb-2" />
+                <p className="text-[10px] font-mono uppercase tracking-widest text-slate-400 font-bold">Authorized Registrar</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default CertificateGenerator;

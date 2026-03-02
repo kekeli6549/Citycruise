@@ -1,20 +1,25 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../context/authStore';
+import { useAdminStore } from '../context/adminStore'; // Added to listen for grades
 import { coursesData } from '../data/coursesData';
 import CertificateGenerator, { downloadCertificate } from '../components/CertificateGenerator';
 import { 
   PlayCircle, Clock, Award, BookOpen, User, X, 
   LogOut, ChevronRight, Camera, KeyRound, Sparkles, 
-  FileText, RefreshCcw, ClipboardCheck, Download 
+  FileText, RefreshCcw, ClipboardCheck, Download,
+  Trophy, AlertTriangle
 } from 'lucide-react';
 
 const Dashboard = () => {
   const { user, logout, login, certificates } = useAuthStore();
+  const { gradedNotifications, clearNotification } = useAdminStore(); // Grade listener
   const navigate = useNavigate();
+  
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [activeNotification, setActiveNotification] = useState(null);
   
   const [editName, setEditName] = useState(user?.firstName || '');
   const [profileImage, setProfileImage] = useState(null);
@@ -23,6 +28,21 @@ const Dashboard = () => {
   const [selectedCourseForCert, setSelectedCourseForCert] = useState(null);
 
   const courses = coursesData;
+
+  // Listen for new grades from the Board
+  useEffect(() => {
+    const myResult = gradedNotifications.find(n => n.studentId === user?.id && !n.viewed);
+    if (myResult) {
+      setActiveNotification(myResult);
+    }
+  }, [gradedNotifications, user?.id]);
+
+  const handleDismissNotification = () => {
+    if (activeNotification) {
+      clearNotification(activeNotification.id);
+      setActiveNotification(null);
+    }
+  };
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
@@ -42,7 +62,6 @@ const Dashboard = () => {
   const handleDownload = async (course) => {
     setSelectedCourseForCert(course);
     setIsDownloading(true);
-    // Give React a millisecond to render the hidden certificate component
     setTimeout(async () => {
       await downloadCertificate(certificateRef, course.title);
       setIsDownloading(false);
@@ -51,12 +70,73 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-white dark:bg-brand-dark flex flex-col">
-      {/* Hidden Certificate Engine */}
       <CertificateGenerator 
         user={user} 
         course={selectedCourseForCert} 
         certificateRef={certificateRef} 
       />
+
+      {/* RESULT NOTIFICATION OVERLAY */}
+      <AnimatePresence>
+        {activeNotification && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-sm">
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0, y: 20 }} 
+              animate={{ scale: 1, opacity: 1, y: 0 }} 
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="bg-white dark:bg-slate-900 w-full max-w-md rounded-[3rem] p-10 shadow-2xl border border-white/20 text-center relative overflow-hidden"
+            >
+              {/* Background Glow */}
+              <div className={`absolute top-0 left-0 w-full h-2 ${activeNotification.passed ? 'bg-emerald-500' : 'bg-red-500'}`} />
+              
+              <div className={`w-20 h-20 rounded-3xl mx-auto mb-6 flex items-center justify-center ${activeNotification.passed ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-500'}`}>
+                {activeNotification.passed ? <Trophy size={40} /> : <AlertTriangle size={40} />}
+              </div>
+
+              <p className="text-[10px] font-mono font-bold uppercase tracking-[0.3em] text-slate-400 mb-2">Board Decision Rendered</p>
+              <h2 className="text-3xl font-heading font-bold text-slate-900 dark:text-white mb-4">
+                {activeNotification.passed ? 'Assessment Passed' : 'Assessment Failed'}
+              </h2>
+              
+              <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-2xl mb-8">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Course: {activeNotification.courseName}</p>
+                <p className="text-4xl font-black text-slate-900 dark:text-white">{activeNotification.score}%</p>
+              </div>
+
+              <div className="space-y-3">
+                {activeNotification.passed ? (
+                  <button 
+                    onClick={() => {
+                      const courseObj = courses.find(c => c.id === activeNotification.courseId);
+                      handleDownload(courseObj || { title: activeNotification.courseName });
+                      handleDismissNotification();
+                    }}
+                    className="w-full py-4 bg-brand-blue text-white rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-xl shadow-brand-blue/20 hover:scale-[1.02] transition-transform"
+                  >
+                    Download Certificate
+                  </button>
+                ) : (
+                  <button 
+                    onClick={() => {
+                      navigate(`/course/${activeNotification.courseId}`);
+                      handleDismissNotification();
+                    }}
+                    className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold text-[10px] uppercase tracking-widest hover:scale-[1.02] transition-transform"
+                  >
+                    Review Course Material
+                  </button>
+                )}
+                <button 
+                  onClick={handleDismissNotification}
+                  className="w-full py-4 text-slate-400 font-bold text-[10px] uppercase tracking-widest hover:text-slate-600 transition-colors"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       <nav className="pl-20 pr-6 md:px-12 py-8 flex justify-between items-center bg-transparent">
         <div>
@@ -133,8 +213,6 @@ const Dashboard = () => {
                       </button>
                     )}
 
-                    {/* Show Retake only if failed (optional logic based on your store) */}
-                    
                     {course.progress === 100 && !hasPassed && (
                       <button onClick={() => navigate(`/exam/${course.id}`)} className="flex items-center gap-2 px-6 py-2 bg-brand-blue text-white rounded-xl text-[10px] font-bold uppercase tracking-widest hover:shadow-lg hover:shadow-brand-blue/20 transition-all">
                         <ClipboardCheck size={14} /> Take Final Assessment

@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Users, BookOpen, TrendingUp, Activity, 
-  Plus, LayoutGrid, ClipboardCheck, Settings, SearchX 
+  Users, BookOpen, TrendingUp, LayoutGrid, ClipboardCheck, SearchX 
 } from 'lucide-react';
 import { useAuthStore } from '../context/authStore';
+import { useAdminStore } from '../context/adminStore'; // New Import
 import AdminUserManagement from './AdminUserManagement';
 import AdminCourseManager from './AdminCourseManager';
 import AdminExamBuilder from './AdminExamBuilder';
@@ -12,11 +12,12 @@ import AdminExamBuilder from './AdminExamBuilder';
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const activityLog = useAuthStore(state => state.activityLog);
+  const { students, revenue, pendingSubmissions } = useAdminStore(); // Live Data
 
   const stats = [
-    { label: "Total Students", value: "1,284", icon: Users, trend: "+12%", color: "text-blue-600" },
-    { label: "Course Revenue", value: "$42,500", icon: TrendingUp, trend: "+8%", color: "text-emerald-600" },
-    { label: "Active Lessons", value: "156", icon: BookOpen, trend: "Stable", color: "text-purple-600" },
+    { label: "Total Students", value: students.length.toLocaleString(), icon: Users, trend: "+12%", color: "text-blue-600" },
+    { label: "Course Revenue", value: `$${revenue.toLocaleString()}`, icon: TrendingUp, trend: "+8%", color: "text-emerald-600" },
+    { label: "Pending Exams", value: pendingSubmissions.length.toString(), icon: ClipboardCheck, trend: "Action Needed", color: "text-purple-600" },
   ];
 
   const tabs = [

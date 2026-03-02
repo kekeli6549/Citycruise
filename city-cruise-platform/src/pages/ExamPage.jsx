@@ -1,155 +1,138 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { CheckCircle2, Award, Home, X, AlertCircle, RotateCcw } from 'lucide-react';
-import { coursesData } from '../data/coursesData'; 
+import { useParams, useNavigate } from 'react-router-dom';
+import { ChevronLeft, Send, Timer, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { useCourseStore } from '../context/courseStore';
 import { useAuthStore } from '../context/authStore';
 
 const ExamPage = () => {
   const { courseId } = useParams();
   const navigate = useNavigate();
-  const recordExamResult = useAuthStore(state => state.recordExamResult);
+  const { courses, submitExamToAdmin } = useCourseStore();
+  const { user, recordExamResult } = useAuthStore();
   
-  const [step, setStep] = useState('intro'); 
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [score, setScore] = useState(0);
-  const [isFinished, setIsFinished] = useState(false);
-
-  const course = coursesData.find(c => c.id === courseId);
+  const course = courses.find(c => c.id === courseId);
   const exam = course?.exam;
-  const questions = exam?.questions || [];
+  
+  const [answers, setAnswers] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(30 * 60); // 30 minutes default
 
   useEffect(() => {
-    if (!exam) { console.error("No exam found"); }
-  }, [exam]);
+    if (timeLeft <= 0) handleSubmit();
+    const timer = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
+    return () => clearInterval(timer);
+  }, [timeLeft]);
 
-  const handleAnswer = (selectedIndex) => {
-    const isCorrect = selectedIndex === questions[currentQuestionIndex].correct;
-    const newScore = isCorrect ? score + 1 : score;
-    
-    if (isCorrect) setScore(newScore);
-
-    if (currentQuestionIndex + 1 < questions.length) {
-      setCurrentQuestionIndex(prev => prev + 1);
-    } else {
-      const finalScorePercent = ((newScore) / questions.length) * 100;
-      const passed = finalScorePercent === 100;
-      
-      setIsFinished(passed);
-      setStep('result');
-
-      // REPORT TO ECOSYSTEM
-      recordExamResult(courseId, course?.title, passed, finalScorePercent);
-    }
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const ExitButton = () => (
-    <button 
-      onClick={() => navigate('/dashboard')}
-      className="fixed top-8 right-8 p-3 bg-slate-100 dark:bg-slate-800 rounded-full text-slate-500 hover:text-red-500 transition-colors z-50"
-    >
-      <X size={20} />
-    </button>
-  );
+  const handleOptionChange = (questionId, value) => {
+    setAnswers({ ...answers, [questionId]: value });
+  };
 
-  if (step === 'intro') return (
-    <div className="min-h-screen bg-slate-50 dark:bg-brand-dark flex items-center justify-center p-6 relative">
-      <ExitButton />
-      <div className="max-w-xl w-full bg-white dark:bg-slate-900 shadow-2xl rounded-[3rem] p-12 text-center">
-        <Award className="text-brand-blue mx-auto mb-6" size={64} />
-        <h1 className="text-3xl font-heading font-bold mb-4 dark:text-white">Final Assessment</h1>
-        <p className="text-slate-500 mb-2 font-body text-lg font-bold">{course?.title}</p>
-        <p className="text-slate-500 mb-8 font-body">
-          This exam consists of {questions.length} questions. <br />
-          You need <span className="text-brand-blue font-bold">100%</span> to receive your certification.
-        </p>
-        <button 
-          onClick={() => setStep('test')} 
-          className="w-full bg-brand-blue text-white py-5 rounded-2xl font-bold uppercase text-[10px] tracking-widest shadow-xl shadow-brand-blue/30 active:scale-95 transition-transform"
-        >
-          Begin Exam
-        </button>
-      </div>
-    </div>
-  );
+  const handleSubmit = async () => {
+    setIsSubmitting(true);
+    
+    // 1. Calculate Objective Score
+    let objectiveScore = 0;
+    const objectiveQuestions = exam.questions.filter(q => q.type === 'objective');
+    
+    objectiveQuestions.forEach(q => {
+      if (answers[q.id] === q.correctAnswer) objectiveScore++;
+    });
 
-  if (step === 'result') return (
-    <div className="min-h-screen bg-white dark:bg-brand-dark flex items-center justify-center p-6 text-center">
-      <div className="max-w-md">
-        {isFinished ? (
-          <>
-            <div className="w-24 h-24 bg-emerald-500 rounded-full flex items-center justify-center mx-auto mb-8 shadow-2xl shadow-emerald-500/40">
-              <CheckCircle2 className="text-white" size={48} />
-            </div>
-            <h1 className="text-4xl font-heading font-bold mb-4 dark:text-white">Certified.</h1>
-            <p className="text-slate-500 mb-12 font-body">Congratulations. Your professional certification for "{course?.title}" has been added to your profile.</p>
-          </>
-        ) : (
-          <>
-            <div className="w-24 h-24 bg-red-500 rounded-full flex items-center justify-center mx-auto mb-8 shadow-2xl shadow-red-500/40">
-              <AlertCircle className="text-white" size={48} />
-            </div>
-            <h1 className="text-4xl font-heading font-bold mb-4 dark:text-white">Not Quite.</h1>
-            <p className="text-slate-500 mb-12 font-body">You scored {Math.round((score/questions.length)*100)}%. A perfect score is required for certification. Review the material and try again.</p>
-          </>
-        )}
-        
-        <div className="flex flex-col gap-4">
-          {!isFinished && (
-             <button 
-                onClick={() => {
-                    setStep('intro');
-                    setCurrentQuestionIndex(0);
-                    setScore(0);
-                }} 
-                className="flex items-center justify-center gap-3 bg-brand-blue text-white px-10 py-5 rounded-2xl font-bold uppercase text-[10px] tracking-widest hover:shadow-xl transition-all active:scale-95"
-                >
-                <RotateCcw size={16} /> Retake Exam
-             </button>
-          )}
-          <button 
-            onClick={() => navigate('/dashboard')} 
-            className="flex items-center justify-center gap-3 bg-slate-900 text-white px-10 py-5 rounded-2xl font-bold uppercase text-[10px] tracking-widest hover:shadow-xl transition-all active:scale-95"
-          >
-            <Home size={16} /> Return to Hub
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+    const finalScore = (objectiveScore / objectiveQuestions.length) * 100;
+    const passed = finalScore >= 70;
 
-  const currentQuestion = questions[currentQuestionIndex];
-  const progressPercent = ((currentQuestionIndex) / questions.length) * 100;
+    const submissionPayload = {
+      studentId: user?.id,
+      studentName: `${user?.firstName} ${user?.lastName}`,
+      answers: answers,
+      score: finalScore,
+      submittedAt: new Date().toISOString(),
+      status: exam.questions.some(q => q.type === 'theory') ? 'Pending Review' : 'Graded'
+    };
+
+    // 2. Push to Admin & Update Student Record
+    submitExamToAdmin(courseId, submissionPayload);
+    recordExamResult(courseId, course.title, passed, finalScore);
+
+    setTimeout(() => {
+      setIsSubmitting(false);
+      navigate(`/dashboard/results/${courseId}`, { state: { score: finalScore, passed } });
+    }, 2000);
+  };
+
+  if (!exam) return <div className="p-20 text-center font-mono">Exam Loading or Not Found...</div>;
 
   return (
-    <div className="min-h-screen bg-white dark:bg-brand-dark p-6 md:p-20 relative">
-      <ExitButton />
-      <div className="max-w-3xl mx-auto pt-12">
-        <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full mb-16 overflow-hidden">
-          <div 
-            className="h-full bg-brand-blue transition-all duration-700" 
-            style={{ width: `${progressPercent}%` }}
-          />
-        </div>
+    <div className="min-h-screen bg-slate-50 dark:bg-brand-dark pb-20">
+      {/* Header */}
+      <div className="sticky top-0 z-50 bg-white/80 dark:bg-brand-dark/80 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 p-6 flex justify-between items-center">
+        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-slate-400 hover:text-brand-blue transition-colors font-bold text-[10px] uppercase tracking-widest">
+          <ChevronLeft size={16}/> Abandon Session
+        </button>
         
-        <p className="font-mono text-[10px] text-brand-blue uppercase tracking-[0.3em] mb-4">
-            Question {String(currentQuestionIndex + 1).padStart(2, '0')} of {String(questions.length).padStart(2, '0')}
-        </p>
-        <h2 className="text-3xl md:text-4xl font-heading font-bold mb-12 dark:text-white leading-tight">
-          {currentQuestion?.q}
-        </h2>
+        <div className="flex items-center gap-4 bg-slate-900 text-white px-6 py-2 rounded-full font-mono text-sm">
+          <Timer size={16} className="text-brand-blue" />
+          {formatTime(timeLeft)}
+        </div>
 
-        <div className="grid gap-4">
-          {currentQuestion?.options.map((opt, i) => (
-            <button 
-              key={i} 
-              onClick={() => handleAnswer(i)} 
-              className="group flex items-center text-left p-6 md:p-8 rounded-[2rem] border border-slate-100 dark:border-slate-800 hover:border-brand-blue hover:bg-brand-blue/5 transition-all active:scale-[0.98]"
-            >
-              <span className="w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center font-mono text-[10px] text-slate-400 mr-6 group-hover:bg-brand-blue group-hover:text-white transition-colors">
-                0{i+1}
-              </span>
-              <span className="font-bold text-lg dark:text-white">{opt}</span>
-            </button>
+        <button 
+          onClick={handleSubmit}
+          disabled={isSubmitting}
+          className="bg-brand-blue text-white px-8 py-2.5 rounded-full font-bold text-[10px] uppercase tracking-widest shadow-lg shadow-brand-blue/20 hover:scale-105 active:scale-95 transition-all disabled:opacity-50"
+        >
+          {isSubmitting ? 'Processing...' : 'Submit Assessment'}
+        </button>
+      </div>
+
+      <div className="max-w-3xl mx-auto mt-12 px-6">
+        <div className="mb-12">
+          <h1 className="text-3xl font-heading font-bold dark:text-white mb-2">{course.title}</h1>
+          <p className="text-slate-500 text-sm">Final Professional Competency Assessment</p>
+        </div>
+
+        <div className="space-y-8">
+          {exam.questions.map((q, idx) => (
+            <div key={q.id} className="bg-white dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 p-8 rounded-3xl">
+              <div className="flex gap-4 mb-6">
+                <span className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-xs font-bold text-slate-400">
+                  {idx + 1}
+                </span>
+                <h3 className="text-lg font-bold dark:text-white leading-relaxed">{q.questionText}</h3>
+              </div>
+
+              {q.type === 'objective' ? (
+                <div className="grid grid-cols-1 gap-3 ml-12">
+                  {q.options.map((opt, i) => (
+                    <label key={i} className={`flex items-center gap-4 p-4 rounded-2xl border cursor-pointer transition-all ${answers[q.id] === opt ? 'border-brand-blue bg-brand-blue/5' : 'border-slate-50 dark:border-slate-800 hover:border-slate-200'}`}>
+                      <input 
+                        type="radio" 
+                        name={q.id} 
+                        className="hidden" 
+                        onChange={() => handleOptionChange(q.id, opt)}
+                      />
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${answers[q.id] === opt ? 'border-brand-blue' : 'border-slate-300'}`}>
+                        {answers[q.id] === opt && <div className="w-2.5 h-2.5 bg-brand-blue rounded-full" />}
+                      </div>
+                      <span className={`text-sm ${answers[q.id] === opt ? 'text-brand-blue font-bold' : 'text-slate-600 dark:text-slate-400'}`}>{opt}</span>
+                    </label>
+                  ))}
+                </div>
+              ) : (
+                <div className="ml-12">
+                  <textarea 
+                    placeholder="Provide your professional detailed response..."
+                    className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-2xl p-6 text-sm dark:text-white focus:ring-2 focus:ring-brand-blue transition-all min-h-[150px]"
+                    onChange={(e) => handleOptionChange(q.id, e.target.value)}
+                  />
+                </div>
+              )}
+            </div>
           ))}
         </div>
       </div>

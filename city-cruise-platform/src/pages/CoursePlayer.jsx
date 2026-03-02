@@ -1,14 +1,17 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft, Play, CheckCircle, Award } from 'lucide-react';
+import { ChevronLeft, Play, CheckCircle, Award, AlertCircle } from 'lucide-react';
 import { useAuthStore } from '../context/authStore';
+import { useCourseStore } from '../context/courseStore';
 
 const CoursePlayer = () => {
   const { courseId } = useParams();
   const navigate = useNavigate();
+  const { courses } = useCourseStore();
   const { completeCourse, completedCourses } = useAuthStore();
   const [activeLesson, setActiveLesson] = useState(1);
 
+  const course = courses.find(c => c.id === courseId);
   const lessons = [
     { id: 1, title: "Industry Overview & Fundamentals", duration: "15:20" },
     { id: 2, title: "Strategic Resource Allocation", duration: "22:45" },
@@ -21,6 +24,14 @@ const CoursePlayer = () => {
     completeCourse(courseId);
   };
 
+  const startExam = () => {
+    if (course?.exam) {
+      navigate(`/exam/${courseId}`);
+    } else {
+      alert("The Board of Directors has not yet published the final assessment for this course.");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white dark:bg-brand-dark flex flex-col">
       <div className="border-b border-slate-100 dark:border-slate-800 p-6 flex justify-between items-center">
@@ -31,10 +42,10 @@ const CoursePlayer = () => {
         
         {isCompleted ? (
           <button 
-            onClick={() => navigate(`/exam/${courseId}`)} 
+            onClick={startExam} 
             className="flex items-center gap-2 bg-emerald-500 text-white px-6 py-2.5 rounded-full font-bold text-[10px] uppercase tracking-widest shadow-lg shadow-emerald-500/20 active:scale-95 transition-all"
           >
-            <Award size={14} /> Take Exam
+            <Award size={14} /> {course?.exam ? 'Take Exam' : 'Exam Unavailable'}
           </button>
         ) : (
           <button 
@@ -82,7 +93,9 @@ const CoursePlayer = () => {
                 <CheckCircle size={18} />
                 <p className="text-xs font-bold uppercase tracking-widest">Progress Verified</p>
               </div>
-              <p className="text-slate-500 text-[10px] leading-relaxed font-body">You have completed all materials. Final assessment is now unlocked.</p>
+              <p className="text-slate-500 text-[10px] leading-relaxed font-body">
+                {course?.exam ? "You have completed all materials. Final assessment is now unlocked." : "Curriculum finished. Awaiting final assessment publication."}
+              </p>
             </div>
           )}
         </div>

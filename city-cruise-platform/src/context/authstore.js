@@ -9,7 +9,8 @@ export const useAuthStore = create(
       purchasedCourses: [], 
       completedCourses: [], 
       certificates: [], // Stores passed exam IDs
-      activityLog: [], // The "Live Ecosystem" feed
+      examResults: [], // NEW: Detailed history of student scores
+      activityLog: [], 
 
       login: (userData) => set({ 
         user: userData, 
@@ -22,13 +23,14 @@ export const useAuthStore = create(
         purchasedCourses: [],
         completedCourses: [],
         certificates: [],
+        examResults: [],
         activityLog: []
       }),
 
       purchaseCourse: (courseId) => set((state) => {
         const newLog = {
           id: Date.now(),
-          user: `${state.user?.firstName} ${state.user?.lastName}`,
+          user: `${state.user?.firstName || 'User'}`,
           action: "Purchased",
           target: courseId,
           time: "Just now"
@@ -42,7 +44,7 @@ export const useAuthStore = create(
       completeCourse: (courseId) => set((state) => {
         const newLog = {
           id: Date.now(),
-          user: `${state.user?.firstName} ${state.user?.lastName}`,
+          user: `${state.user?.firstName || 'User'}`,
           action: "Completed",
           target: courseId,
           time: "Just now"
@@ -53,11 +55,10 @@ export const useAuthStore = create(
         };
       }),
 
-      // New: Record Exam Results
       recordExamResult: (courseId, title, passed, score) => set((state) => {
         const newLog = {
           id: Date.now(),
-          user: `${state.user?.firstName} ${state.user?.lastName}`,
+          user: `${state.user?.firstName || 'User'}`,
           action: passed ? "Passed Exam" : "Failed Exam",
           target: title,
           time: "Just now"
@@ -67,8 +68,16 @@ export const useAuthStore = create(
           ? [...new Set([...state.certificates, courseId])] 
           : state.certificates;
 
+        const newResult = {
+          courseId,
+          score,
+          passed,
+          date: new Date().toISOString()
+        };
+
         return {
           certificates: updatedCertificates,
+          examResults: [newResult, ...state.examResults],
           activityLog: [newLog, ...state.activityLog].slice(0, 50)
         };
       })
