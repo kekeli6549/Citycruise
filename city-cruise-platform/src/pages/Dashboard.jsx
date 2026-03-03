@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 
 const Dashboard = () => {
-  const { user, logout, login, certificates } = useAuthStore();
+  const { user, logout, login, certificates, completedLessons } = useAuthStore();
   const { gradedNotifications, clearNotification } = useAdminStore(); 
   const navigate = useNavigate();
   
@@ -63,7 +63,6 @@ const Dashboard = () => {
     setSelectedCourseForCert(course);
     setIsDownloading(true);
     
-    // Small timeout to allow the hidden CertificateGenerator to update with the new course data
     setTimeout(async () => {
       await downloadCertificate(certificateRef, course.title);
       setIsDownloading(false);
@@ -72,14 +71,12 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-white dark:bg-brand-dark flex flex-col">
-      {/* Hidden high-res certificate for PDF generation */}
       <CertificateGenerator 
         user={user} 
         course={selectedCourseForCert} 
         certificateRef={certificateRef} 
       />
 
-      {/* RESULT NOTIFICATION OVERLAY */}
       <AnimatePresence>
         {activeNotification && (
           <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-sm">
@@ -176,7 +173,7 @@ const Dashboard = () => {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mb-20">
           {[
-            { label: "Mastery Progress", val: "03", icon: BookOpen, color: "text-blue-500" },
+            { label: "Mastery Progress", val: courses.length.toString().padStart(2, '0'), icon: BookOpen, color: "text-blue-500" },
             { label: "Learning Hours", val: "24.5", icon: Clock, color: "text-purple-500" },
             { label: "Global Badges", val: certificates?.length.toString().padStart(2, '0') || "00", icon: Award, color: "text-amber-500" },
           ].map((stat, i) => (
@@ -192,6 +189,13 @@ const Dashboard = () => {
           {courses.map((course, idx) => {
             const hasPassed = certificates?.includes(course.id);
             
+            // Calculate progress based on completed lessons
+            const courseLessons = course.lessons || [];
+            const completedInThisCourse = courseLessons.filter(lesson => completedLessons.includes(lesson.id)).length;
+            const progressPercentage = courseLessons.length > 0 
+              ? Math.round((completedInThisCourse / courseLessons.length) * 100) 
+              : 0;
+            
             return (
               <motion.div key={course.id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 + (idx * 0.1) }} className="group bg-white dark:bg-slate-900/40 rounded-[2.5rem] overflow-hidden border border-slate-100 dark:border-slate-800/60 flex flex-col md:flex-row shadow-sm hover:shadow-2xl transition-all duration-500">
                 <div className="w-full md:w-56 h-48 md:h-auto bg-slate-100 dark:bg-slate-800 flex items-center justify-center relative shrink-0">
@@ -201,6 +205,24 @@ const Dashboard = () => {
                   <div>
                     <h3 className="text-xl font-heading font-bold text-slate-900 dark:text-white mb-3 group-hover:text-brand-blue transition-colors">{course.title}</h3>
                     <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed mb-6 line-clamp-2">{course.description}</p>
+                    
+                    {/* Progress Bar Component */}
+                    {!hasPassed && (
+                      <div className="mb-6">
+                        <div className="flex justify-between items-end mb-2">
+                          <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Course Progress</span>
+                          <span className="text-[10px] font-mono font-bold text-brand-blue">{progressPercentage}%</span>
+                        </div>
+                        <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                          <motion.div 
+                            initial={{ width: 0 }}
+                            animate={{ width: `${progressPercentage}%` }}
+                            transition={{ duration: 1, ease: "easeOut" }}
+                            className="h-full bg-brand-blue shadow-[0_0_10px_rgba(0,102,255,0.3)]"
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
                   
                   <div className="flex flex-wrap gap-2">
@@ -219,14 +241,16 @@ const Dashboard = () => {
                       </button>
                     )}
 
-                    {course.progress === 100 && !hasPassed && (
+                    {progressPercentage === 100 && !hasPassed && (
                       <button onClick={() => navigate(`/exam/${course.id}`)} className="flex items-center gap-2 px-6 py-2 bg-brand-blue text-white rounded-xl text-[10px] font-bold uppercase tracking-widest hover:shadow-lg hover:shadow-brand-blue/20 transition-all">
                         <ClipboardCheck size={14} /> Take Final Assessment
                       </button>
                     )}
 
-                    {course.progress < 100 && (
-                      <button onClick={() => navigate(`/course/${course.id}`)} className="px-6 py-2 bg-slate-900 dark:bg-brand-blue text-white rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-brand-blue transition-colors">Resume</button>
+                    {progressPercentage < 100 && (
+                      <button onClick={() => navigate(`/course/${course.id}`)} className="px-6 py-2 bg-slate-900 dark:bg-brand-blue text-white rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-brand-blue transition-colors">
+                        {progressPercentage > 0 ? 'Resume' : 'Start Curriculum'}
+                      </button>
                     )}
                   </div>
                 </div>

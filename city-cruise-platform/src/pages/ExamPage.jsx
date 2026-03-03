@@ -37,51 +37,55 @@ const ExamPage = () => {
     if (!exam || isSubmitting) return;
     setIsSubmitting(true);
     
-    // 1. Calculate Objective Score
-    let objectiveScore = 0;
+    // 1. Separate questions by type
     const objectiveQuestions = exam.questions.filter(q => q.type === 'objective');
     const theoryQuestions = exam.questions.filter(q => q.type === 'theory');
-    
+    const hasTheory = theoryQuestions.length > 0;
+
+    // 2. Calculate Objective Score
+    let objectiveScoreCount = 0;
     objectiveQuestions.forEach(q => {
-      // Logic: If the student's selected option matches the correct option text
+      // Logic: Compare selected option text with the correct option text at the specified index
       if (answers[q.id] === q.options[q.correct]) {
-        objectiveScore++;
+        objectiveScoreCount++;
       }
     });
 
     const objectivePercentage = objectiveQuestions.length > 0 
-      ? (objectiveScore / objectiveQuestions.length) * 100 
+      ? Math.round((objectiveScoreCount / objectiveQuestions.length) * 100) 
       : 100;
 
-    const hasTheory = theoryQuestions.length > 0;
-    
     const submissionPayload = {
       courseId: courseId,
       courseTitle: course.title,
       studentId: user?.id,
-      studentName: `${user?.firstName || 'Guest'} ${user?.lastName || 'Learner'}`,
+      studentName: `${user?.firstName || 'Innovator'} ${user?.lastName || ''}`,
       answers: answers,
       objectiveScore: objectivePercentage,
       submittedAt: new Date().toISOString(),
       status: hasTheory ? 'Pending Review' : 'Graded'
     };
 
-    // 2. Push to Store
+    // 3. Push to Admin Submissions in Course Store
     submitExamToAdmin(courseId, submissionPayload);
     
-    // 3. Record result if auto-graded
+    // 4. Record result in Auth Store for the user's persistent record
+    // Only record as a final "Pass/Fail" if there is no theory. 
+    // If theory exists, the Admin will trigger the final record later.
     if (!hasTheory) {
-      const passed = objectivePercentage >= 70;
+      const passed = objectivePercentage >= 70; // Standard 70% pass mark
       recordExamResult(courseId, course.title, passed, objectivePercentage);
     }
 
+    // Aesthetic delay for "Processing" feedback
     setTimeout(() => {
       setIsSubmitting(false);
-      navigate(`/dashboard/results/${courseId}`, { 
+      // Navigate back to a summary or the dashboard
+      navigate(`/dashboard`, { 
         state: { 
-          score: objectivePercentage, 
-          status: submissionPayload.status,
-          hasTheory: hasTheory 
+          examSubmitted: true,
+          courseTitle: course.title,
+          status: submissionPayload.status 
         } 
       });
     }, 2000);
@@ -114,7 +118,7 @@ const ExamPage = () => {
         <div className="mb-12">
           <span className="text-brand-blue font-black text-[10px] uppercase tracking-[0.3em] mb-2 block">Official Board Examination</span>
           <h1 className="text-3xl font-bold dark:text-white mb-2 tracking-tight">{course.title}</h1>
-          <p className="text-slate-500 text-sm font-medium italic">Standardized Professional Competency Assessment</p>
+          <p className="text-slate-500 text-sm font-medium italic font-body">Standardized Professional Competency Assessment</p>
         </div>
 
         <div className="space-y-8">
@@ -124,7 +128,7 @@ const ExamPage = () => {
                 <span className="w-10 h-10 shrink-0 rounded-2xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-xs font-black text-brand-blue">
                   {idx + 1}
                 </span>
-                <h3 className="text-lg font-bold dark:text-white leading-relaxed pt-1">{q.text}</h3>
+                <h3 className="text-lg font-bold dark:text-white leading-relaxed pt-1 font-heading">{q.text}</h3>
               </div>
 
               {q.type === 'objective' ? (
@@ -148,7 +152,7 @@ const ExamPage = () => {
                 <div className="ml-16">
                   <textarea 
                     placeholder="Structure your professional response here..."
-                    className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-[24px] p-8 text-sm dark:text-white focus:ring-2 focus:ring-brand-blue transition-all min-h-[200px] outline-none font-medium"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-[24px] p-8 text-sm dark:text-white focus:ring-2 focus:ring-brand-blue transition-all min-h-[200px] outline-none font-medium font-body"
                     onChange={(e) => handleOptionChange(q.id, e.target.value)}
                   />
                   <p className="mt-4 text-[10px] text-slate-400 font-bold uppercase tracking-widest flex items-center gap-2">

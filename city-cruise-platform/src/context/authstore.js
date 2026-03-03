@@ -8,8 +8,9 @@ export const useAuthStore = create(
       isAuthenticated: false,
       purchasedCourses: [], 
       completedCourses: [], 
-      certificates: [], // Stores passed exam IDs
-      examResults: [], // NEW: Detailed history of student scores
+      completedLessons: [], 
+      certificates: [], 
+      examResults: [], 
       activityLog: [], 
 
       login: (userData) => set({ 
@@ -22,6 +23,7 @@ export const useAuthStore = create(
         isAuthenticated: false,
         purchasedCourses: [],
         completedCourses: [],
+        completedLessons: [], 
         certificates: [],
         examResults: [],
         activityLog: []
@@ -30,7 +32,7 @@ export const useAuthStore = create(
       purchaseCourse: (courseId) => set((state) => {
         const newLog = {
           id: Date.now(),
-          user: `${state.user?.firstName || 'User'}`,
+          user: `${state.user?.firstName || 'Innovator'}`,
           action: "Purchased",
           target: courseId,
           time: "Just now"
@@ -41,10 +43,15 @@ export const useAuthStore = create(
         };
       }),
 
+      // Syncing name with CoursePlayer usage
+      addCompletedLesson: (lessonId) => set((state) => ({
+        completedLessons: [...new Set([...state.completedLessons, lessonId])]
+      })),
+
       completeCourse: (courseId) => set((state) => {
         const newLog = {
           id: Date.now(),
-          user: `${state.user?.firstName || 'User'}`,
+          user: `${state.user?.firstName || 'Innovator'}`,
           action: "Completed",
           target: courseId,
           time: "Just now"
@@ -58,7 +65,7 @@ export const useAuthStore = create(
       recordExamResult: (courseId, title, passed, score) => set((state) => {
         const newLog = {
           id: Date.now(),
-          user: `${state.user?.firstName || 'User'}`,
+          user: `${state.user?.firstName || 'Innovator'}`,
           action: passed ? "Passed Exam" : "Failed Exam",
           target: title,
           time: "Just now"

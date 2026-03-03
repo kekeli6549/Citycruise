@@ -20,7 +20,6 @@ const AdminExamBuilder = () => {
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [gradingScore, setGradingScore] = useState("");
 
-  // Derived pending submissions from all courses
   const allPending = courses.reduce((acc, course) => {
     const pending = (course.submissions || [])
       .filter(s => s.status === 'Pending Review')
@@ -52,21 +51,17 @@ const AdminExamBuilder = () => {
 
   const handleFinalizeGrade = (submission) => {
     if (!gradingScore) return alert("Please assign a theory score first.");
-    
     const theoryPoints = parseInt(gradingScore);
-    const finalScore = Math.min(100, (submission.objectiveScore * 0.5) + (theoryPoints * 2)); // Example weighted logic
+    const finalScore = Math.min(100, Math.round((submission.objectiveScore * 0.5) + theoryPoints));
     const passed = finalScore >= 70;
 
-    // 1. Update Course Store
     updateSubmissionStatus(submission.courseId, submission.id, { 
       status: 'Graded', 
       finalScore: finalScore,
       passed: passed 
     });
 
-    // 2. Record Result in Auth Store for Certificate
     recordExamResult(submission.courseId, submission.courseTitle, passed, finalScore);
-
     alert(`Grading Complete: ${finalScore}% - ${passed ? 'PASSED' : 'FAILED'}`);
     setGradingScore("");
   };
@@ -84,7 +79,7 @@ const AdminExamBuilder = () => {
         
         {view === 'builder' && (
           <div className="flex items-center gap-3">
-            <select value={selectedCourseId} onChange={(e) => setSelectedCourseId(e.target.value)} className="p-2.5 bg-slate-50 border border-slate-100 rounded-xl text-[10px] font-bold uppercase tracking-widest outline-none text-slate-600 font-black">
+            <select value={selectedCourseId} onChange={(e) => setSelectedCourseId(e.target.value)} className="p-2.5 bg-slate-50 border border-slate-100 rounded-xl text-[10px] font-bold uppercase tracking-widest outline-none text-slate-600 font-black cursor-pointer">
               {courses.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
             </select>
             <button onClick={handlePublishExam} className="flex items-center gap-2 px-5 py-2.5 bg-emerald-500 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20"><Send size={14} /> Commit to Live</button>
@@ -94,7 +89,7 @@ const AdminExamBuilder = () => {
 
       <AnimatePresence mode="wait">
         {view === 'builder' ? (
-          <motion.div key="builder" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="flex flex-col lg:flex-row h-[70vh] bg-white rounded-[40px] border border-slate-200 overflow-hidden shadow-sm">
+          <motion.div key="builder" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="flex flex-col lg:flex-row h-[75vh] bg-white rounded-[40px] border border-slate-200 overflow-hidden shadow-sm">
             <div className="w-full lg:w-80 border-r border-slate-100 flex flex-col bg-slate-50/30">
               <div className="p-6 border-b border-slate-100 bg-white"><h3 className="font-black text-slate-900 text-sm flex items-center gap-2 uppercase tracking-tighter"><Layers size={18} className="text-brand-blue" /> Exam Schema</h3></div>
               <div className="flex-1 overflow-y-auto p-4 space-y-2">
@@ -106,7 +101,7 @@ const AdminExamBuilder = () => {
                 ))}
               </div>
               <div className="p-4 bg-white border-t border-slate-100 grid grid-cols-2 gap-2">
-                <button onClick={() => addQuestion('objective')} className="p-4 bg-slate-900 text-white rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-brand-blue transition-colors"><Plus size={14} /> MCQ</button>
+                <button onClick={() => addQuestion('objective')} className="p-4 bg-slate-900 text-white rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-brand-blue transition-colors"><Plus size={14} /> Objectives</button>
                 <button onClick={() => addQuestion('theory')} className="p-4 border-2 border-slate-100 text-slate-600 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-slate-50 transition-colors"><Plus size={14} /> Theory</button>
               </div>
             </div>
@@ -120,7 +115,7 @@ const AdminExamBuilder = () => {
                   </div>
                   <div className="space-y-4">
                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Question Intelligence</label>
-                    <textarea className="w-full p-8 bg-slate-50 border-none rounded-[32px] text-lg font-bold focus:ring-2 ring-brand-blue/10 outline-none min-h-[150px] transition-all" value={questions[selectedIdx].text} onChange={(e) => { const u = [...questions]; u[selectedIdx].text = e.target.value; setQuestions(u); }} placeholder="Define the challenge..." />
+                    <textarea className="w-full p-8 bg-slate-50 border-none rounded-[32px] text-lg font-bold text-slate-900 focus:ring-2 ring-brand-blue/10 outline-none min-h-[150px] transition-all" value={questions[selectedIdx].text} onChange={(e) => { const u = [...questions]; u[selectedIdx].text = e.target.value; setQuestions(u); }} placeholder="Define the challenge..." />
                   </div>
                   {questions[selectedIdx].type === 'objective' ? (
                     <div className="space-y-4">
@@ -129,7 +124,7 @@ const AdminExamBuilder = () => {
                         {questions[selectedIdx].options.map((opt, oIdx) => (
                           <div key={oIdx} className="flex gap-4 items-center">
                             <button onClick={() => { const u = [...questions]; u[selectedIdx].correct = oIdx; setQuestions(u); }} className={`w-14 h-14 shrink-0 rounded-[20px] flex items-center justify-center border-2 font-black transition-all ${questions[selectedIdx].correct === oIdx ? 'bg-brand-blue border-brand-blue text-white shadow-lg' : 'border-slate-100 text-slate-300'}`}>{String.fromCharCode(65 + oIdx)}</button>
-                            <input type="text" value={opt} className="flex-1 p-5 bg-slate-50 border-none rounded-[20px] text-sm font-bold" onChange={(e) => { const u = [...questions]; u[selectedIdx].options[oIdx] = e.target.value; setQuestions(u); }} placeholder={`Option ${String.fromCharCode(65 + oIdx)}`} />
+                            <input type="text" value={opt} className="flex-1 p-5 bg-slate-50 border-none rounded-[20px] text-sm font-bold text-slate-900" onChange={(e) => { const u = [...questions]; u[selectedIdx].options[oIdx] = e.target.value; setQuestions(u); }} placeholder={`Option ${String.fromCharCode(65 + oIdx)}`} />
                           </div>
                         ))}
                       </div>
@@ -172,8 +167,8 @@ const AdminExamBuilder = () => {
               </div>
             )) : (
               <div className="col-span-full py-32 text-center opacity-30 flex flex-col items-center">
-                 <CheckCircle2 size={64} className="mb-6 text-emerald-500" strokeWidth={1} />
-                 <p className="text-xs font-black uppercase tracking-[0.3em]">Board Queue Cleared</p>
+                  <CheckCircle2 size={64} className="mb-6 text-emerald-500" strokeWidth={1} />
+                  <p className="text-xs font-black uppercase tracking-[0.3em] text-slate-900">Board Queue Cleared</p>
               </div>
             )}
           </motion.div>
