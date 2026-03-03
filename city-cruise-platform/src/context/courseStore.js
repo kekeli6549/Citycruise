@@ -8,7 +8,7 @@ export const useCourseStore = create((set) => ({
     examStatus: c.examStatus || 'not_started',
     students: c.students || Math.floor(Math.random() * 500) + 100,
     status: c.status || 'Published',
-    submissions: [] 
+    submissions: c.submissions || [] 
   })),
 
   updateCourse: (id, updates) => set((state) => ({
@@ -22,7 +22,7 @@ export const useCourseStore = create((set) => ({
   })),
 
   addCourse: (newCourse) => set((state) => ({
-    courses: [...state.courses, { ...newCourse, id: `course-${Date.now()}`, students: 0, status: 'Draft' }]
+    courses: [...state.courses, { ...newCourse, id: `course-${Date.now()}`, students: 0, status: 'Draft', submissions: [] }]
   })),
 
   submitExamToAdmin: (courseId, submissionData) => set((state) => ({

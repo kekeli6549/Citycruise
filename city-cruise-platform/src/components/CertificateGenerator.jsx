@@ -46,9 +46,9 @@ const CertificateGenerator = ({ user, course, certificateRef }) => {
     day: 'numeric'
   }), []);
 
-  // Generate a unique Diaspora-styled Serial ID
+  // Generate a unique Diaspora-styled Serial ID linked to course ID
   const serialNumber = useMemo(() => 
-    `RT-${course.id?.toUpperCase().substring(0, 4) || 'CERT'}-${Math.floor(1000 + Math.random() * 9000)}`
+    `RT-${course.id?.toString().toUpperCase().substring(0, 4) || 'CERT'}-${Math.floor(1000 + Math.random() * 9000)}`
   , [course.id]);
 
   return (
@@ -67,7 +67,7 @@ const CertificateGenerator = ({ user, course, certificateRef }) => {
           <div className="flex justify-between items-start">
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 bg-brand-blue rounded-lg flex items-center justify-center">
+                <div className="w-8 h-8 bg-brand-blue rounded-lg flex items-center justify-center shadow-lg shadow-brand-blue/20">
                   <Zap className="text-white" size={18} fill="currentColor" />
                 </div>
                 <span className="font-heading font-bold text-2xl tracking-tighter">ROOTLE</span>
@@ -76,7 +76,7 @@ const CertificateGenerator = ({ user, course, certificateRef }) => {
             </div>
             <div className="text-right">
               <p className="text-[10px] font-mono uppercase tracking-widest text-slate-400 mb-1">Serial ID</p>
-              <p className="font-bold text-sm font-mono">{serialNumber}</p>
+              <p className="font-bold text-sm font-mono text-slate-900">{serialNumber}</p>
             </div>
           </div>
 
@@ -91,10 +91,10 @@ const CertificateGenerator = ({ user, course, certificateRef }) => {
               {user.firstName} {user.lastName || ''}
             </h1>
 
-            <div className="max-w-2xl mx-auto border-t border-b border-slate-100 py-8">
+            <div className="max-w-2xl mx-auto border-t border-b border-slate-100 py-10">
               <p className="text-slate-500 leading-relaxed font-body text-lg">
                 For the successful completion and mastery of the <br />
-                <span className="text-slate-900 font-bold uppercase tracking-wide text-xl">"{course.title}"</span> <br />
+                <span className="text-slate-900 font-bold uppercase tracking-wide text-2xl block mt-2">"{course.title}"</span> <br />
                 curriculum, demonstrating exceptional proficiency in professional standards and leadership.
               </p>
             </div>
@@ -103,32 +103,32 @@ const CertificateGenerator = ({ user, course, certificateRef }) => {
           {/* Footer Section / Signatures */}
           <div className="flex justify-between items-end">
             <div className="space-y-4">
-              <div className="flex items-center gap-6">
+              <div className="flex items-center gap-10">
                 <div>
                   <p className="text-[10px] font-mono uppercase tracking-widest text-slate-400 mb-2">Date Issued</p>
-                  <p className="font-bold border-b border-slate-900 pb-1">{date}</p>
+                  <p className="font-bold border-b border-slate-900 pb-1 text-slate-900">{date}</p>
                 </div>
                 <div>
                   <p className="text-[10px] font-mono uppercase tracking-widest text-slate-400 mb-2">Accreditation</p>
                   <div className="flex items-center gap-1 text-emerald-600 font-bold">
                     <ShieldCheck size={14} />
-                    <span className="text-xs uppercase tracking-tighter">Verified Member</span>
+                    <span className="text-xs uppercase tracking-tighter">Verified Diaspora Member</span>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="relative flex flex-col items-center">
-              <div className="absolute top-[-80px] w-24 h-24 border-2 border-brand-blue/20 rounded-full flex items-center justify-center">
-                <div className="w-20 h-20 bg-brand-blue/5 border border-brand-blue rounded-full flex items-center justify-center animate-[spin_10s_linear_infinite]">
-                   <Globe className="text-brand-blue/20" size={40} />
+            <div className="relative flex flex-col items-center mr-10">
+              <div className="absolute top-[-90px] w-28 h-28 border-2 border-brand-blue/10 rounded-full flex items-center justify-center">
+                <div className="w-24 h-24 bg-brand-blue/5 border border-brand-blue/30 rounded-full flex items-center justify-center animate-[spin_15s_linear_infinite]">
+                   <Globe className="text-brand-blue/10" size={48} />
                 </div>
-                <Award className="absolute text-brand-blue" size={32} />
+                <Award className="absolute text-brand-blue shadow-xl shadow-brand-blue/20" size={40} />
               </div>
               
               <div className="mt-4 text-center">
-                <p className="font-serif italic text-2xl text-slate-800 mb-1">Rootle Board</p>
-                <div className="w-40 h-px bg-slate-900 mb-2" />
+                <p className="font-serif italic text-3xl text-slate-800 mb-1">Rootle Board</p>
+                <div className="w-40 h-[2px] bg-slate-900 mb-2" />
                 <p className="text-[10px] font-mono uppercase tracking-widest text-slate-400 font-bold">Authorized Registrar</p>
               </div>
             </div>
