@@ -6,19 +6,35 @@ export const useAuthStore = create(
     (set) => ({
       user: null,
       isAuthenticated: false,
-      purchasedCourses: [], 
-      completedCourses: [], 
+      purchasedCourses: [],
+      completedCourses: [],
       certificates: [], // Stores passed exam IDs
       examResults: [], // NEW: Detailed history of student scores
-      activityLog: [], 
+      activityLog: [],
 
-      login: (userData) => set({ 
-        user: userData, 
-        isAuthenticated: true 
+      signup: async (formData) => {
+        set({ isLoading: true, error: null });
+        try {
+          const data = await registerUser(formData);
+          set({ user: data, isAuthenticated: true, isLoading: false });
+          return { success: true };
+        } catch (err) {
+          console.error("Full API Error Object:", err);
+          console.error("Server Response Data:", err.response?.data);
+
+          const message = err.response?.data?.message || "Registration failed";
+          set({ error: message, isLoading: false });
+          return { success: false, message };
+        }
+      },
+
+      login: (userData) => set({
+        user: userData,
+        isAuthenticated: true
       }),
-      
-      logout: () => set({ 
-        user: null, 
+
+      logout: () => set({
+        user: null,
         isAuthenticated: false,
         purchasedCourses: [],
         completedCourses: [],
@@ -35,7 +51,7 @@ export const useAuthStore = create(
           target: courseId,
           time: "Just now"
         };
-        return { 
+        return {
           purchasedCourses: [...new Set([...state.purchasedCourses, courseId])],
           activityLog: [newLog, ...state.activityLog].slice(0, 50)
         };
@@ -49,7 +65,7 @@ export const useAuthStore = create(
           target: courseId,
           time: "Just now"
         };
-        return { 
+        return {
           completedCourses: [...new Set([...state.completedCourses, courseId])],
           activityLog: [newLog, ...state.activityLog].slice(0, 50)
         };
@@ -63,9 +79,9 @@ export const useAuthStore = create(
           target: title,
           time: "Just now"
         };
-        
-        const updatedCertificates = passed 
-          ? [...new Set([...state.certificates, courseId])] 
+
+        const updatedCertificates = passed
+          ? [...new Set([...state.certificates, courseId])]
           : state.certificates;
 
         const newResult = {

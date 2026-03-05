@@ -17,7 +17,7 @@ import ExamPage from './pages/ExamPage';
 import ExamsHub from './pages/ExamsHub';
 import AdminDashboard from './pages/AdminDashboard'; 
 import AdminLogin from './pages/AdminLogin'; 
-import { useAuthStore } from './context/authStore';
+import { useAuthStore } from './context/authstore';
 
 const ScrollToTop = () => {
   const { pathname } = useLocation();
