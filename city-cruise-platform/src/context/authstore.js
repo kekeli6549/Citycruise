@@ -28,17 +28,31 @@ export const useAuthStore = create(
         }
       },
 
-      login: (userData) => set({
-        user: userData,
-        isAuthenticated: true
-      }),
+      login: async (credentials) => {
+        set({ isLoading: true, error: null });
+        try {
+          const response = await loginUser(credentials);
+
+          set({
+            user: response.data.user,
+            isAuthenticated: true,
+            isLoading: false
+          });
+
+          return { success: true };
+        } catch (err) {
+          const message = err.response?.data?.message || "Invalid email or password";
+          set({ error: message, isLoading: false });
+          return { success: false, message };
+        }
+      },
 
       logout: () => set({
         user: null,
         isAuthenticated: false,
         purchasedCourses: [],
         completedCourses: [],
-        completedLessons: [], 
+        completedLessons: [],
         certificates: [],
         examResults: [],
         activityLog: []
