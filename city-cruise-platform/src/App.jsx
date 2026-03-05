@@ -25,13 +25,11 @@ const ScrollToTop = () => {
   return null;
 };
 
-// STUDENT ROUTE GUARD
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated } = useAuthStore();
   return isAuthenticated ? children : <Navigate to="/login" replace />;
 };
 
-// ADMIN ROUTE GUARD
 const AdminRoute = ({ children }) => {
   const { isAuthenticated, user } = useAuthStore();
   const isAdmin = isAuthenticated && user?.role === 'admin'; 
@@ -107,9 +105,10 @@ const AppLayout = ({ darkMode, setDarkMode }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const location = useLocation();
   
+  // Cleaned up UI logic to handle the Course Player and Exam routes correctly
   const isMinimalUI = ['/dashboard', '/checkout', '/course', '/exam', '/courses', '/exams'].some(path => location.pathname.startsWith(path));
   const isAdminArea = location.pathname.startsWith('/admin');
-  const isFocusMode = location.pathname.startsWith('/exam/') || location.pathname.startsWith('/checkout/');
+  const isFocusMode = location.pathname.startsWith('/exam/') || location.pathname.startsWith('/checkout/') || location.pathname.startsWith('/course/');
   const isRightAlignNav = ['/courses', '/exams'].some(path => location.pathname.startsWith(path));
 
   return (
@@ -135,7 +134,6 @@ const AppLayout = ({ darkMode, setDarkMode }) => {
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           
-          {/* PROTECTED STUDENT ROUTES */}
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/courses" element={<ProtectedRoute><CoursesPage /></ProtectedRoute>} />
           <Route path="/checkout/:courseId" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
@@ -143,7 +141,6 @@ const AppLayout = ({ darkMode, setDarkMode }) => {
           <Route path="/exam/:courseId" element={<ProtectedRoute><ExamPage /></ProtectedRoute>} />
           <Route path="/exams" element={<ProtectedRoute><ExamsHub /></ProtectedRoute>} />
 
-          {/* PROTECTED ADMIN ROUTES */}
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin/dashboard" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
         </Routes>

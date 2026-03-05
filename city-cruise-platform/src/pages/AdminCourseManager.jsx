@@ -21,14 +21,15 @@ const AdminCourseManager = () => {
     title: '',
     summary: '',
     videoUrl: '',
-    resources: [] // Array of {name: '', size: ''}
+    resources: [] 
   });
 
+  // Helper to ensure URLs are trimmed
   const addLessonToCourse = () => {
     if(!currentLesson.title) return;
     setNewCourseData({
       ...newCourseData,
-      lessons: [...newCourseData.lessons, { ...currentLesson, id: Date.now() }]
+      lessons: [...newCourseData.lessons, { ...currentLesson, videoUrl: currentLesson.videoUrl.trim(), id: Date.now() }]
     });
     setCurrentLesson({ title: '', summary: '', videoUrl: '', resources: [] });
   };
@@ -165,6 +166,7 @@ const AdminCourseManager = () => {
                           <option>Finance & Wealth</option>
                           <option>Tech Leadership</option>
                           <option>Creative Arts</option>
+                          <option>Creative Arts</option>
                         </select>
                       </div>
                     </div>
@@ -179,7 +181,7 @@ const AdminCourseManager = () => {
                         <input type="text" placeholder="Lesson Title" value={currentLesson.title} onChange={(e) => setCurrentLesson({...currentLesson, title: e.target.value})} className="w-full p-4 bg-white rounded-2xl border-none outline-none shadow-sm" />
                         <textarea placeholder="Lesson Summary & Key Takeaways" value={currentLesson.summary} onChange={(e) => setCurrentLesson({...currentLesson, summary: e.target.value})} className="w-full p-4 bg-white rounded-2xl border-none outline-none shadow-sm" rows="3" />
                         <div className="grid grid-cols-2 gap-4">
-                          <input type="text" placeholder="Video URL" value={currentLesson.videoUrl} onChange={(e) => setCurrentLesson({...currentLesson, videoUrl: e.target.value})} className="p-4 bg-white rounded-2xl border-none outline-none shadow-sm" />
+                          <input type="text" placeholder="YouTube Video URL" value={currentLesson.videoUrl} onChange={(e) => setCurrentLesson({...currentLesson, videoUrl: e.target.value})} className="p-4 bg-white rounded-2xl border-none outline-none shadow-sm" />
                           <button onClick={addLessonToCourse} className="bg-slate-900 text-white rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-brand-blue transition-colors">Register Lesson</button>
                         </div>
                       </div>
