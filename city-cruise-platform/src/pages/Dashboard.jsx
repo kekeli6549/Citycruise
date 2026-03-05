@@ -190,7 +190,7 @@ const Dashboard = () => {
             const hasPassed = certificates?.includes(course.id);
             
             // Calculate progress based on completed lessons
-            const courseLessons = course.lessons || [];
+            const courseLessons = course?.lessons || [];
             const completedInThisCourse = courseLessons.filter(lesson => completedLessons.includes(lesson.id)).length;
             const progressPercentage = courseLessons.length > 0 
               ? Math.round((completedInThisCourse / courseLessons.length) * 100) 

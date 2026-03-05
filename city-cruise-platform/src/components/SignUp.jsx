@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, CheckCircle2, Check, X } from 'lucide-react';
-import { useAuthStore } from '../context/authstore';
+import { useAuthStore } from '../context/authStore';
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -113,7 +113,11 @@ const Signup = () => {
                 <input type="checkbox" checked={formData.terms} onChange={(e) => setFormData({ ...formData, terms: e.target.checked })} className={`mt-1 w-4 h-4 rounded border-slate-300 text-brand-blue ${errors.terms ? 'ring-2 ring-red-400' : ''}`} />
                 <p className="text-[10px] text-slate-500 leading-relaxed">I agree to the <a href="#" className="text-brand-blue underline">Terms of Excellence</a>.</p>
               </div>
-              {apiError && <p className="text-red-500 text-xs mt-2 text-center">{apiError}</p>}
+              {apiError && (
+                <div className="p-3 bg-red-50 border border-red-200 text-red-600 text-xs rounded-xl">
+                  {apiError}
+                </div>
+              )}
               <button
                 type="submit"
                 disabled={isLoading}
