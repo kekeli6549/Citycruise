@@ -14,7 +14,7 @@ const Login = () => {
     if (!formData.email) tempErrors.email = "Email is required";
     else if (!emailRegex.test(formData.email)) tempErrors.email = "Invalid email format";
     if (!formData.password) tempErrors.password = "Password is required";
-    else if (formData.password.length < 6) tempErrors.password = "Minimum 6 characters required";
+    else if (formData.password.length < 8) tempErrors.password = "Minimum 8 characters required";
     setErrors(tempErrors);
     return Object.keys(tempErrors).length === 0;
   };
