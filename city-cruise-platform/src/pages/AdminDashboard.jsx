@@ -40,7 +40,7 @@ const AdminDashboard = () => {
       <header className="mb-10 flex flex-col xl:flex-row xl:items-center justify-between gap-6">
         <div>
           <h1 className="text-4xl font-black text-slate-900 tracking-tight">Command Center</h1>
-          <p className="text-slate-500 text-sm mt-1 uppercase font-bold tracking-widest text-[10px] opacity-60">Rootle Professional Ecosystem</p>
+          <p className="text-slate-500 text-sm mt-1 uppercase font-bold tracking-widest text-[10px] opacity-60">City Cruise Professional Ecosystem</p>
         </div>
         
         <div className="flex bg-slate-200/50 p-1.5 rounded-2xl w-fit backdrop-blur-md border border-white/50 shadow-sm">
@@ -128,7 +128,7 @@ const AdminDashboard = () => {
               <div className="bg-brand-blue rounded-[40px] p-10 text-white shadow-2xl shadow-brand-blue/30 relative overflow-hidden group">
                 <div className="relative z-10 h-full flex flex-col">
                   <p className="text-blue-200 text-[10px] font-black uppercase tracking-[0.3em] mb-6">Star Performer</p>
-                  <h3 className="text-3xl font-black mb-4 font-heading leading-tight tracking-tighter">Global Strategy & Diaspora Wealth</h3>
+                  <h3 className="text-3xl font-black mb-4 font-heading leading-tight tracking-tighter">Global Strategy & Financial Wealth</h3>
                   <p className="text-blue-100 text-sm mb-10 leading-relaxed font-medium">Dominating the platform with an 84% completion rate this quarter.</p>
                   
                   <div className="mt-auto flex items-center justify-between">
