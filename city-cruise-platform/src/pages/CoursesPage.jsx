@@ -1,29 +1,58 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Search, SlidersHorizontal, PlayCircle, Star, Users, ArrowUpRight, SearchX, ChevronDown, Check, LockOpen } from 'lucide-react';
-import { coursesData } from '../data/coursesData'; 
+import { coursesData } from '../data/coursesData';
 import { useAuthStore } from '../context/authStore';
 
 const CoursesPage = () => {
   const navigate = useNavigate();
   const { purchasedCourses } = useAuthStore();
+
+  const [courses, setCourses] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
   const [searchQuery, setSearchQuery] = useState("");
-  const [filter, setFilter] = useState("Alphabetical"); 
+  const [filter, setFilter] = useState("Alphabetical");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [occupation, setOccupation] = useState("All");
+
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        setIsLoading(true);
+        const data = await getAllCourses();
+        setCourses(data || []);
+      } catch (err) {
+        setError("Failed to load curriculum. Please try again later.");
+        console.error("Course Fetch Error:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchCourses();
+  }, []);
 
   const occupations = ["All", "Finance", "Leadership", "Technology", "Design"];
   const filterOptions = ["Alphabetical", "Most Viewed"];
 
-  const filteredCourses = coursesData
+  const filteredCourses = (courses || [])
     .filter(c => (occupation === "All" || c.category === occupation))
-    .filter(c => c.title.toLowerCase().includes(searchQuery.toLowerCase()))
+    .filter(c => c.title?.toLowerCase().includes(searchQuery.toLowerCase()))
     .sort((a, b) => {
-      if (filter === "Alphabetical") return a.title.localeCompare(b.title);
+      if (filter === "Alphabetical") return a.title?.localeCompare(b.title);
       if (filter === "Most Viewed") return (b.views || 0) - (a.views || 0);
       return 0;
     });
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-brand-dark">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-blue"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white dark:bg-brand-dark p-6 md:p-12">
@@ -38,7 +67,7 @@ const CoursesPage = () => {
         <div className="bg-slate-50 dark:bg-slate-900/40 p-4 rounded-[2rem] md:rounded-[2.5rem] border border-slate-100 dark:border-slate-800 flex flex-col lg:flex-row gap-6 items-center mb-12 backdrop-blur-xl relative z-40">
           <div className="relative flex-1 w-full">
             <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-            <input 
+            <input
               type="text"
               placeholder="Search curriculum..."
               value={searchQuery}
@@ -50,7 +79,7 @@ const CoursesPage = () => {
           <div className="flex flex-col md:flex-row items-center gap-4 w-full lg:w-auto">
             <div className="flex items-center gap-4 w-full md:w-auto">
               <div className="relative shrink-0">
-                <button 
+                <button
                   onClick={() => setIsFilterOpen(!isFilterOpen)}
                   className="flex items-center gap-3 bg-white dark:bg-brand-dark px-5 py-3 rounded-xl border border-slate-100 dark:border-slate-800 transition-all hover:border-brand-blue/30 active:scale-95"
                 >
@@ -65,7 +94,7 @@ const CoursesPage = () => {
                   {isFilterOpen && (
                     <>
                       <div className="fixed inset-0 z-10" onClick={() => setIsFilterOpen(false)} />
-                      <motion.div 
+                      <motion.div
                         initial={{ opacity: 0, y: 10, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 10, scale: 0.95 }}
@@ -78,11 +107,10 @@ const CoursesPage = () => {
                               setFilter(opt);
                               setIsFilterOpen(false);
                             }}
-                            className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-colors ${
-                              filter === opt 
-                                ? 'bg-brand-blue/10 text-brand-blue' 
-                                : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white'
-                            }`}
+                            className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-colors ${filter === opt
+                              ? 'bg-brand-blue/10 text-brand-blue'
+                              : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white'
+                              }`}
                           >
                             {opt}
                             {filter === opt && <Check size={12} />}
@@ -112,7 +140,7 @@ const CoursesPage = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           <AnimatePresence mode="popLayout">
             {filteredCourses.length > 0 ? filteredCourses.map((course) => {
-              const isOwned = purchasedCourses.includes(course.id);
+              const isOwned = purchasedCourses?.some(id => String(id) === String(course.id));
               return (
                 <motion.div
                   layout
@@ -135,7 +163,7 @@ const CoursesPage = () => {
                       <h3 className="text-xl font-heading font-bold text-slate-900 dark:text-white group-hover:text-brand-blue transition-colors">{course.title}</h3>
                       <ArrowUpRight className="text-slate-300 group-hover:text-brand-blue transition-all" />
                     </div>
-                    
+
                     <div className="flex items-center gap-4 mb-8">
                       <div className="flex items-center gap-1.5">
                         <Users size={14} className="text-slate-400" />
@@ -150,9 +178,8 @@ const CoursesPage = () => {
                     <div className="mt-auto pt-6 border-t border-slate-50 dark:border-slate-800 flex justify-between items-center">
                       <div>
                         <p className="text-[9px] font-mono text-slate-400 uppercase tracking-tighter">Investment</p>
-                        <p className="text-2xl font-bold dark:text-white">{isOwned ? "Owned" : `$${course.price}`}</p>
-                      </div>
-                      <button 
+                        <p className="text-2xl font-bold dark:text-white">{isOwned ? "Owned" : `$${course.price || '0'}`}</p>                      </div>
+                      <button
                         onClick={() => isOwned ? navigate(`/course/${course.id}`) : navigate(`/checkout/${course.id}`, { state: { course } })}
                         className={`px-6 py-3 rounded-xl font-bold uppercase text-[9px] tracking-widest transition-all active:scale-95 ${isOwned ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-slate-900 dark:bg-brand-blue text-white hover:shadow-xl'}`}
                       >
