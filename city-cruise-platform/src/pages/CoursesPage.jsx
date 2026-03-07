@@ -2,16 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Search, SlidersHorizontal, PlayCircle, Star, Users, ArrowUpRight, SearchX, ChevronDown, Check, LockOpen } from 'lucide-react';
-import { coursesData } from '../data/coursesData';
+import { useCourseStore } from '../context/courseStore';
 import { useAuthStore } from '../context/authStore';
 
 const CoursesPage = () => {
   const navigate = useNavigate();
   const { purchasedCourses } = useAuthStore();
-
-  const [courses, setCourses] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const { courses, fetchCourses, isLoading, error } = useCourseStore();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState("Alphabetical");
@@ -19,18 +16,6 @@ const CoursesPage = () => {
   const [occupation, setOccupation] = useState("All");
 
   useEffect(() => {
-    const fetchCourses = async () => {
-      try {
-        setIsLoading(true);
-        const data = await getAllCourses();
-        setCourses(data || []);
-      } catch (err) {
-        setError("Failed to load curriculum. Please try again later.");
-        console.error("Course Fetch Error:", err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
     fetchCourses();
   }, []);
 

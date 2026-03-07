@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '../context/authStore';
+import { initializePayment } from '../api/paymentService';
 import { ShieldCheck, CreditCard, Lock, ChevronLeft, CheckCircle2, Globe, ArrowRight } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -58,15 +59,32 @@ const Checkout = () => {
     }, 250);
   };
 
-  const handlePayment = (e) => {
+  const [error, setError] = useState(null);
+
+  const handlePayment = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      setShowSuccess(true);
-      purchaseCourse(course.id);
-      triggerConfetti();
-    }, 2500);
+    setError(null);
+    try {
+      const response = await initializePayment(course.id);
+      const data = response.data || response;
+      
+      if (data.authorization_url) {
+        window.location.href = data.authorization_url;
+      } else {
+        // Fallback for mock/local testing if URL isn't provided
+        setTimeout(() => {
+          setLoading(false);
+          setShowSuccess(true);
+          purchaseCourse(course.id);
+          triggerConfetti();
+        }, 1500);
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || "Payment initialization failed. Please try again.");
+      setLoading(true);
+      setTimeout(() => setLoading(false), 1000); // UI feedback
+    }
   };
 
   return (
@@ -189,6 +207,12 @@ const Checkout = () => {
                 </div>
               </div>
             </div>
+
+            {error && (
+              <div className="bg-red-500/10 border border-red-500/20 text-red-500 p-4 rounded-xl text-[10px] font-mono uppercase tracking-widest text-center">
+                {error}
+              </div>
+            )}
 
             <button 
               disabled={loading}

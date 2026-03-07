@@ -4,12 +4,18 @@ import {
   Plus, Trash2, CheckCircle2, HelpCircle, 
   FileText, AlignLeft, Layers, AlertCircle, Send
 } from 'lucide-react';
+import { createExam, addQuestion as apiAddQuestion } from '../api/adminService';
 import { useCourseStore } from '../context/courseStore';
+import { useAdminStore } from '../context/adminStore'; 
 import { useAuthStore } from '../context/authStore'; 
 
 const AdminExamBuilder = () => {
-  const { courses, updateCourse, updateSubmissionStatus } = useCourseStore();
-  const recordExamResult = useAuthStore(state => state.recordExamResult);
+  const { courses, fetchCourses, isLoading: storeLoading } = useCourseStore();
+  const { finalizeGrading } = useAdminStore();
+  const { recordExamResult } = useAuthStore();
+
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const [view, setView] = useState('builder'); 
   const [selectedCourseId, setSelectedCourseId] = useState(courses[0]?.id);
@@ -35,34 +41,46 @@ const AdminExamBuilder = () => {
     setSelectedIdx(questions.length);
   };
 
-  const handlePublishExam = () => {
+  const handlePublishExam = async () => {
     const targetCourse = courses.find(c => c.id === selectedCourseId);
-    if (targetCourse) {
-      updateCourse(selectedCourseId, {
-        exam: {
-          examId: `EXAM-${Date.now()}`,
-          questions: [...questions],
-          publishedAt: new Date().toISOString()
-        }
+    if (!targetCourse) return;
+    
+    setIsLoading(true);
+    setError(null);
+    try {
+      // 1. Create Exam Container
+      const examResponse = await createExam({
+        courseId: selectedCourseId,
+        title: `${targetCourse.title} Final Assessment`,
+        duration: 30 // Default 30 mins
       });
+      const examId = examResponse.data?.id || examResponse.id;
+
+      // 2. Add Questions
+      for (const q of questions) {
+        await apiAddQuestion({
+          examId: examId,
+          text: q.text,
+          type: q.type,
+          options: q.type === 'objective' ? q.options : [],
+          correctIndex: q.type === 'objective' ? q.correct : 0,
+          theoryPoints: q.type === 'theory' ? q.points : 0
+        });
+      }
+
       alert(`Success: Exam published to ${targetCourse.title}`);
+      fetchCourses(); // Refresh
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to publish exam infrastructure.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleFinalizeGrade = (submission) => {
+  const handleFinalizeGrade = async (submission) => {
     if (!gradingScore) return alert("Please assign a theory score first.");
-    const theoryPoints = parseInt(gradingScore);
-    const finalScore = Math.min(100, Math.round((submission.objectiveScore * 0.5) + theoryPoints));
-    const passed = finalScore >= 70;
-
-    updateSubmissionStatus(submission.courseId, submission.id, { 
-      status: 'Graded', 
-      finalScore: finalScore,
-      passed: passed 
-    });
-
-    recordExamResult(submission.courseId, submission.courseTitle, passed, finalScore);
-    alert(`Grading Complete: ${finalScore}% - ${passed ? 'PASSED' : 'FAILED'}`);
+    await finalizeGrading(submission.id, parseInt(gradingScore), recordExamResult);
+    alert("Grading Complete and Authorized.");
     setGradingScore("");
   };
 

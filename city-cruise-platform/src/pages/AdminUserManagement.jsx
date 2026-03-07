@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Search, Filter, ChevronRight, X, User, 
-  Calendar, CreditCard, Edit3, Ban, CheckCircle2 
+  Calendar, CreditCard, Edit3, Ban, CheckCircle2, RefreshCcw 
 } from 'lucide-react';
 import { useAdminStore } from '../context/adminStore'; // Live Store
 
@@ -11,7 +11,11 @@ const AdminUserManagement = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   
-  const { students, toggleUserStatus } = useAdminStore();
+  const { students, toggleUserStatus, fetchStudents, isLoading } = useAdminStore();
+
+  React.useEffect(() => {
+    fetchStudents();
+  }, []);
 
   const handleToggleStatus = (id) => {
     toggleUserStatus(id);
@@ -40,54 +44,58 @@ const AdminUserManagement = () => {
         </button>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-50/50 border-b border-slate-100">
-                <th className="p-5 text-[10px] font-bold uppercase tracking-widest text-slate-400">Student</th>
-                <th className="p-5 text-[10px] font-bold uppercase tracking-widest text-slate-400">Status</th>
-                <th className="p-5 text-[10px] font-bold uppercase tracking-widest text-slate-400">Joined</th>
-                <th className="p-5 text-[10px] font-bold uppercase tracking-widest text-slate-400 text-right">Profile</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-50">
-              {students
-                .filter(u => u.name.toLowerCase().includes(searchTerm.toLowerCase()) || u.email.toLowerCase().includes(searchTerm.toLowerCase()))
-                .map((user) => (
-                <tr key={user.id} className="hover:bg-slate-50/50 transition-colors group">
-                  <td className="p-5">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-brand-blue/10 flex items-center justify-center text-brand-blue font-bold text-xs">
-                        {user.name.charAt(0)}
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold text-slate-900">{user.name}</p>
-                        <p className="text-xs text-slate-400">{user.email}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="p-5">
-                    <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${
-                      user.status === 'Active' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'
-                    }`}>
-                      {user.status}
-                    </span>
-                  </td>
-                  <td className="p-5 text-sm text-slate-500 font-medium">{user.joined}</td>
-                  <td className="p-5 text-right">
-                    <button 
-                      onClick={() => { setSelectedUser(user); setIsModalOpen(true); }} 
-                      className="p-2 hover:bg-white hover:shadow-md rounded-lg text-slate-400 hover:text-brand-blue transition-all"
-                    >
-                      <ChevronRight size={18} />
-                    </button>
-                  </td>
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden min-h-[300px]">
+        {isLoading ? (
+          <div className="p-20 flex justify-center"><RefreshCcw className="animate-spin text-brand-blue" size={32} /></div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-50/50 border-b border-slate-100">
+                  <th className="p-5 text-[10px] font-bold uppercase tracking-widest text-slate-400">Student</th>
+                  <th className="p-5 text-[10px] font-bold uppercase tracking-widest text-slate-400">Status</th>
+                  <th className="p-5 text-[10px] font-bold uppercase tracking-widest text-slate-400">Joined</th>
+                  <th className="p-5 text-[10px] font-bold uppercase tracking-widest text-slate-400 text-right">Profile</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {students
+                  .filter(u => u.name.toLowerCase().includes(searchTerm.toLowerCase()) || u.email.toLowerCase().includes(searchTerm.toLowerCase()))
+                  .map((user) => (
+                    <tr key={user.id} className="hover:bg-slate-50/50 transition-colors group">
+                      <td className="p-5">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-brand-blue/10 flex items-center justify-center text-brand-blue font-bold text-xs">
+                            {user.name?.charAt(0) || user.username?.charAt(0) || 'U'}
+                          </div>
+                          <div>
+                            <p className="text-sm font-bold text-slate-900">{user.name || user.username}</p>
+                            <p className="text-xs text-slate-400">{user.email}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="p-5">
+                        <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${
+                          user.status === 'Active' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'
+                        }`}>
+                          {user.status || 'Active'}
+                        </span>
+                      </td>
+                      <td className="p-5 text-sm text-slate-500 font-medium">{user.joined || 'Recent'}</td>
+                      <td className="p-5 text-right">
+                        <button 
+                          onClick={() => { setSelectedUser(user); setIsModalOpen(true); }} 
+                          className="p-2 hover:bg-white hover:shadow-md rounded-lg text-slate-400 hover:text-brand-blue transition-all"
+                        >
+                          <ChevronRight size={18} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       <AnimatePresence>

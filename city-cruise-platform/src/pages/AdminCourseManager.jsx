@@ -2,11 +2,18 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Edit2, Trash2, DollarSign, Image as ImageIcon, X, ChevronRight, Save, Power, Users, ClipboardCheck, Video, FileText, PlusCircle, Trash } from 'lucide-react';
 import { useCourseStore } from '../context/courseStore';
+import { adminCreateCourse, adminCreateLesson } from '../api/adminService';
 
 const AdminCourseManager = () => {
-  const { courses, toggleStatus, addCourse } = useCourseStore();
+  const { courses, toggleStatus, fetchCourses, isLoading } = useCourseStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [modalStep, setModalStep] = useState(1);
+  const [imageFile, setImageFile] = useState(null);
+
+  useEffect(() => {
+    fetchCourses();
+  }, []);
   
   const [newCourseData, setNewCourseData] = useState({ 
     title: '', 
@@ -41,11 +48,46 @@ const AdminCourseManager = () => {
     });
   };
 
-  const handleCreateCourse = () => {
-    addCourse(newCourseData);
-    setIsModalOpen(false);
-    setModalStep(1);
-    setNewCourseData({ title: '', description: '', intro: '', price: '', category: 'Finance & Wealth', lessons: [] });
+  const handleFileSelect = (e) => {
+    const file = e.target.files[0];
+    if (file) setImageFile(file);
+  };
+
+  const handleCreateCourse = async () => {
+    setIsSubmitting(true);
+    try {
+      // 1. Create Course with Image
+      const courseForm = new FormData();
+      courseForm.append('title', newCourseData.title);
+      courseForm.append('description', newCourseData.description);
+      courseForm.append('price', newCourseData.price);
+      if (imageFile) courseForm.append('coverImage', imageFile);
+
+      const courseResponse = await adminCreateCourse(courseForm);
+      const courseId = courseResponse.data?.id || courseResponse.id;
+
+      // 2. Create Lessons for this course
+      for (const lesson of newCourseData.lessons) {
+        const lessonForm = new FormData();
+        lessonForm.append('title', lesson.title);
+        lessonForm.append('content', lesson.summary);
+        lessonForm.append('orderIndex', newCourseData.lessons.indexOf(lesson));
+        lessonForm.append('video_link', lesson.videoUrl);
+        // Assuming video file is optional and not handled in this specific UI step yet
+        await adminCreateLesson(courseId, lessonForm);
+      }
+
+      fetchCourses(); // Refresh local list
+      setIsModalOpen(false);
+      setModalStep(1);
+      setNewCourseData({ title: '', description: '', intro: '', price: '', category: 'Finance & Wealth', lessons: [] });
+      setImageFile(null);
+    } catch (err) {
+      console.error("Failed to deploy content:", err);
+      alert("Deployment failed. Please verify API connection.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (

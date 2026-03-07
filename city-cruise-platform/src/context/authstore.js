@@ -19,7 +19,6 @@ export const useAuthStore = create(
       examResults: [],
       activityLog: [],
 
-      // --- AUTH ACTIONS ---
       signup: async (formData) => {
         set({ isLoading: true, error: null });
         try {
@@ -47,14 +46,13 @@ export const useAuthStore = create(
         try {
           const response = await loginUser(credentials);
           
-          // CRITICAL: Defensive data mapping to prevent ".includes()" errors
           const userData = response.data?.user || response; 
           
           set({
             user: userData,
+            token: response.data.token || response.token,
             isAuthenticated: true,
             isLoading: false,
-            // If API doesn't provide these yet, default to empty arrays
             purchasedCourses: userData.purchasedCourses || [],
             completedCourses: userData.completedCourses || [],
             completedLessons: userData.completedLessons || [],
