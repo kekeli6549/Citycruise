@@ -3,7 +3,7 @@ import apiClient from './apiClient';
 export const registerUser = async (userData) => {
     const payload = {
         email: userData.email,
-        username: `${userData.firstName}${userData.lastName}`.toLowerCase(),
+        username: `${userData.firstName} ${" "} ${userData.lastName}`.toLowerCase(),
         password: userData.password
     };
 

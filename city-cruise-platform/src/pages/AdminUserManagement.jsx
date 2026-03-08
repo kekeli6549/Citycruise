@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Search, Filter, ChevronRight, X, User, 
-  Calendar, CreditCard, Edit3, Ban, CheckCircle2, RefreshCcw 
+import {
+  Search, Filter, ChevronRight, X, User,
+  Calendar, CreditCard, Edit3, Ban, CheckCircle2, RefreshCcw
 } from 'lucide-react';
 import { useAdminStore } from '../context/adminStore'; // Live Store
 
@@ -10,7 +10,7 @@ const AdminUserManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedUser, setSelectedUser] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  
+
   const { students, toggleUserStatus, fetchStudents, isLoading } = useAdminStore();
 
   React.useEffect(() => {
@@ -20,9 +20,9 @@ const AdminUserManagement = () => {
   const handleToggleStatus = (id) => {
     toggleUserStatus(id);
     if (selectedUser?.id === id) {
-      setSelectedUser(prev => ({ 
-        ...prev, 
-        status: prev.status === 'Banned' ? 'Active' : 'Banned' 
+      setSelectedUser(prev => ({
+        ...prev,
+        status: prev.status === 'Banned' ? 'Active' : 'Banned'
       }));
     }
   };
@@ -32,9 +32,9 @@ const AdminUserManagement = () => {
       <div className="flex flex-col md:flex-row gap-4 justify-between items-center bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
         <div className="relative w-full md:w-96">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-          <input 
-            type="text" 
-            placeholder="Search students..." 
+          <input
+            type="text"
+            placeholder="Search students..."
             className="w-full pl-12 pr-4 py-3 bg-slate-50 border-none rounded-xl text-sm focus:ring-2 ring-brand-blue/20 outline-none transition-all"
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -60,31 +60,37 @@ const AdminUserManagement = () => {
               </thead>
               <tbody className="divide-y divide-slate-50">
                 {students
-                  .filter(u => u.name.toLowerCase().includes(searchTerm.toLowerCase()) || u.email.toLowerCase().includes(searchTerm.toLowerCase()))
+                  .filter(u => u.username.toLowerCase().includes(searchTerm.toLowerCase()) || u.email.toLowerCase().includes(searchTerm.toLowerCase()))
                   .map((user) => (
                     <tr key={user.id} className="hover:bg-slate-50/50 transition-colors group">
                       <td className="p-5">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-full bg-brand-blue/10 flex items-center justify-center text-brand-blue font-bold text-xs">
-                            {user.name?.charAt(0) || user.username?.charAt(0) || 'U'}
+                            {user.username?.charAt(0) || 'U'}
                           </div>
                           <div>
-                            <p className="text-sm font-bold text-slate-900">{user.name || user.username}</p>
+                            <p className="text-sm font-bold text-slate-900">{user.username}</p>
                             <p className="text-xs text-slate-400">{user.email}</p>
                           </div>
                         </div>
                       </td>
                       <td className="p-5">
-                        <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${
-                          user.status === 'Active' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'
-                        }`}>
+                        <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${user.status === 'Active' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'
+                          }`}>
                           {user.status || 'Active'}
                         </span>
                       </td>
-                      <td className="p-5 text-sm text-slate-500 font-medium">{user.joined || 'Recent'}</td>
+                      <td className="p-5 text-sm text-slate-500 font-medium">{new Date(user.created_at).toLocaleString('en-US', {
+                        month: 'short',
+                        day: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: true
+                      }) || 'Recent'}</td>
                       <td className="p-5 text-right">
-                        <button 
-                          onClick={() => { setSelectedUser(user); setIsModalOpen(true); }} 
+                        <button
+                          onClick={() => { setSelectedUser(user); setIsModalOpen(true); }}
                           className="p-2 hover:bg-white hover:shadow-md rounded-lg text-slate-400 hover:text-brand-blue transition-all"
                         >
                           <ChevronRight size={18} />
@@ -110,7 +116,7 @@ const AdminUserManagement = () => {
 
               <div className="flex flex-col items-center mb-10">
                 <div className="w-20 h-20 rounded-2xl bg-slate-50 flex items-center justify-center text-brand-blue mb-4 border border-slate-100 shadow-inner"><User size={40} /></div>
-                <h4 className="text-2xl font-bold text-slate-900">{selectedUser.name}</h4>
+                <h4 className="text-2xl font-bold text-slate-900">{selectedUser.username}</h4>
                 <p className="text-slate-400 text-sm">{selectedUser.email}</p>
               </div>
 
@@ -126,8 +132,15 @@ const AdminUserManagement = () => {
               </div>
 
               <div className="space-y-6">
-                <div className="flex items-center gap-4 text-slate-500"><Calendar size={18} /><span className="text-sm font-medium">Joined {selectedUser.joined}</span></div>
-                <div className="flex items-center gap-4 text-slate-500"><CreditCard size={18} /><span className="text-sm font-medium">Tier: Premium</span></div>
+                <div className="flex items-center gap-4 text-slate-500"><Calendar size={18} /><span className="text-sm font-medium">Joined {new Date(selectedUser.created_at).toLocaleString('en-US', {
+                  month: 'short',
+                  day: '2-digit',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  hour12: true
+                })}</span></div>
+                <div className="flex items-center gap-4 text-slate-500"><CreditCard size={18} /><span className="text-sm font-medium">Tier: Standard</span></div>
               </div>
 
               <div className="pt-8 border-t border-slate-100 mt-auto space-y-3">

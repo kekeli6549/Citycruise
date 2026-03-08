@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Plus, Trash2, CheckCircle2, HelpCircle, 
+import {
+  Plus, Trash2, CheckCircle2, HelpCircle,
   FileText, AlignLeft, Layers, AlertCircle, Send
 } from 'lucide-react';
 import { createExam, addQuestion as apiAddQuestion } from '../api/adminService';
 import { useCourseStore } from '../context/courseStore';
-import { useAdminStore } from '../context/adminStore'; 
-import { useAuthStore } from '../context/authStore'; 
+import { useAdminStore } from '../context/adminStore';
+import { useAuthStore } from '../context/authStore';
 
 const AdminExamBuilder = () => {
   const { courses, fetchCourses, isLoading: storeLoading } = useCourseStore();
@@ -17,10 +17,10 @@ const AdminExamBuilder = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const [view, setView] = useState('builder'); 
+  const [view, setView] = useState('builder');
   const [selectedCourseId, setSelectedCourseId] = useState(courses[0]?.id);
   const [questions, setQuestions] = useState([
-    { id: 1, type: 'objective', text: 'What is the primary goal of Global Strategy?', options: ['Profit', 'Expansion', 'Sustainability', 'All of above'], correct: 3 },
+    { id: 1, type: 'objective', text: 'What is the primary goal of Global Strategy?', options: ['Profit', 'Expansion', 'Sustainability', 'All of above'], correct_option: 3 },
     { id: 2, type: 'theory', text: 'Explain the impact of Diaspora investment on local emerging markets.', points: 20 }
   ]);
   const [selectedIdx, setSelectedIdx] = useState(0);
@@ -34,8 +34,8 @@ const AdminExamBuilder = () => {
   }, []);
 
   const addQuestion = (type) => {
-    const newQ = type === 'objective' 
-      ? { id: Date.now(), type: 'objective', text: '', options: ['', '', '', ''], correct: 0 }
+    const newQ = type === 'objective'
+      ? { id: Date.now(), type: 'objective', text: '', options: ['', '', '', ''], correct_option: 0 }
       : { id: Date.now(), type: 'theory', text: '', points: 10 };
     setQuestions([...questions, newQ]);
     setSelectedIdx(questions.length);
@@ -43,35 +43,38 @@ const AdminExamBuilder = () => {
 
   const handlePublishExam = async () => {
     const targetCourse = courses.find(c => c.id === selectedCourseId);
-    if (!targetCourse) return;
-    
+    if (!targetCourse) return alert("Please select a valid course.");
+
     setIsLoading(true);
     setError(null);
+
     try {
-      // 1. Create Exam Container
-      const examResponse = await createExam({
-        courseId: selectedCourseId,
+      const examResponse = await createExam(selectedCourseId, {
         title: `${targetCourse.title} Final Assessment`,
-        duration: 30 // Default 30 mins
+        duration: 30,
+        passPercentage: 70
       });
+
       const examId = examResponse.data?.id || examResponse.id;
 
-      // 2. Add Questions
+      if (!examId) throw new Error("Server failed to return an Exam ID.");
+
       for (const q of questions) {
-        await apiAddQuestion({
-          examId: examId,
-          text: q.text,
+        await apiAddQuestion(examId, {
+          question_text: q.text,
           type: q.type,
           options: q.type === 'objective' ? q.options : [],
-          correctIndex: q.type === 'objective' ? q.correct : 0,
-          theoryPoints: q.type === 'theory' ? q.points : 0
+          correct_option: q.type === 'objective' ? q.correct_option : 0,
         });
       }
 
-      alert(`Success: Exam published to ${targetCourse.title}`);
-      fetchCourses(); // Refresh
+      alert(`Success: Exam and ${questions.length} questions published!`);
+      fetchCourses();
+      setQuestions([]);
+
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to publish exam infrastructure.");
+      console.error("Publishing Failed:", err);
+      setError(err.response?.data?.message || "Failed to sync exam to server.");
     } finally {
       setIsLoading(false);
     }
@@ -88,13 +91,13 @@ const AdminExamBuilder = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
         <div className="flex gap-2">
-           <button onClick={() => setView('builder')} className={`px-5 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${view === 'builder' ? 'bg-brand-blue text-white shadow-lg shadow-brand-blue/20' : 'text-slate-500 hover:bg-slate-50'}`}>Builder</button>
-           <button onClick={() => setView('grading')} className={`px-5 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest relative transition-all ${view === 'grading' ? 'bg-brand-blue text-white shadow-lg shadow-brand-blue/20' : 'text-slate-500 hover:bg-slate-50'}`}>
-             Board Review
-             {allPending.length > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[8px] flex items-center justify-center rounded-full border-2 border-white">{allPending.length}</span>}
-           </button>
+          <button onClick={() => setView('builder')} className={`px-5 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${view === 'builder' ? 'bg-brand-blue text-white shadow-lg shadow-brand-blue/20' : 'text-slate-500 hover:bg-slate-50'}`}>Builder</button>
+          <button onClick={() => setView('grading')} className={`px-5 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest relative transition-all ${view === 'grading' ? 'bg-brand-blue text-white shadow-lg shadow-brand-blue/20' : 'text-slate-500 hover:bg-slate-50'}`}>
+            Board Review
+            {allPending.length > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[8px] flex items-center justify-center rounded-full border-2 border-white">{allPending.length}</span>}
+          </button>
         </div>
-        
+
         {view === 'builder' && (
           <div className="flex items-center gap-3">
             <select value={selectedCourseId} onChange={(e) => setSelectedCourseId(e.target.value)} className="p-2.5 bg-slate-50 border border-slate-100 rounded-xl text-[10px] font-bold uppercase tracking-widest outline-none text-slate-600 font-black cursor-pointer">
@@ -141,7 +144,7 @@ const AdminExamBuilder = () => {
                       <div className="grid gap-4">
                         {questions[selectedIdx].options.map((opt, oIdx) => (
                           <div key={oIdx} className="flex gap-4 items-center">
-                            <button onClick={() => { const u = [...questions]; u[selectedIdx].correct = oIdx; setQuestions(u); }} className={`w-14 h-14 shrink-0 rounded-[20px] flex items-center justify-center border-2 font-black transition-all ${questions[selectedIdx].correct === oIdx ? 'bg-brand-blue border-brand-blue text-white shadow-lg' : 'border-slate-100 text-slate-300'}`}>{String.fromCharCode(65 + oIdx)}</button>
+                            <button onClick={() => { const u = [...questions]; u[selectedIdx].correct_option = oIdx; setQuestions(u); }} className={`w-14 h-14 shrink-0 rounded-[20px] flex items-center justify-center border-2 font-black transition-all ${questions[selectedIdx].correct_option === oIdx ? 'bg-brand-blue border-brand-blue text-white shadow-lg' : 'border-slate-100 text-slate-300'}`}>{String.fromCharCode(65 + oIdx)}</button>
                             <input type="text" value={opt} className="flex-1 p-5 bg-slate-50 border-none rounded-[20px] text-sm font-bold text-slate-900" onChange={(e) => { const u = [...questions]; u[selectedIdx].options[oIdx] = e.target.value; setQuestions(u); }} placeholder={`Option ${String.fromCharCode(65 + oIdx)}`} />
                           </div>
                         ))}
@@ -149,11 +152,11 @@ const AdminExamBuilder = () => {
                     </div>
                   ) : (
                     <div className="p-10 border-2 border-dashed border-slate-100 rounded-[40px] bg-slate-50/30 text-center">
-                        <div className="flex flex-col items-center gap-4 text-slate-400 mb-6"><AlignLeft size={40} className="opacity-20"/><p className="text-[11px] font-bold uppercase tracking-widest max-w-[200px]">Theoretical prompts require manual board intervention.</p></div>
-                        <div className="flex items-center justify-center gap-3">
-                             <span className="text-[10px] font-black uppercase text-slate-500">Weight:</span>
-                             <input type="number" className="w-24 p-4 bg-white border border-slate-100 rounded-2xl font-black text-center text-brand-blue" value={questions[selectedIdx].points || 0} onChange={(e) => { const u = [...questions]; u[selectedIdx].points = parseInt(e.target.value); setQuestions(u); }} />
-                        </div>
+                      <div className="flex flex-col items-center gap-4 text-slate-400 mb-6"><AlignLeft size={40} className="opacity-20" /><p className="text-[11px] font-bold uppercase tracking-widest max-w-[200px]">Theoretical prompts require manual board intervention.</p></div>
+                      <div className="flex items-center justify-center gap-3">
+                        <span className="text-[10px] font-black uppercase text-slate-500">Weight:</span>
+                        <input type="number" className="w-24 p-4 bg-white border border-slate-100 rounded-2xl font-black text-center text-brand-blue" value={questions[selectedIdx].points || 0} onChange={(e) => { const u = [...questions]; u[selectedIdx].points = parseInt(e.target.value); setQuestions(u); }} />
+                      </div>
                     </div>
                   )}
                 </div>
@@ -185,8 +188,8 @@ const AdminExamBuilder = () => {
               </div>
             )) : (
               <div className="col-span-full py-32 text-center opacity-30 flex flex-col items-center">
-                  <CheckCircle2 size={64} className="mb-6 text-emerald-500" strokeWidth={1} />
-                  <p className="text-xs font-black uppercase tracking-[0.3em] text-slate-900">Board Queue Cleared</p>
+                <CheckCircle2 size={64} className="mb-6 text-emerald-500" strokeWidth={1} />
+                <p className="text-xs font-black uppercase tracking-[0.3em] text-slate-900">Board Queue Cleared</p>
               </div>
             )}
           </motion.div>

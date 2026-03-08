@@ -5,27 +5,27 @@ import { ShieldCheck, ArrowRight } from 'lucide-react';
 import { useAuthStore } from '../context/authStore'; // Imported to link session
 
 const AdminLogin = () => {
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
-  const { login } = useAuthStore(); // Grab login function from store
+  const { login, isLoading, error, logout } = useAuthStore();
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     
-    // Simple bypass for frontend watching
-    if (password === 'admin123') {
-      // Log in as an admin in the global state
-      login({
-        firstName: 'System',
-        lastName: 'Admin',
-        role: 'admin',
-        email: 'admin@citycruise.com',
-        profilePic: null
-      });
+    if (!email || !password) return;
+
+    const result = await login({ email, password });
+    
+    if (result.success) {
+      const currentUser = useAuthStore.getState().user;
       
-      navigate('/admin/dashboard');
-    } else {
-      alert('Unauthorized access.');
+      if (currentUser?.role === 'admin') {
+        navigate('/admin/dashboard');
+      } else {
+        logout();
+        alert('Access Denied: Admin privileges required.');
+      }
     }
   };
 
@@ -44,14 +44,21 @@ const AdminLogin = () => {
           <p className="text-slate-500 text-sm mt-2">Enter credentials to access the command center.</p>
         </div>
 
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-100 rounded-2xl text-red-600 text-sm text-center">
+            {error}
+          </div>
+        )}
+
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
             <input 
-              type="text" 
-              placeholder="Admin ID" 
-              className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm outline-none focus:ring-2 ring-slate-200 transition-all"
-              defaultValue="root_admin"
-              readOnly
+              type="email" 
+              placeholder="Admin Email" 
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm outline-none focus:ring-2 ring-slate-200 transition-all font-medium"
+              required
             />
           </div>
           <div>
@@ -60,14 +67,16 @@ const AdminLogin = () => {
               placeholder="Security Password" 
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm outline-none focus:ring-2 ring-slate-200 transition-all"
+              className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm outline-none focus:ring-2 ring-slate-200 transition-all font-medium"
+              required
             />
           </div>
           <button 
             type="submit"
-            className="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold text-xs uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-slate-800 transition-all active:scale-[0.98]"
+            disabled={isLoading}
+            className="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold text-xs uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-slate-800 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-slate-100"
           >
-            Authenticate <ArrowRight size={16} />
+            {isLoading ? 'Authenticating...' : 'Authenticate'} <ArrowRight size={16} />
           </button>
         </form>
         
