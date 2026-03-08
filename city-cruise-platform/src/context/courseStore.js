@@ -1,15 +1,55 @@
 import { create } from 'zustand';
-import { coursesData as initialData } from '../data/coursesData';
+import { getAllCourses, getCourseById, getMyCourses } from '../api/courseService';
 
 export const useCourseStore = create((set) => ({
-  courses: initialData.map(c => ({
-    ...c,
-    progress: c.progress || 0,
-    examStatus: c.examStatus || 'not_started',
-    students: c.students || Math.floor(Math.random() * 500) + 100,
-    status: c.status || 'Published',
-    submissions: c.submissions || [] 
-  })),
+  courses: [],
+  enrolledCourses: [],
+  selectedCourse: null,
+  isLoading: false,
+  error: null,
+
+  fetchMyCourses: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const data = await getMyCourses();
+      set({ enrolledCourses: data.data || data, isLoading: false });
+    } catch (err) {
+      set({ error: err.message, isLoading: false });
+    }
+  },
+
+  fetchCourses: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const data = await getAllCourses();
+      set({ 
+        courses: (data.data || data).map(c => ({
+          ...c,
+          progress: c.progress || 0,
+          examStatus: c.examStatus || 'not_started',
+          students: c.students || 0,
+          status: c.status || 'Published',
+          submissions: c.submissions || [] 
+        })),
+        isLoading: false 
+      });
+    } catch (err) {
+      set({ error: err.message, isLoading: false });
+    }
+  },
+
+  fetchCourseDetails: async (id) => {
+    set({ isLoading: true, error: null });
+    try {
+      const data = await getCourseById(id);
+      const course = data.data || data;
+      set({ selectedCourse: course, isLoading: false });
+      return course;
+    } catch (err) {
+      set({ error: err.message, isLoading: false });
+      return null;
+    }
+  },
 
   updateCourse: (id, updates) => set((state) => ({
     courses: state.courses.map((c) => (c.id === id ? { ...c, ...updates } : c)),
@@ -38,7 +78,7 @@ export const useCourseStore = create((set) => ({
       c.id === courseId 
         ? { 
             ...c, 
-            submissions: c.submissions.map(s => s.id === submissionId ? { ...s, ...updates } : s) 
+            submissions: (c.submissions || []).map(s => s.id === submissionId ? { ...s, ...updates } : s) 
           } 
         : c
     ),

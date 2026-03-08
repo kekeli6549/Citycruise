@@ -3,16 +3,36 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, Play, CheckCircle, Award, FileText, Info, Download, ArrowRight, ShieldCheck } from 'lucide-react';
 import { useAuthStore } from '../context/authStore';
-import { useCourseStore } from '../context/courseStore';
+import { markLessonComplete, getLessonDetails } from '../api/courseService';
 
 const CoursePlayer = () => {
   const { courseId } = useParams();
   const navigate = useNavigate();
-  const { courses } = useCourseStore();
+  const { courses, fetchCourseDetails, isLoading: storeLoading } = useCourseStore();
   const { completeCourse, completedCourses, completedLessons: globalCompletedLessons, addCompletedLesson } = useAuthStore();
   
+  const [isLoading, setIsLoading] = useState(!courses.find(c => c.id === courseId));
   const course = courses.find(c => c.id === courseId);
-  const [activeLessonId, setActiveLessonId] = useState(course?.lessons[0]?.id || null);
+  const [activeLessonId, setActiveLessonId] = useState(null);
+  const [lessonData, setLessonData] = useState(null);
+
+  useEffect(() => {
+    if (!course) {
+      fetchCourseDetails(courseId).finally(() => setIsLoading(false));
+    }
+  }, [courseId, course, fetchCourseDetails]);
+
+  useEffect(() => {
+    if (course && !activeLessonId) {
+      setActiveLessonId(course.lessons[0]?.id);
+    }
+  }, [course, activeLessonId]);
+
+  useEffect(() => {
+    if (activeLessonId) {
+      getLessonDetails(activeLessonId).then(data => setLessonData(data.data || data));
+    }
+  }, [activeLessonId]);
   
   // Track completed lessons for this specific course
   const courseLessons = course?.lessons || [];
@@ -24,7 +44,7 @@ const CoursePlayer = () => {
     ? Math.round((completedInThisCourse.length / courseLessons.length) * 100) 
     : 0;
 
-  const activeLesson = course?.lessons.find(l => l.id === activeLessonId) || course?.lessons[0];
+  const activeLesson = lessonData || course?.lessons.find(l => l.id === activeLessonId) || course?.lessons[0];
   const activeIndex = course?.lessons.findIndex(l => l.id === activeLessonId);
   const isCompleted = completedCourses.includes(courseId);
 
@@ -41,20 +61,34 @@ const CoursePlayer = () => {
     return `https://www.youtube-nocookie.com/embed/${videoId}?rel=0&modestbranding=1`;
   };
 
-  const handleLessonComplete = () => {
-    // Save to global auth store
-    if (!globalCompletedLessons.includes(activeLessonId)) {
-      addCompletedLesson(activeLessonId);
-    }
+  const handleLessonComplete = async () => {
+    try {
+      await markLessonComplete(activeLessonId);
+      
+      // Save to global auth store
+      if (!globalCompletedLessons.includes(activeLessonId)) {
+        addCompletedLesson(activeLessonId);
+      }
 
-    // Auto-advance logic
-    if (activeIndex < course.lessons.length - 1) {
-      const nextLessonId = course.lessons[activeIndex + 1].id;
-      setTimeout(() => {
-        setActiveLessonId(nextLessonId);
-      }, 600);
+      // Auto-advance logic
+      if (activeIndex < course.lessons.length - 1) {
+        const nextLessonId = course.lessons[activeIndex + 1].id;
+        setTimeout(() => {
+          setActiveLessonId(nextLessonId);
+        }, 600);
+      }
+    } catch (err) {
+      console.error("Failed to mark lesson as complete:", err);
     }
   };
+
+  if (isLoading || storeLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-brand-dark">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-blue"></div>
+      </div>
+    );
+  }
 
   const handleFinishCourse = () => {
     completeCourse(courseId);

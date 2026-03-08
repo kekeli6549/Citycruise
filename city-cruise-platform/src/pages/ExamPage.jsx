@@ -4,14 +4,40 @@ import { ChevronLeft, Send, Timer, AlertCircle, CheckCircle2 } from 'lucide-reac
 import { useCourseStore } from '../context/courseStore';
 import { useAuthStore } from '../context/authStore';
 
+import { getCourseExam, submitExam } from '../api/examService';
+
 const ExamPage = () => {
   const { courseId } = useParams();
   const navigate = useNavigate();
-  const { courses, submitExamToAdmin } = useCourseStore();
+  const { courses, submitExamToAdmin, fetchCourseDetails } = useCourseStore();
   const { user, recordExamResult } = useAuthStore();
   
-  const course = courses.find(c => c.id === courseId);
-  const exam = course?.exam;
+  const [course, setCourse] = useState(courses.find(c => c.id === courseId));
+  const [examData, setExamData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const loadExam = async () => {
+      try {
+        setIsLoading(true);
+        if (!course) {
+          const fetchedCourse = await fetchCourseDetails(courseId);
+          setCourse(fetchedCourse);
+        }
+        const data = await getCourseExam(courseId);
+        setExamData(data.data || data);
+      } catch (err) {
+        setError(err.response?.data?.message || "Assessment payload not found.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadExam();
+  }, [courseId, course, fetchCourseDetails]);
+
+  const exam = examData?.exam || examData;
+  const questions = examData?.questions || [];
   
   const [answers, setAnswers] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -37,59 +63,53 @@ const ExamPage = () => {
     if (!exam || isSubmitting) return;
     setIsSubmitting(true);
     
-    // 1. Separate questions by type
-    const objectiveQuestions = exam.questions.filter(q => q.type === 'objective');
-    const theoryQuestions = exam.questions.filter(q => q.type === 'theory');
-    const hasTheory = theoryQuestions.length > 0;
-
-    // 2. Calculate Objective Score
-    let objectiveScoreCount = 0;
-    objectiveQuestions.forEach(q => {
-      // Logic: Compare selected option text with the correct option text at the specified index
-      if (answers[q.id] === q.options[q.correct]) {
-        objectiveScoreCount++;
+    // 1. Prepare answers for API
+    const formattedAnswers = questions.map(q => {
+      const answer = answers[q.id];
+      if (q.type === 'objective') {
+        return { questionId: q.id, selectedOption: q.options.indexOf(answer) };
       }
+      return { questionId: q.id, theoryAnswer: answer };
     });
 
-    const objectivePercentage = objectiveQuestions.length > 0 
-      ? Math.round((objectiveScoreCount / objectiveQuestions.length) * 100) 
-      : 100;
-
-    const submissionPayload = {
-      courseId: courseId,
-      courseTitle: course.title,
-      studentId: user?.id,
-      studentName: `${user?.firstName || 'Innovator'} ${user?.lastName || ''}`,
-      answers: answers,
-      objectiveScore: objectivePercentage,
-      submittedAt: new Date().toISOString(),
-      status: hasTheory ? 'Pending Review' : 'Graded'
-    };
-
-    // 3. Push to Admin Submissions in Course Store
-    submitExamToAdmin(courseId, submissionPayload);
-    
-    // 4. Record result in Auth Store for the user's persistent record
-    // Only record as a final "Pass/Fail" if there is no theory. 
-    // If theory exists, the Admin will trigger the final record later.
-    if (!hasTheory) {
-      const passed = objectivePercentage >= 70; // Standard 70% pass mark
-      recordExamResult(courseId, course.title, passed, objectivePercentage);
-    }
-
-    // Aesthetic delay for "Processing" feedback
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      const response = await submitExam(courseId, { answers: formattedAnswers });
+      const data = response.data || response;
+      
       // Navigate back to a summary or the dashboard
       navigate(`/dashboard`, { 
         state: { 
           examSubmitted: true,
           courseTitle: course.title,
-          status: submissionPayload.status 
+          status: data.status,
+          score: data.objectiveScore
         } 
       });
-    }, 2000);
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to submit assessment.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-brand-dark">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-blue"></div>
+      </div>
+    );
+  }
+
+  if (error && !exam) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
+        <AlertCircle size={48} className="text-red-500 mb-4" />
+        <h2 className="text-2xl font-bold dark:text-white mb-2">Access Denied</h2>
+        <p className="text-slate-400 mb-6">{error}</p>
+        <button onClick={() => navigate(-1)} className="text-brand-blue font-bold uppercase text-[10px] tracking-widest">Return to Dashboard</button>
+      </div>
+    );
+  }
 
   if (!exam) return <div className="p-20 text-center font-mono text-slate-400 uppercase tracking-widest">Awaiting Board Assessment...</div>;
 

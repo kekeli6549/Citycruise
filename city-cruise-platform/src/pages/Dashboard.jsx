@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../context/authStore';
 import { useAdminStore } from '../context/adminStore'; 
-import { coursesData } from '../data/coursesData';
+import { useCourseStore } from '../context/courseStore';
 import CertificateGenerator, { downloadCertificate } from '../components/CertificateGenerator';
 import { 
   PlayCircle, Clock, Award, BookOpen, User, X, 
@@ -15,6 +15,7 @@ import {
 const Dashboard = () => {
   const { user, logout, login, certificates, completedLessons } = useAuthStore();
   const { gradedNotifications, clearNotification } = useAdminStore(); 
+  const { enrolledCourses, fetchMyCourses, isLoading } = useCourseStore();
   const navigate = useNavigate();
   
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -27,7 +28,9 @@ const Dashboard = () => {
   const certificateRef = useRef(null);
   const [selectedCourseForCert, setSelectedCourseForCert] = useState(null);
 
-  const courses = coursesData;
+  useEffect(() => {
+    fetchMyCourses();
+  }, []);
 
   useEffect(() => {
     const myResult = gradedNotifications.find(n => n.studentId === user?.id && !n.viewed);
@@ -173,7 +176,7 @@ const Dashboard = () => {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mb-20">
           {[
-            { label: "Mastery Progress", val: courses.length.toString().padStart(2, '0'), icon: BookOpen, color: "text-blue-500" },
+            { label: "Mastery Progress", val: enrolledCourses.length.toString().padStart(2, '0'), icon: BookOpen, color: "text-blue-500" },
             { label: "Learning Hours", val: "24.5", icon: Clock, color: "text-purple-500" },
             { label: "Global Badges", val: certificates?.length.toString().padStart(2, '0') || "00", icon: Award, color: "text-amber-500" },
           ].map((stat, i) => (
@@ -186,7 +189,11 @@ const Dashboard = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {courses.map((course, idx) => {
+          {isLoading ? (
+            <div className="col-span-full py-20 flex justify-center">
+              <RefreshCcw className="animate-spin text-brand-blue" size={40} />
+            </div>
+          ) : enrolledCourses.map((course, idx) => {
             const hasPassed = certificates?.includes(course.id);
             
             // Calculate progress based on completed lessons
