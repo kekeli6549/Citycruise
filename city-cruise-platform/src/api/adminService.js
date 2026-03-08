@@ -36,8 +36,8 @@ export const approveSubmission = async (submissionId) => {
     return response.data;
 };
 
-export const createExam = async (courseId, passPercentage) => {
-    const response = await apiClient.post(`/admin/courses/${courseId}/exam`, { passPercentage });
+export const createExam = async (courseId, examData) => {
+    const response = await apiClient.post(`/admin/courses/${courseId}/exam`, examData);
     return response.data;
 };
 
@@ -46,8 +46,7 @@ export const addQuestion = async (examId, questionData) => {
     return response.data;
 };
 
-// User Management (Based on existing adminStore needs)
 export const getStudents = async () => {
-    const response = await apiClient.get('/admin/students'); // Note: Endpoint not explicitly in MAPPING but needed for UI
+    const response = await apiClient.get('/admin/users');
     return response.data;
 };

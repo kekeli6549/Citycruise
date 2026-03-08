@@ -85,13 +85,12 @@ export const useAdminStore = create(
         }
       },
 
-      // ACTION: Specifically for the Student Dashboard to clear the pop-up
       clearNotification: (notifId) => set((state) => ({
         gradedNotifications: state.gradedNotifications.filter(n => n.id !== notifId)
       })),
 
       updateRevenue: (amount) => set((state) => ({ revenue: state.revenue + amount }))
     }),
-    { name: 'rootle-admin-storage' }
+    { name: 'citycruise-admin-storage' }
   )
-);
+);

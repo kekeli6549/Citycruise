@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Edit2, Trash2, DollarSign, Image as ImageIcon, X, ChevronRight, Save, Power, Users, ClipboardCheck, Video, FileText, PlusCircle, Trash } from 'lucide-react';
 import { useCourseStore } from '../context/courseStore';
@@ -10,16 +10,18 @@ const AdminCourseManager = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [modalStep, setModalStep] = useState(1);
   const [imageFile, setImageFile] = useState(null);
+  const fileInputRef = useRef(null);
+  const [previewUrl, setPreviewUrl] = useState(null);
 
   useEffect(() => {
     fetchCourses();
   }, []);
-  
-  const [newCourseData, setNewCourseData] = useState({ 
-    title: '', 
-    description: '', 
+
+  const [newCourseData, setNewCourseData] = useState({
+    title: '',
+    description: '',
     intro: '',
-    price: '', 
+    price: '',
     category: 'Finance & Wealth',
     lessons: []
   });
@@ -28,12 +30,28 @@ const AdminCourseManager = () => {
     title: '',
     summary: '',
     videoUrl: '',
-    resources: [] 
+    resources: []
   });
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setImageFile(file);
+      setPreviewUrl(URL.createObjectURL(file));
+    }
+  };
+
+  const triggerUpload = () => fileInputRef.current.click();
+
+  const removeImage = (e) => {
+    e.stopPropagation();
+    setImageFile(null);
+    setPreviewUrl(null);
+  };
 
   // Helper to ensure URLs are trimmed
   const addLessonToCourse = () => {
-    if(!currentLesson.title) return;
+    if (!currentLesson.title) return;
     setNewCourseData({
       ...newCourseData,
       lessons: [...newCourseData.lessons, { ...currentLesson, videoUrl: currentLesson.videoUrl.trim(), id: Date.now() }]
@@ -48,15 +66,9 @@ const AdminCourseManager = () => {
     });
   };
 
-  const handleFileSelect = (e) => {
-    const file = e.target.files[0];
-    if (file) setImageFile(file);
-  };
-
   const handleCreateCourse = async () => {
     setIsSubmitting(true);
     try {
-      // 1. Create Course with Image
       const courseForm = new FormData();
       courseForm.append('title', newCourseData.title);
       courseForm.append('description', newCourseData.description);
@@ -66,18 +78,17 @@ const AdminCourseManager = () => {
       const courseResponse = await adminCreateCourse(courseForm);
       const courseId = courseResponse.data?.id || courseResponse.id;
 
-      // 2. Create Lessons for this course
       for (const lesson of newCourseData.lessons) {
         const lessonForm = new FormData();
         lessonForm.append('title', lesson.title);
         lessonForm.append('content', lesson.summary);
         lessonForm.append('orderIndex', newCourseData.lessons.indexOf(lesson));
         lessonForm.append('video_link', lesson.videoUrl);
-        // Assuming video file is optional and not handled in this specific UI step yet
+        //video file is optional and not handled in this specific UI step yet
         await adminCreateLesson(courseId, lessonForm);
       }
 
-      fetchCourses(); // Refresh local list
+      fetchCourses();
       setIsModalOpen(false);
       setModalStep(1);
       setNewCourseData({ title: '', description: '', intro: '', price: '', category: 'Finance & Wealth', lessons: [] });
@@ -97,7 +108,7 @@ const AdminCourseManager = () => {
           <h2 className="text-2xl font-black text-slate-900 tracking-tight">Course Inventory</h2>
           <p className="text-sm text-slate-500">Deploy, edit, and curate your educational content.</p>
         </div>
-        <button 
+        <button
           onClick={() => { setModalStep(1); setIsModalOpen(true); }}
           className="flex items-center gap-3 px-8 py-4 bg-brand-blue text-white rounded-2xl font-bold text-xs uppercase tracking-[0.2em] shadow-xl shadow-brand-blue/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
         >
@@ -113,20 +124,19 @@ const AdminCourseManager = () => {
                 <img src={course.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt="" />
               ) : (
                 <div className={`w-full h-full ${course.img || 'bg-slate-200'} flex items-center justify-center`}>
-                   <ImageIcon className="text-slate-400" size={40} />
+                  <ImageIcon className="text-slate-400" size={40} />
                 </div>
               )}
               <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
               <div className="absolute top-4 left-4 flex gap-2">
-                <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest backdrop-blur-md shadow-lg ${
-                  course.status === 'Published' ? 'bg-emerald-500 text-white' : 'bg-slate-900/80 text-white'
-                }`}>
+                <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest backdrop-blur-md shadow-lg ${course.status === 'Published' ? 'bg-emerald-500 text-white' : 'bg-slate-900/80 text-white'
+                  }`}>
                   {course.status || 'Draft'}
                 </span>
                 {course.lessons?.length > 0 && (
-                   <span className="px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-brand-blue text-white shadow-lg flex items-center gap-1">
-                     <Video size={10} /> {course.lessons.length} Lessons
-                   </span>
+                  <span className="px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-brand-blue text-white shadow-lg flex items-center gap-1">
+                    <Video size={10} /> {course.lessons.length} Lessons
+                  </span>
                 )}
               </div>
             </div>
@@ -156,7 +166,7 @@ const AdminCourseManager = () => {
         {isModalOpen && (
           <>
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsModalOpen(false)} className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[200]" />
-            <motion.div 
+            <motion.div
               initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 20 }}
               className="fixed inset-0 m-auto w-full max-w-4xl h-[90vh] bg-white z-[201] rounded-[40px] shadow-2xl overflow-hidden flex flex-col"
             >
@@ -176,18 +186,18 @@ const AdminCourseManager = () => {
                 {modalStep === 1 && (
                   <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="space-y-8">
                     <div className="grid gap-6">
-                        <div className="space-y-3">
-                            <label className="text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em]">Course Identity</label>
-                            <input type="text" value={newCourseData.title} onChange={(e) => setNewCourseData({...newCourseData, title: e.target.value})} placeholder="e.g. Masterclass in Diaspora Wealth" className="w-full p-5 bg-slate-50 border-2 border-transparent rounded-[24px] text-base font-medium focus:border-brand-blue/20 focus:bg-white outline-none transition-all" />
-                        </div>
-                        <div className="space-y-3">
-                            <label className="text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em]">Introduction Summary</label>
-                            <textarea rows="2" value={newCourseData.intro} onChange={(e) => setNewCourseData({...newCourseData, intro: e.target.value})} placeholder="Short catchphrase for the course..." className="w-full p-5 bg-slate-50 border-2 border-transparent rounded-[24px] text-base font-medium focus:border-brand-blue/20 focus:bg-white outline-none transition-all" />
-                        </div>
-                        <div className="space-y-3">
-                            <label className="text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em]">Full Description</label>
-                            <textarea rows="4" value={newCourseData.description} onChange={(e) => setNewCourseData({...newCourseData, description: e.target.value})} placeholder="Detailed curriculum vision..." className="w-full p-5 bg-slate-50 border-2 border-transparent rounded-[24px] text-base font-medium focus:border-brand-blue/20 focus:bg-white outline-none transition-all" />
-                        </div>
+                      <div className="space-y-3">
+                        <label className="text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em]">Course Identity</label>
+                        <input type="text" value={newCourseData.title} onChange={(e) => setNewCourseData({ ...newCourseData, title: e.target.value })} placeholder="e.g. Masterclass in Diaspora Wealth" className="w-full p-5 bg-slate-50 border-2 border-transparent rounded-[24px] text-base font-medium focus:border-brand-blue/20 focus:bg-white outline-none transition-all" />
+                      </div>
+                      <div className="space-y-3">
+                        <label className="text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em]">Introduction Summary</label>
+                        <textarea rows="2" value={newCourseData.intro} onChange={(e) => setNewCourseData({ ...newCourseData, intro: e.target.value })} placeholder="Short catchphrase for the course..." className="w-full p-5 bg-slate-50 border-2 border-transparent rounded-[24px] text-base font-medium focus:border-brand-blue/20 focus:bg-white outline-none transition-all" />
+                      </div>
+                      <div className="space-y-3">
+                        <label className="text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em]">Full Description</label>
+                        <textarea rows="4" value={newCourseData.description} onChange={(e) => setNewCourseData({ ...newCourseData, description: e.target.value })} placeholder="Detailed curriculum vision..." className="w-full p-5 bg-slate-50 border-2 border-transparent rounded-[24px] text-base font-medium focus:border-brand-blue/20 focus:bg-white outline-none transition-all" />
+                      </div>
                     </div>
                   </motion.div>
                 )}
@@ -199,12 +209,12 @@ const AdminCourseManager = () => {
                         <label className="text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em]">Investment (USD)</label>
                         <div className="relative">
                           <DollarSign className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-                          <input type="number" value={newCourseData.price} onChange={(e) => setNewCourseData({...newCourseData, price: e.target.value})} placeholder="299" className="w-full pl-12 p-5 bg-slate-50 border-transparent border-2 rounded-[24px] focus:border-brand-blue/20 focus:bg-white outline-none" />
+                          <input type="number" value={newCourseData.price} onChange={(e) => setNewCourseData({ ...newCourseData, price: e.target.value })} placeholder="299" className="w-full pl-12 p-5 bg-slate-50 border-transparent border-2 rounded-[24px] focus:border-brand-blue/20 focus:bg-white outline-none" />
                         </div>
                       </div>
                       <div className="space-y-3">
                         <label className="text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em]">Discipline</label>
-                        <select value={newCourseData.category} onChange={(e) => setNewCourseData({...newCourseData, category: e.target.value})} className="w-full p-5 bg-slate-50 border-transparent border-2 rounded-[24px] focus:border-brand-blue/20 outline-none appearance-none font-bold">
+                        <select value={newCourseData.category} onChange={(e) => setNewCourseData({ ...newCourseData, category: e.target.value })} className="w-full p-5 bg-slate-50 border-transparent border-2 rounded-[24px] focus:border-brand-blue/20 outline-none appearance-none font-bold">
                           <option>Finance & Wealth</option>
                           <option>Tech Leadership</option>
                           <option>Creative Arts</option>
@@ -218,12 +228,12 @@ const AdminCourseManager = () => {
                 {modalStep === 3 && (
                   <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="space-y-8">
                     <div className="bg-slate-50 p-8 rounded-[32px] border border-slate-100 space-y-6">
-                      <h4 className="font-bold text-slate-900 flex items-center gap-2"><PlusCircle size={20} className="text-brand-blue"/> Add New Lesson</h4>
+                      <h4 className="font-bold text-slate-900 flex items-center gap-2"><PlusCircle size={20} className="text-brand-blue" /> Add New Lesson</h4>
                       <div className="grid gap-4">
-                        <input type="text" placeholder="Lesson Title" value={currentLesson.title} onChange={(e) => setCurrentLesson({...currentLesson, title: e.target.value})} className="w-full p-4 bg-white rounded-2xl border-none outline-none shadow-sm" />
-                        <textarea placeholder="Lesson Summary & Key Takeaways" value={currentLesson.summary} onChange={(e) => setCurrentLesson({...currentLesson, summary: e.target.value})} className="w-full p-4 bg-white rounded-2xl border-none outline-none shadow-sm" rows="3" />
+                        <input type="text" placeholder="Lesson Title" value={currentLesson.title} onChange={(e) => setCurrentLesson({ ...currentLesson, title: e.target.value })} className="w-full p-4 bg-white rounded-2xl border-none outline-none shadow-sm" />
+                        <textarea placeholder="Lesson Summary & Key Takeaways" value={currentLesson.summary} onChange={(e) => setCurrentLesson({ ...currentLesson, summary: e.target.value })} className="w-full p-4 bg-white rounded-2xl border-none outline-none shadow-sm" rows="3" />
                         <div className="grid grid-cols-2 gap-4">
-                          <input type="text" placeholder="YouTube Video URL" value={currentLesson.videoUrl} onChange={(e) => setCurrentLesson({...currentLesson, videoUrl: e.target.value})} className="p-4 bg-white rounded-2xl border-none outline-none shadow-sm" />
+                          <input type="text" placeholder="YouTube Video URL" value={currentLesson.videoUrl} onChange={(e) => setCurrentLesson({ ...currentLesson, videoUrl: e.target.value })} className="p-4 bg-white rounded-2xl border-none outline-none shadow-sm" />
                           <button onClick={addLessonToCourse} className="bg-slate-900 text-white rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-brand-blue transition-colors">Register Lesson</button>
                         </div>
                       </div>
@@ -240,7 +250,7 @@ const AdminCourseManager = () => {
                               <p className="text-[10px] text-slate-400 truncate max-w-[300px]">{lesson.summary}</p>
                             </div>
                           </div>
-                          <button onClick={() => removeLesson(lesson.id)} className="p-3 text-red-400 hover:bg-red-50 rounded-xl transition-all"><Trash size={16}/></button>
+                          <button onClick={() => removeLesson(lesson.id)} className="p-3 text-red-400 hover:bg-red-50 rounded-xl transition-all"><Trash size={16} /></button>
                         </div>
                       ))}
                     </div>
@@ -249,19 +259,63 @@ const AdminCourseManager = () => {
 
                 {modalStep === 4 && (
                   <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="space-y-8">
-                    <div className="border-4 border-dashed border-slate-100 rounded-[40px] p-20 flex flex-col items-center justify-center hover:border-brand-blue/20 hover:bg-blue-50/30 transition-all cursor-pointer group">
-                      <div className="w-20 h-20 bg-white shadow-xl rounded-3xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                        <ImageIcon className="text-brand-blue" size={32} />
-                      </div>
-                      <p className="text-lg font-black text-slate-900">Upload Cinematic Cover</p>
-                      <p className="text-sm text-slate-400 mt-2 font-medium">16:9 Aspect Ratio recommended (Max 5MB)</p>
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleFileSelect}
+                      accept="image/*"
+                      className="hidden"
+                    />
+
+                    <div
+                      onClick={triggerUpload}
+                      className="relative overflow-hidden border-4 border-dashed border-slate-100 rounded-[40px] min-h-[300px] flex flex-col items-center justify-center hover:border-brand-blue/20 hover:bg-blue-50/30 transition-all cursor-pointer group"
+                    >
+                      <AnimatePresence mode="wait">
+                        {!previewUrl ? (
+                          <motion.div
+                            key="upload"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="flex flex-col items-center"
+                          >
+                            <div className="w-20 h-20 bg-white shadow-xl rounded-3xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                              <ImageIcon className="text-brand-blue" size={32} />
+                            </div>
+                            <p className="text-lg font-black text-slate-900">Upload Cinematic Cover</p>
+                            <p className="text-sm text-slate-400 mt-2 font-medium">16:9 Aspect Ratio recommended (Max 5MB)</p>
+                          </motion.div>
+                        ) : (
+                          <motion.div
+                            key="preview"
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            className="absolute inset-0 w-full h-full"
+                          >
+                            <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <p className="text-white font-bold bg-white/20 backdrop-blur-md px-6 py-2 rounded-full border border-white/30">
+                                Change Image
+                              </p>
+                            </div>
+
+                            <button
+                              onClick={removeImage}
+                              className="absolute top-6 right-6 p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors z-10"
+                            >
+                              <X size={20} />
+                            </button>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
                   </motion.div>
                 )}
               </div>
 
               <div className="p-10 bg-slate-50 flex justify-between gap-6">
-                <button 
+                <button
                   disabled={modalStep === 1}
                   onClick={() => setModalStep(s => s - 1)}
                   className={`px-10 py-5 rounded-2xl font-black text-xs uppercase tracking-widest transition-all ${modalStep === 1 ? 'opacity-0' : 'bg-white text-slate-600 border border-slate-200 hover:shadow-md'}`}
