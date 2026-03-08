@@ -2,10 +2,16 @@ import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Edit2, Trash2, DollarSign, Image as ImageIcon, X, ChevronRight, Save, Power, Users, Video, PlusCircle, Trash } from 'lucide-react';
 import { useCourseStore } from '../context/courseStore';
-import { adminCreateCourse, adminCreateLesson, adminUpdateCourse, adminUpdateLesson } from '../api/adminService';
+import { 
+  adminCreateCourse, 
+  adminCreateLesson, 
+  adminUpdateCourse, 
+  adminUpdateLesson 
+} from '../api/adminService';
+import ConfirmationModal from '../components/ConfirmationModal';
 
 const AdminCourseManager = () => {
-  const { courses, toggleStatus, fetchCourses, isLoading } = useCourseStore();
+  const { courses, categories, toggleStatus, fetchCourses, fetchCategories, addCategory, deleteCourse, isLoading } = useCourseStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [modalStep, setModalStep] = useState(1);
@@ -13,20 +19,28 @@ const AdminCourseManager = () => {
   const fileInputRef = useRef(null);
   const [previewUrl, setPreviewUrl] = useState(null);
   
+  // Custom Delete Modal State
+  const [deleteConfig, setDeleteConfig] = useState({ isOpen: false, courseId: null, courseTitle: '' });
+
+  // Discipline Management
+  const [newDisciplineName, setNewDisciplineName] = useState("");
+  const [isAddingDiscipline, setIsAddingDiscipline] = useState(false);
+
   // Edit Mode States
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingCourseId, setEditingCourseId] = useState(null);
 
   useEffect(() => {
     fetchCourses();
-  }, [fetchCourses]);
+    fetchCategories();
+  }, [fetchCourses, fetchCategories]);
 
   const [newCourseData, setNewCourseData] = useState({
     title: '',
     description: '',
     intro: '',
     price: '',
-    category: 'Finance & Wealth',
+    category: '',
     lessons: []
   });
 
@@ -37,7 +51,31 @@ const AdminCourseManager = () => {
     resources: []
   });
 
-  // Handle opening modal for Edit
+  const handleCreateDiscipline = async () => {
+    if (!newDisciplineName.trim()) return;
+    try {
+      await addCategory(newDisciplineName);
+      setNewCourseData({ ...newCourseData, category: newDisciplineName });
+      setNewDisciplineName("");
+      setIsAddingDiscipline(false);
+    } catch (err) {
+      alert("Failed to create discipline");
+    }
+  };
+
+  const openDeleteModal = (id, title) => {
+    setDeleteConfig({ isOpen: true, courseId: id, courseTitle: title });
+  };
+
+  const confirmDelete = async () => {
+    try {
+      await deleteCourse(deleteConfig.courseId);
+      setDeleteConfig({ isOpen: false, courseId: null, courseTitle: '' });
+    } catch (err) {
+      alert("Failed to delete course.");
+    }
+  };
+
   const handleEditClick = (course) => {
     setIsEditMode(true);
     setEditingCourseId(course.id);
@@ -46,7 +84,7 @@ const AdminCourseManager = () => {
       description: course.description || '',
       intro: course.intro || '',
       price: course.price || '',
-      category: course.category || 'Finance & Wealth',
+      category: course.category || (categories[0]?.name || ''),
       lessons: course.lessons || []
     });
     setPreviewUrl(course.image || null);
@@ -54,11 +92,17 @@ const AdminCourseManager = () => {
     setIsModalOpen(true);
   };
 
-  // Handle opening modal for New
   const handleNewCourseClick = () => {
     setIsEditMode(false);
     setEditingCourseId(null);
-    setNewCourseData({ title: '', description: '', intro: '', price: '', category: 'Finance & Wealth', lessons: [] });
+    setNewCourseData({ 
+        title: '', 
+        description: '', 
+        intro: '', 
+        price: '', 
+        category: categories[0]?.name || '', 
+        lessons: [] 
+    });
     setPreviewUrl(null);
     setImageFile(null);
     setModalStep(1);
@@ -104,17 +148,20 @@ const AdminCourseManager = () => {
       courseForm.append('title', newCourseData.title);
       courseForm.append('description', newCourseData.description);
       courseForm.append('price', newCourseData.price);
+      courseForm.append('category', newCourseData.category);
       if (imageFile) courseForm.append('coverImage', imageFile);
 
-      let courseId = editingCourseId;
+      let currentCourseId = editingCourseId;
       
       if (isEditMode) {
         await adminUpdateCourse(editingCourseId, courseForm);
       } else {
         const courseResponse = await adminCreateCourse(courseForm);
-        courseId = courseResponse.data?.id || courseResponse.id;
+        // Checking for nested data based on your service response
+        currentCourseId = courseResponse.data?.id || courseResponse.id;
       }
 
+      // Process lessons sequentially to avoid race conditions
       for (const lesson of newCourseData.lessons) {
         const lessonForm = new FormData();
         lessonForm.append('title', lesson.title);
@@ -122,10 +169,12 @@ const AdminCourseManager = () => {
         lessonForm.append('orderIndex', newCourseData.lessons.indexOf(lesson));
         lessonForm.append('video_link', lesson.videoUrl);
 
+        // Logic: If the lesson ID is numeric (Date.now()), it's a new unsaved lesson. 
+        // If it's a string/UUID, it already exists in the DB.
         if (isEditMode && lesson.id && typeof lesson.id !== 'number') {
             await adminUpdateLesson(lesson.id, lessonForm);
         } else {
-            await adminCreateLesson(courseId, lessonForm);
+            await adminCreateLesson(currentCourseId, lessonForm);
         }
       }
 
@@ -134,6 +183,7 @@ const AdminCourseManager = () => {
       setModalStep(1);
       setIsEditMode(false);
     } catch (err) {
+      console.error("Course Sync Error:", err);
       alert("Action failed. Please verify API connection.");
     } finally {
       setIsSubmitting(false);
@@ -171,12 +221,16 @@ const AdminCourseManager = () => {
                 <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest backdrop-blur-md shadow-lg ${course.status === 'Published' ? 'bg-emerald-500 text-white' : 'bg-slate-900/80 text-white'}`}>
                   {course.status || 'Draft'}
                 </span>
-                {course.lessons?.length > 0 && (
-                  <span className="px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-brand-blue text-white shadow-lg flex items-center gap-1">
-                    <Video size={10} /> {course.lessons.length}
-                  </span>
-                )}
               </div>
+
+              {course.status === 'Draft' && (
+                <button 
+                  onClick={() => openDeleteModal(course.id, course.title)}
+                  className="absolute top-4 right-4 p-2.5 bg-white/90 backdrop-blur-md text-red-500 rounded-xl shadow-lg hover:bg-red-500 hover:text-white transition-all z-10"
+                >
+                  <Trash2 size={16} />
+                </button>
+              )}
             </div>
             <div className="p-6 md:p-7">
               <h3 className="font-bold text-slate-900 text-lg mb-2 truncate group-hover:text-brand-blue transition-colors">{course.title}</h3>
@@ -225,15 +279,11 @@ const AdminCourseManager = () => {
                   <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="space-y-6 md:space-y-8">
                     <div className="grid gap-6">
                       <div className="space-y-3">
-                        <label className="text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em]">Course Identity</label>
+                        <span className="text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em]">Course Identity</span>
                         <input type="text" value={newCourseData.title} onChange={(e) => setNewCourseData({ ...newCourseData, title: e.target.value })} placeholder="e.g. Masterclass in Diaspora Wealth" className="w-full p-4 md:p-5 bg-slate-50 border-2 border-transparent rounded-[20px] md:rounded-[24px] text-base focus:border-brand-blue/20 focus:bg-white outline-none transition-all" />
                       </div>
                       <div className="space-y-3">
-                        <label className="text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em]">Introduction Summary</label>
-                        <textarea rows="2" value={newCourseData.intro} onChange={(e) => setNewCourseData({ ...newCourseData, intro: e.target.value })} placeholder="Short catchphrase..." className="w-full p-4 md:p-5 bg-slate-50 border-2 border-transparent rounded-[20px] md:rounded-[24px] text-base focus:border-brand-blue/20 focus:bg-white outline-none transition-all" />
-                      </div>
-                      <div className="space-y-3">
-                        <label className="text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em]">Full Description</label>
+                        <span className="text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em]">Full Description</span>
                         <textarea rows="4" value={newCourseData.description} onChange={(e) => setNewCourseData({ ...newCourseData, description: e.target.value })} placeholder="Detailed curriculum..." className="w-full p-4 md:p-5 bg-slate-50 border-2 border-transparent rounded-[20px] md:rounded-[24px] text-base focus:border-brand-blue/20 focus:bg-white outline-none transition-all" />
                       </div>
                     </div>
@@ -244,27 +294,49 @@ const AdminCourseManager = () => {
                   <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="space-y-6 md:space-y-8">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-3">
-                        <label className="text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em]">Investment (USD)</label>
+                        <span className="text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em]">Investment (USD)</span>
                         <div className="relative">
-                          {/* Positioned DollarSign icon */}
-                          <DollarSign className="absolute left-0.5 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-                          {/* pl-14 provides the 'little space' between $ and number */}
+                          <DollarSign className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={20} />
                           <input 
                             type="number" 
                             value={newCourseData.price} 
                             onChange={(e) => setNewCourseData({ ...newCourseData, price: e.target.value })} 
                             placeholder="299" 
-                            className="w-full pl-14 p-4 md:p-5 bg-slate-50 border-transparent border-2 rounded-[20px] md:rounded-[24px] focus:border-brand-blue/20 focus:bg-white outline-none font-bold" 
+                            className="w-full pl-12 p-4 md:p-5 bg-slate-50 border-transparent border-2 rounded-[20px] md:rounded-[24px] focus:border-brand-blue/20 focus:bg-white outline-none font-bold" 
                           />
                         </div>
                       </div>
                       <div className="space-y-3">
-                        <label className="text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em]">Discipline</label>
-                        <select value={newCourseData.category} onChange={(e) => setNewCourseData({ ...newCourseData, category: e.target.value })} className="w-full p-4 md:p-5 bg-slate-50 border-transparent border-2 rounded-[20px] md:rounded-[24px] focus:border-brand-blue/20 outline-none appearance-none font-bold">
-                          <option>Finance & Wealth</option>
-                          <option>Tech Leadership</option>
-                          <option>Creative Arts</option>
-                        </select>
+                        <div className="flex justify-between items-center">
+                            <span className="text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em]">Discipline</span>
+                            <button onClick={() => setIsAddingDiscipline(!isAddingDiscipline)} className="text-[9px] font-black text-brand-blue uppercase tracking-widest hover:underline">
+                                {isAddingDiscipline ? "Cancel" : "+ Create New"}
+                            </button>
+                        </div>
+                        
+                        {isAddingDiscipline ? (
+                            <div className="flex gap-2">
+                                <input 
+                                    type="text" 
+                                    value={newDisciplineName} 
+                                    onChange={(e) => setNewDisciplineName(e.target.value)} 
+                                    placeholder="New Discipline Name..." 
+                                    className="flex-1 p-4 bg-slate-50 border-2 border-brand-blue/20 rounded-[20px] outline-none font-bold text-sm"
+                                />
+                                <button onClick={handleCreateDiscipline} className="px-6 bg-brand-blue text-white rounded-[20px] font-bold text-[10px] uppercase">Add</button>
+                            </div>
+                        ) : (
+                            <select 
+                                value={newCourseData.category} 
+                                onChange={(e) => setNewCourseData({ ...newCourseData, category: e.target.value })} 
+                                className="w-full p-4 md:p-5 bg-slate-50 border-transparent border-2 rounded-[20px] md:rounded-[24px] focus:border-brand-blue/20 outline-none appearance-none font-bold"
+                            >
+                                <option value="" disabled>Select Discipline</option>
+                                {categories.map(cat => (
+                                    <option key={cat.id} value={cat.name}>{cat.name}</option>
+                                ))}
+                            </select>
+                        )}
                       </div>
                     </div>
                   </motion.div>
@@ -285,7 +357,7 @@ const AdminCourseManager = () => {
                     </div>
 
                     <div className="space-y-4">
-                      <label className="text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em]">Curriculum Stack ({newCourseData.lessons.length})</label>
+                      <span className="text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em]">Curriculum Stack ({newCourseData.lessons.length})</span>
                       <div className="max-h-[300px] overflow-y-auto space-y-3 pr-2">
                         {newCourseData.lessons.map((lesson, idx) => (
                           <div key={lesson.id} className="flex items-center justify-between p-4 bg-white border border-slate-100 rounded-2xl shadow-sm">
@@ -357,6 +429,15 @@ const AdminCourseManager = () => {
           </>
         )}
       </AnimatePresence>
+
+      <ConfirmationModal 
+        isOpen={deleteConfig.isOpen}
+        onClose={() => setDeleteConfig({ ...deleteConfig, isOpen: false })}
+        onConfirm={confirmDelete}
+        title="Delete Course?"
+        message={`Are you sure you want to remove "${deleteConfig.courseTitle}"? This is a permanent destruction of this curriculum.`}
+        confirmText="Confirm Delete"
+      />
     </motion.div>
   );
 };

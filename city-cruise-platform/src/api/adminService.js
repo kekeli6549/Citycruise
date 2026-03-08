@@ -19,6 +19,11 @@ export const adminUpdateCourse = async (courseId, formData) => {
     return response.data;
 };
 
+export const adminDeleteCourse = async (courseId) => {
+    const response = await apiClient.delete(`/admin/courses/${courseId}`);
+    return response.data;
+};
+
 // Lessons
 export const adminCreateLesson = async (courseId, formData) => {
     const response = await apiClient.post(`/admin/courses/${courseId}/lessons`, formData, {
@@ -35,6 +40,22 @@ export const adminUpdateLesson = async (lessonId, formData) => {
             'Content-Type': 'multipart/form-data',
         },
     });
+    return response.data;
+};
+
+// Categories / Disciplines
+export const adminGetCategories = async () => {
+    const response = await apiClient.get('/admin/categories');
+    return response.data;
+};
+
+export const adminCreateCategory = async (name) => {
+    const response = await apiClient.post('/admin/categories', { name });
+    return response.data;
+};
+
+export const adminDeleteCategory = async (categoryId) => {
+    const response = await apiClient.delete(`/admin/categories/${categoryId}`);
     return response.data;
 };
 

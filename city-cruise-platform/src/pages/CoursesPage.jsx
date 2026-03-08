@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Search, SlidersHorizontal, PlayCircle, Star, Users, ArrowUpRight, SearchX, ChevronDown, Check, LockOpen } from 'lucide-react';
+import { Search, SlidersHorizontal, PlayCircle, Star, Users, ArrowUpRight, SearchX, ChevronDown, Check } from 'lucide-react';
 import { useCourseStore } from '../context/courseStore';
 import { useAuthStore } from '../context/authStore';
 
 const CoursesPage = () => {
   const navigate = useNavigate();
   const { purchasedCourses } = useAuthStore();
-  const { courses, fetchCourses, isLoading, error } = useCourseStore();
+  const { courses, categories, fetchCourses, fetchCategories, isLoading } = useCourseStore();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState("Alphabetical");
@@ -17,9 +17,11 @@ const CoursesPage = () => {
 
   useEffect(() => {
     fetchCourses();
-  }, []);
+    fetchCategories();
+  }, [fetchCourses, fetchCategories]);
 
-  const occupations = ["All", "Finance", "Leadership", "Technology", "Design"];
+  // Merge "All" with dynamically created categories from the admin side
+  const occupations = ["All", ...categories.map(cat => cat.name)];
   const filterOptions = ["Alphabetical", "Most Viewed"];
 
   const filteredCourses = (courses || [])
@@ -163,7 +165,8 @@ const CoursesPage = () => {
                     <div className="mt-auto pt-6 border-t border-slate-50 dark:border-slate-800 flex justify-between items-center">
                       <div>
                         <p className="text-[9px] font-mono text-slate-400 uppercase tracking-tighter">Investment</p>
-                        <p className="text-2xl font-bold dark:text-white">{isOwned ? "Owned" : `$${course.price || '0'}`}</p>                      </div>
+                        <p className="text-2xl font-bold dark:text-white">{isOwned ? "Owned" : `$${course.price || '0'}`}</p>
+                      </div>
                       <button
                         onClick={() => isOwned ? navigate(`/course/${course.id}`) : navigate(`/checkout/${course.id}`, { state: { course } })}
                         className={`px-6 py-3 rounded-xl font-bold uppercase text-[9px] tracking-widest transition-all active:scale-95 ${isOwned ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-slate-900 dark:bg-brand-blue text-white hover:shadow-xl'}`}

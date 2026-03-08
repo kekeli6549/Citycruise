@@ -5,11 +5,13 @@ import {
   Calendar, CreditCard, Edit3, Ban, CheckCircle2, RefreshCcw
 } from 'lucide-react';
 import { useAdminStore } from '../context/adminStore';
+import ConfirmationModal from '../components/ConfirmationModal';
 
 const AdminUserManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedUser, setSelectedUser] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
   const { students, toggleUserStatus, fetchStudents, isLoading } = useAdminStore();
 
@@ -17,17 +19,20 @@ const AdminUserManagement = () => {
     fetchStudents();
   }, [fetchStudents]);
 
-  const handleToggleStatus = async (id) => {
-    await toggleUserStatus(id);
-    if (selectedUser?.id === id) {
-      setSelectedUser(prev => ({
-        ...prev,
-        status: prev.status === 'Banned' ? 'Active' : 'Banned'
-      }));
-    }
+  const handleToggleStatus = async () => {
+    if (!selectedUser) return;
+    const userId = selectedUser.id;
+    await toggleUserStatus(userId);
+    
+    // Update local state for immediate feedback
+    setSelectedUser(prev => ({
+      ...prev,
+      status: prev.status === 'Banned' ? 'Active' : 'Banned'
+    }));
+    setIsConfirmOpen(false);
   };
 
-  const filteredStudents = students.filter(u => 
+  const filteredStudents = (students || []).filter(u => 
     u.username?.toLowerCase().includes(searchTerm.toLowerCase()) || 
     u.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -188,7 +193,7 @@ const AdminUserManagement = () => {
                   <Edit3 size={16} /> Edit Profile
                 </button>
                 <button 
-                  onClick={() => handleToggleStatus(selectedUser.id)} 
+                  onClick={() => setIsConfirmOpen(true)} 
                   className={`w-full flex items-center justify-center gap-3 py-4 rounded-2xl font-bold text-xs uppercase tracking-widest transition-all ${selectedUser.status === 'Banned' ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100' : 'bg-red-50 text-red-600 hover:bg-red-100'}`}
                 >
                   {selectedUser.status === 'Banned' ? <><CheckCircle2 size={16} /> Activate Access</> : <><Ban size={16} /> Restrict Access</>}
@@ -198,6 +203,16 @@ const AdminUserManagement = () => {
           </>
         )}
       </AnimatePresence>
+
+      <ConfirmationModal 
+        isOpen={isConfirmOpen}
+        onClose={() => setIsConfirmOpen(false)}
+        onConfirm={handleToggleStatus}
+        title={selectedUser?.status === 'Banned' ? "Reactivate User?" : "Restrict Access?"}
+        message={selectedUser?.status === 'Banned' ? `You are about to restore full access for ${selectedUser?.username}.` : `You are about to ban ${selectedUser?.username}. They will no longer be able to access their courses.`}
+        confirmText={selectedUser?.status === 'Banned' ? "Restore Access" : "Restrict Now"}
+        type={selectedUser?.status === 'Banned' ? 'warning' : 'danger'}
+      />
     </motion.div>
   );
 };
