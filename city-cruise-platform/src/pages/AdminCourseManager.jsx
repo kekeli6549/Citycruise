@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Edit2, Trash2, DollarSign, Image as ImageIcon, X, ChevronRight, Save, Power, Users, Video, PlusCircle, Trash } from 'lucide-react';
 import { useCourseStore } from '../context/courseStore';
-import { adminCreateCourse, adminCreateLesson } from '../api/adminService';
+import { adminCreateCourse, adminCreateLesson, adminUpdateCourse, adminUpdateLesson } from '../api/adminService';
 
 const AdminCourseManager = () => {
   const { courses, toggleStatus, fetchCourses, isLoading } = useCourseStore();
@@ -12,6 +12,10 @@ const AdminCourseManager = () => {
   const [imageFile, setImageFile] = useState(null);
   const fileInputRef = useRef(null);
   const [previewUrl, setPreviewUrl] = useState(null);
+  
+  // Edit Mode States
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editingCourseId, setEditingCourseId] = useState(null);
 
   useEffect(() => {
     fetchCourses();
@@ -32,6 +36,34 @@ const AdminCourseManager = () => {
     videoUrl: '',
     resources: []
   });
+
+  // Handle opening modal for Edit
+  const handleEditClick = (course) => {
+    setIsEditMode(true);
+    setEditingCourseId(course.id);
+    setNewCourseData({
+      title: course.title || '',
+      description: course.description || '',
+      intro: course.intro || '',
+      price: course.price || '',
+      category: course.category || 'Finance & Wealth',
+      lessons: course.lessons || []
+    });
+    setPreviewUrl(course.image || null);
+    setModalStep(1);
+    setIsModalOpen(true);
+  };
+
+  // Handle opening modal for New
+  const handleNewCourseClick = () => {
+    setIsEditMode(false);
+    setEditingCourseId(null);
+    setNewCourseData({ title: '', description: '', intro: '', price: '', category: 'Finance & Wealth', lessons: [] });
+    setPreviewUrl(null);
+    setImageFile(null);
+    setModalStep(1);
+    setIsModalOpen(true);
+  };
 
   const handleFileSelect = (e) => {
     const file = e.target.files[0];
@@ -65,7 +97,7 @@ const AdminCourseManager = () => {
     });
   };
 
-  const handleCreateCourse = async () => {
+  const handleSaveCourse = async () => {
     setIsSubmitting(true);
     try {
       const courseForm = new FormData();
@@ -74,8 +106,14 @@ const AdminCourseManager = () => {
       courseForm.append('price', newCourseData.price);
       if (imageFile) courseForm.append('coverImage', imageFile);
 
-      const courseResponse = await adminCreateCourse(courseForm);
-      const courseId = courseResponse.data?.id || courseResponse.id;
+      let courseId = editingCourseId;
+      
+      if (isEditMode) {
+        await adminUpdateCourse(editingCourseId, courseForm);
+      } else {
+        const courseResponse = await adminCreateCourse(courseForm);
+        courseId = courseResponse.data?.id || courseResponse.id;
+      }
 
       for (const lesson of newCourseData.lessons) {
         const lessonForm = new FormData();
@@ -83,16 +121,20 @@ const AdminCourseManager = () => {
         lessonForm.append('content', lesson.summary);
         lessonForm.append('orderIndex', newCourseData.lessons.indexOf(lesson));
         lessonForm.append('video_link', lesson.videoUrl);
-        await adminCreateLesson(courseId, lessonForm);
+
+        if (isEditMode && lesson.id && typeof lesson.id !== 'number') {
+            await adminUpdateLesson(lesson.id, lessonForm);
+        } else {
+            await adminCreateLesson(courseId, lessonForm);
+        }
       }
 
       fetchCourses();
       setIsModalOpen(false);
       setModalStep(1);
-      setNewCourseData({ title: '', description: '', intro: '', price: '', category: 'Finance & Wealth', lessons: [] });
-      setImageFile(null);
+      setIsEditMode(false);
     } catch (err) {
-      alert("Deployment failed. Please verify API connection.");
+      alert("Action failed. Please verify API connection.");
     } finally {
       setIsSubmitting(false);
     }
@@ -106,7 +148,7 @@ const AdminCourseManager = () => {
           <p className="text-sm text-slate-500">Deploy, edit, and curate your educational content.</p>
         </div>
         <button
-          onClick={() => { setModalStep(1); setIsModalOpen(true); }}
+          onClick={handleNewCourseClick}
           className="w-full md:w-auto flex items-center justify-center gap-3 px-8 py-4 bg-brand-blue text-white rounded-2xl font-bold text-xs uppercase tracking-[0.2em] shadow-xl shadow-brand-blue/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
         >
           <Plus size={18} /> New Course
@@ -146,7 +188,7 @@ const AdminCourseManager = () => {
                 <p className="text-lg font-black text-slate-900">${course.price}</p>
               </div>
               <div className="flex gap-3">
-                <button className="flex-1 flex items-center justify-center gap-2 py-3.5 bg-slate-50 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-100 transition-all">
+                <button onClick={() => handleEditClick(course)} className="flex-1 flex items-center justify-center gap-2 py-3.5 bg-slate-50 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-100 transition-all">
                   <Edit2 size={14} /> Edit
                 </button>
                 <button onClick={() => toggleStatus(course.id)} className={`p-3.5 rounded-xl transition-all ${course.status === 'Published' ? 'text-red-500 bg-red-50 hover:bg-red-100' : 'text-emerald-500 bg-emerald-50 hover:bg-emerald-100'}`}>
@@ -168,7 +210,7 @@ const AdminCourseManager = () => {
             >
               <div className="p-6 md:p-10 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
                 <div className="pr-8">
-                  <h3 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">Architect New Content</h3>
+                  <h3 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">{isEditMode ? 'Modify Course' : 'Architect New Content'}</h3>
                   <div className="flex gap-2 md:gap-3 mt-3 overflow-x-auto pb-1">
                     {[1, 2, 3, 4].map(i => (
                       <div key={i} className={`h-1.5 min-w-[30px] md:w-12 rounded-full transition-all duration-500 ${modalStep >= i ? 'bg-brand-blue md:w-20' : 'bg-slate-200'}`} />
@@ -204,8 +246,16 @@ const AdminCourseManager = () => {
                       <div className="space-y-3">
                         <label className="text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em]">Investment (USD)</label>
                         <div className="relative">
-                          <DollarSign className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-                          <input type="number" value={newCourseData.price} onChange={(e) => setNewCourseData({ ...newCourseData, price: e.target.value })} placeholder="299" className="w-full pl-12 p-4 md:p-5 bg-slate-50 border-transparent border-2 rounded-[20px] md:rounded-[24px] focus:border-brand-blue/20 focus:bg-white outline-none" />
+                          {/* Positioned DollarSign icon */}
+                          <DollarSign className="absolute left-0.5 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                          {/* pl-14 provides the 'little space' between $ and number */}
+                          <input 
+                            type="number" 
+                            value={newCourseData.price} 
+                            onChange={(e) => setNewCourseData({ ...newCourseData, price: e.target.value })} 
+                            placeholder="299" 
+                            className="w-full pl-14 p-4 md:p-5 bg-slate-50 border-transparent border-2 rounded-[20px] md:rounded-[24px] focus:border-brand-blue/20 focus:bg-white outline-none font-bold" 
+                          />
                         </div>
                       </div>
                       <div className="space-y-3">
@@ -297,8 +347,8 @@ const AdminCourseManager = () => {
                       Next Phase <ChevronRight size={18} />
                     </button>
                   ) : (
-                    <button onClick={handleCreateCourse} disabled={isSubmitting} className="w-full sm:w-auto px-10 py-4 md:py-5 bg-brand-blue text-white rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 shadow-2xl shadow-brand-blue/40 hover:scale-105 active:scale-95 transition-all">
-                      {isSubmitting ? 'Deploying...' : 'Deploy to Live'} <Save size={18} />
+                    <button onClick={handleSaveCourse} disabled={isSubmitting} className="w-full sm:w-auto px-10 py-4 md:py-5 bg-brand-blue text-white rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 shadow-2xl shadow-brand-blue/40 hover:scale-105 active:scale-95 transition-all">
+                      {isSubmitting ? 'Syncing...' : (isEditMode ? 'Update Changes' : 'Deploy to Live')} <Save size={18} />
                     </button>
                   )}
                 </div>

@@ -19,7 +19,6 @@ const AdminUserManagement = () => {
 
   const handleToggleStatus = async (id) => {
     await toggleUserStatus(id);
-    // Sync the sidebar state if the toggled user is the one currently being viewed
     if (selectedUser?.id === id) {
       setSelectedUser(prev => ({
         ...prev,
@@ -35,7 +34,6 @@ const AdminUserManagement = () => {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6 px-4 md:px-0">
-      {/* Search and Filter Bar */}
       <div className="flex flex-col md:flex-row gap-4 justify-between items-center bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
         <div className="relative w-full md:w-96">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
@@ -51,13 +49,11 @@ const AdminUserManagement = () => {
         </button>
       </div>
 
-      {/* Content Area */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden min-h-[300px]">
         {isLoading ? (
           <div className="p-20 flex justify-center"><RefreshCcw className="animate-spin text-brand-blue" size={32} /></div>
         ) : (
           <>
-            {/* Desktop Table View */}
             <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
@@ -104,7 +100,6 @@ const AdminUserManagement = () => {
               </table>
             </div>
 
-            {/* Mobile List View */}
             <div className="md:hidden divide-y divide-slate-100">
               {filteredStudents.map((user) => (
                 <div 
@@ -136,7 +131,6 @@ const AdminUserManagement = () => {
         )}
       </div>
 
-      {/* User Detail Sidebar */}
       <AnimatePresence>
         {isModalOpen && selectedUser && (
           <>
@@ -184,7 +178,7 @@ const AdminUserManagement = () => {
                   <span className="text-xs md:text-sm font-medium">Joined {selectedUser.created_at ? new Date(selectedUser.created_at).toLocaleDateString('en-US', { month: 'long', day: '2-digit', year: 'numeric' }) : 'Recent'}</span>
                 </div>
                 <div className="flex items-center gap-4 text-slate-500">
-                  <開 CreditCard size={18} />
+                  <CreditCard size={18} />
                   <span className="text-xs md:text-sm font-medium">Tier: Standard Access</span>
                 </div>
               </div>

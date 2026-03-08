@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation, Navigate, useNavigate, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation, Navigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LayoutDashboard, BookOpen, Award, X, Menu, LogOut, ChevronRight, User, ShieldCheck } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Award, X, Menu, LogOut, ChevronRight, User } from 'lucide-react';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import Features from './components/Features';
@@ -18,6 +18,7 @@ import ExamsHub from './pages/ExamsHub';
 import AdminDashboard from './pages/AdminDashboard'; 
 import AdminLogin from './pages/AdminLogin'; 
 import { useAuthStore } from './context/authStore';
+import ErrorBoundary from './components/ErrorBoundary'; // Added this
 
 const ScrollToTop = () => {
   const { pathname } = useLocation();
@@ -105,7 +106,6 @@ const AppLayout = ({ darkMode, setDarkMode }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const location = useLocation();
   
-  // Cleaned up UI logic to handle the Course Player and Exam routes correctly
   const isMinimalUI = ['/dashboard', '/checkout', '/course', '/exam', '/courses', '/exams'].some(path => location.pathname.startsWith(path));
   const isAdminArea = location.pathname.startsWith('/admin');
   const isFocusMode = location.pathname.startsWith('/exam/') || location.pathname.startsWith('/checkout/') || location.pathname.startsWith('/course/');
@@ -129,21 +129,24 @@ const AppLayout = ({ darkMode, setDarkMode }) => {
         (isFocusMode || isAdminArea) ? "pl-0" : 
         "lg:pl-80"
       }`}>
-        <Routes>
-          <Route path="/" element={<><Hero /><Features /><Mentors /><Contact /></>} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
-          
-          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-          <Route path="/courses" element={<ProtectedRoute><CoursesPage /></ProtectedRoute>} />
-          <Route path="/checkout/:courseId" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
-          <Route path="/course/:courseId" element={<ProtectedRoute><CoursePlayer /></ProtectedRoute>} />
-          <Route path="/exam/:courseId" element={<ProtectedRoute><ExamPage /></ProtectedRoute>} />
-          <Route path="/exams" element={<ProtectedRoute><ExamsHub /></ProtectedRoute>} />
+        {/* Wrap Routes in ErrorBoundary to catch page-level crashes */}
+        <ErrorBoundary>
+          <Routes>
+            <Route path="/" element={<><Hero /><Features /><Mentors /><Contact /></>} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
+            
+            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/courses" element={<ProtectedRoute><CoursesPage /></ProtectedRoute>} />
+            <Route path="/checkout/:courseId" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
+            <Route path="/course/:courseId" element={<ProtectedRoute><CoursePlayer /></ProtectedRoute>} />
+            <Route path="/exam/:courseId" element={<ProtectedRoute><ExamPage /></ProtectedRoute>} />
+            <Route path="/exams" element={<ProtectedRoute><ExamsHub /></ProtectedRoute>} />
 
-          <Route path="/admin/login" element={<AdminLogin />} />
-          <Route path="/admin/dashboard" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
-        </Routes>
+            <Route path="/admin/login" element={<AdminLogin />} />
+            <Route path="/admin/dashboard" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+          </Routes>
+        </ErrorBoundary>
       </div>
 
       {!isMinimalUI && !isAdminArea && (

@@ -18,16 +18,13 @@ const AdminDashboard = () => {
   const { students, revenue } = useAdminStore(); 
   const { courses } = useCourseStore();
 
-  // Derived: Live Star Performer Data
   const starPerformer = useMemo(() => {
     if (!students || students.length === 0) return null;
-    const topStudent = [...students].sort((a, b) => {
+    return [...students].sort((a, b) => {
       const aMax = Math.max(...(a.examResults?.map(r => r.score) || [0]));
       const bMax = Math.max(...(b.examResults?.map(r => r.score) || [0]));
       return bMax - aMax;
     })[0];
-    
-    return topStudent;
   }, [students]);
 
   const allPending = courses.reduce((acc, course) => {
@@ -56,7 +53,6 @@ const AdminDashboard = () => {
             <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight">Command Center</h1>
             <p className="text-slate-500 text-[9px] md:text-[10px] mt-1 uppercase font-bold tracking-widest opacity-60">City Cruise Professional Ecosystem</p>
           </div>
-          {/* Mobile Menu Toggle */}
           <button 
             className="xl:hidden p-3 bg-white rounded-xl shadow-sm border border-slate-200 text-slate-600 active:scale-95 transition-all" 
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -65,7 +61,6 @@ const AdminDashboard = () => {
           </button>
         </div>
         
-        {/* Desktop & Mobile Navigation */}
         <div className={`${isMobileMenuOpen ? 'flex' : 'hidden'} xl:flex flex-col md:flex-row bg-slate-200/50 p-1.5 rounded-2xl w-full xl:w-fit backdrop-blur-md border border-white/50 shadow-sm gap-1`}>
           {tabs.map((tab) => (
             <button
@@ -90,7 +85,6 @@ const AdminDashboard = () => {
       <AnimatePresence mode="wait">
         {activeTab === 'overview' && (
           <motion.div key="ov" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-6 md:space-y-8">
-            {/* Stats Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
               {stats.map((stat, i) => (
                 <div key={i} className="bg-white p-6 md:p-8 rounded-[24px] md:rounded-[32px] border border-slate-200 shadow-sm flex items-center justify-between group hover:border-brand-blue/30 transition-all">
@@ -109,7 +103,6 @@ const AdminDashboard = () => {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
-              {/* System Pulse Log */}
               <div className="lg:col-span-2 bg-white rounded-[24px] md:rounded-[32px] border border-slate-200 shadow-sm overflow-hidden order-2 lg:order-1">
                 <div className="p-6 md:p-8 border-b border-slate-100 flex flex-wrap justify-between items-center gap-4 bg-white">
                   <h3 className="font-bold text-slate-900 flex items-center gap-3">
@@ -143,7 +136,6 @@ const AdminDashboard = () => {
                 </div>
               </div>
 
-              {/* Star Performer Section */}
               <div className="bg-brand-blue rounded-[32px] md:rounded-[40px] p-8 md:p-10 text-white shadow-2xl shadow-brand-blue/30 relative overflow-hidden group order-1 lg:order-2">
                 <div className="relative z-10 h-full flex flex-col">
                   <p className="text-blue-200 text-[10px] font-black uppercase tracking-[0.3em] mb-6">Star Performer</p>

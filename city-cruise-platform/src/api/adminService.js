@@ -10,9 +10,27 @@ export const adminCreateCourse = async (formData) => {
     return response.data;
 };
 
+export const adminUpdateCourse = async (courseId, formData) => {
+    const response = await apiClient.patch(`/admin/courses/${courseId}`, formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    });
+    return response.data;
+};
+
 // Lessons
 export const adminCreateLesson = async (courseId, formData) => {
     const response = await apiClient.post(`/admin/courses/${courseId}/lessons`, formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    });
+    return response.data;
+};
+
+export const adminUpdateLesson = async (lessonId, formData) => {
+    const response = await apiClient.patch(`/admin/lessons/${lessonId}`, formData, {
         headers: {
             'Content-Type': 'multipart/form-data',
         },
