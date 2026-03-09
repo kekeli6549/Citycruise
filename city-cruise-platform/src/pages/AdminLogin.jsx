@@ -12,14 +12,14 @@ const AdminLogin = () => {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    
+
     if (!email || !password) return;
 
     const result = await login({ email, password });
-    
+
     if (result.success) {
       const currentUser = useAuthStore.getState().user;
-      
+
       if (currentUser?.role === 'admin') {
         navigate('/admin/dashboard');
       } else {
@@ -31,7 +31,7 @@ const AdminLogin = () => {
 
   return (
     <div className="min-h-screen bg-white flex items-center justify-center p-6">
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="max-w-md w-full"
@@ -52,9 +52,9 @@ const AdminLogin = () => {
 
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <input 
-              type="email" 
-              placeholder="Admin Email" 
+            <input
+              type="email"
+              placeholder="Admin Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm outline-none focus:ring-2 ring-slate-200 transition-all font-medium"
@@ -62,16 +62,16 @@ const AdminLogin = () => {
             />
           </div>
           <div>
-            <input 
-              type="password" 
-              placeholder="Security Password" 
+            <input
+              type="password"
+              placeholder="Security Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm outline-none focus:ring-2 ring-slate-200 transition-all font-medium"
               required
             />
           </div>
-          <button 
+          <button
             type="submit"
             disabled={isLoading}
             className="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold text-xs uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-slate-800 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-slate-100"
@@ -79,7 +79,7 @@ const AdminLogin = () => {
             {isLoading ? 'Authenticating...' : 'Authenticate'} <ArrowRight size={16} />
           </button>
         </form>
-        
+
         <p className="text-center text-[10px] text-slate-300 uppercase tracking-widest mt-10">
           Encrypted Connection &bull; Terminal 01
         </p>

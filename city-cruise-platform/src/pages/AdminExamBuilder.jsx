@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus, Trash2, CheckCircle2, HelpCircle,
@@ -25,6 +25,10 @@ const AdminExamBuilder = () => {
   ]);
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [gradingScore, setGradingScore] = useState("");
+
+  useEffect(() => {
+    fetchCourses();
+  }, [courses]);
 
   const allPending = courses.reduce((acc, course) => {
     const pending = (course.submissions || [])
