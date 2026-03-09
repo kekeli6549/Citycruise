@@ -74,8 +74,8 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
             {user?.profilePic ? <img src={user.profilePic} className="w-full h-full object-cover" alt="Profile" /> : <User size={18} className="text-brand-blue" />}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-heading font-bold dark:text-white uppercase tracking-tight truncate">{user?.firstName || 'Innovator'}</p>
-            <p className="text-[9px] font-mono text-slate-400 uppercase">Premium Member</p>
+            <p className="text-xs font-heading font-bold dark:text-white uppercase tracking-tight truncate">{user?.username || 'Innovator'}</p>
+            <p className="text-[9px] font-mono text-slate-400 uppercase">Standard Member</p>
           </div>
         </div>
         <button onClick={logout} className="w-full flex items-center justify-center gap-3 p-4 rounded-2xl border border-red-100 dark:border-red-900/30 text-red-500 font-bold text-[10px] uppercase tracking-widest hover:bg-red-50 dark:hover:bg-red-900/10 transition-all"><LogOut size={14} /> End Session</button>

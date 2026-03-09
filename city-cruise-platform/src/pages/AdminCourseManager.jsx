@@ -54,7 +54,8 @@ const AdminCourseManager = () => {
   const handleCreateDiscipline = async () => {
     if (!newDisciplineName.trim()) return;
     try {
-      await addCategory(newDisciplineName);
+      const tag = newDisciplineName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+      await addCategory(newDisciplineName, tag);
       setNewCourseData({ ...newCourseData, category: newDisciplineName });
       setNewDisciplineName("");
       setIsAddingDiscipline(false);
@@ -134,11 +135,20 @@ const AdminCourseManager = () => {
     setCurrentLesson({ title: '', summary: '', videoUrl: '', resources: [] });
   };
 
-  const removeLesson = (id) => {
+  const removeLesson = async (id) => {
     setNewCourseData({
       ...newCourseData,
       lessons: newCourseData.lessons.filter(l => l.id !== id)
     });
+
+    if (typeof id !== 'number') {
+      try {
+        const { deleteLesson } = useCourseStore.getState();
+        await deleteLesson(id);
+      } catch (err) {
+        console.error("Failed to delete lesson from database", err);
+      }
+    }
   };
 
   const handleSaveCourse = async () => {
@@ -218,12 +228,12 @@ const AdminCourseManager = () => {
               )}
               <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
               <div className="absolute top-4 left-4 flex flex-wrap gap-2 pr-4">
-                <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest backdrop-blur-md shadow-lg ${course.status === 'Published' ? 'bg-emerald-500 text-white' : 'bg-slate-900/80 text-white'}`}>
-                  {course.status || 'Draft'}
+                <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest backdrop-blur-md shadow-lg ${course.status === 'active' || course.status === 'Published' ? 'bg-emerald-500 text-white' : 'bg-slate-900/80 text-white'}`}>
+                  {course.status === 'active' || course.status === 'Published' ? 'Active' : 'Inactive'}
                 </span>
               </div>
 
-              {course.status === 'Draft' && (
+              {(course.status === 'Inactive' || course.status === 'inactive' || course.status === 'Draft') && (
                 <button 
                   onClick={() => openDeleteModal(course.id, course.title)}
                   className="absolute top-4 right-4 p-2.5 bg-white/90 backdrop-blur-md text-red-500 rounded-xl shadow-lg hover:bg-red-500 hover:text-white transition-all z-10"
@@ -245,7 +255,13 @@ const AdminCourseManager = () => {
                 <button onClick={() => handleEditClick(course)} className="flex-1 flex items-center justify-center gap-2 py-3.5 bg-slate-50 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-100 transition-all">
                   <Edit2 size={14} /> Edit
                 </button>
-                <button onClick={() => toggleStatus(course.id)} className={`p-3.5 rounded-xl transition-all ${course.status === 'Published' ? 'text-red-500 bg-red-50 hover:bg-red-100' : 'text-emerald-500 bg-emerald-50 hover:bg-emerald-100'}`}>
+                <button 
+                  onClick={() => {
+                    const newStatus = (course.status === 'Published' || course.status === 'active') ? 'inactive' : 'active';
+                    toggleStatus(course.id, newStatus);
+                  }} 
+                  className={`p-3.5 rounded-xl transition-all ${course.status === 'Published' || course.status === 'active' ? 'text-red-500 bg-red-50 hover:bg-red-100' : 'text-emerald-500 bg-emerald-50 hover:bg-emerald-100'}`}
+                >
                   <Power size={18} />
                 </button>
               </div>
@@ -333,7 +349,7 @@ const AdminCourseManager = () => {
                             >
                                 <option value="" disabled>Select Discipline</option>
                                 {categories.map(cat => (
-                                    <option key={cat.id} value={cat.name}>{cat.name}</option>
+                                    <option key={cat.id} value={cat.category_tag}>{cat.NAME}</option>
                                 ))}
                             </select>
                         )}

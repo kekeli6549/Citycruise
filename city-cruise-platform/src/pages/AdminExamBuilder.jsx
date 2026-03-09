@@ -4,7 +4,12 @@ import {
   Plus, Trash2, CheckCircle2, HelpCircle,
   FileText, AlignLeft, Layers, AlertCircle, Send, ChevronDown
 } from 'lucide-react';
-import { createExam, addQuestion as apiAddQuestion } from '../api/adminService';
+import {
+  createExam,
+  addQuestion as apiAddQuestion,
+  adminUpdateExam,
+  adminGetExamDetails
+} from '../api/adminService';
 import { useCourseStore } from '../context/courseStore';
 import { useAdminStore } from '../context/adminStore';
 import { useAuthStore } from '../context/authStore';
@@ -16,19 +21,58 @@ const AdminExamBuilder = () => {
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-
   const [view, setView] = useState('builder');
-  const [selectedCourseId, setSelectedCourseId] = useState('');
-  const [questions, setQuestions] = useState([
-    { id: 1, type: 'objective', text: 'What is the primary goal of Global Strategy?', options: ['Profit', 'Expansion', 'Sustainability', 'All of above'], correct_option: 3 },
-    { id: 2, type: 'theory', text: 'Explain the impact of Diaspora investment on local emerging markets.', points: 20 }
-  ]);
+  const [selectedCourseId, setSelectedCourseId] = useState(courses[0]?.id);
+  const [examId, setExamId] = useState(null);
+  const [passPercentage, setPassPercentage] = useState(70);
+
+  const dummyQuestions = [
+    { id: 1, type: 'objective', text: 'Objective: Identify the fundamental principle that governs the primary objective of this module.', options: ['Core Principle A', 'Secondary Theory B', 'Hybrid Approach C', 'All of the above'], correct_option: 3 },
+    { id: 2, type: 'theory', text: 'Theory: Synthesize the relationship between the theoretical frameworks discussed and their practical implementation in a professional ecosystem.', points: 20 }
+  ];
+
+  const [questions, setQuestions] = useState(dummyQuestions);
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [gradingScore, setGradingScore] = useState("");
 
   useEffect(() => {
     fetchCourses();
-  }, [courses]);
+  }, []);
+
+  useEffect(() => {
+    if (selectedCourseId) {
+      const fetchExam = async () => {
+        setIsLoading(true);
+        try {
+          const examData = await adminGetExamDetails(selectedCourseId);
+          // Standardize data extraction
+          const data = examData.data || examData;
+          const exam = data.exam || data;
+          const fetchedQuestions = data.questions || exam.questions || [];
+
+          if (exam && exam.id) {
+            setExamId(exam.id);
+            setPassPercentage(exam.pass_percentage || 70);
+            const standardizedQuestions = fetchedQuestions.map(q => ({
+              ...q,
+              text: q.question_text || q.text || ''
+            }));
+            setQuestions(standardizedQuestions.length > 0 ? standardizedQuestions : dummyQuestions);
+          } else {
+            setExamId(null);
+            setQuestions(dummyQuestions);
+          }
+        } catch (err) {
+          console.error("No exam found or error fetching exam", err);
+          setExamId(null);
+          setQuestions(dummyQuestions);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      fetchExam();
+    }
+  }, [selectedCourseId]);
 
   const allPending = courses.reduce((acc, course) => {
     const pending = (course.submissions || [])
@@ -49,29 +93,43 @@ const AdminExamBuilder = () => {
     const targetCourse = courses.find(c => String(c.id) === String(selectedCourseId));
     if (!targetCourse) return alert("Please select a valid course.");
     if (questions.length === 0) return alert("Please add at least one question.");
-    
+
     setIsLoading(true);
     try {
-      const examResponse = await createExam(selectedCourseId, {
-        title: `${targetCourse.title} Final Assessment`,
-        duration: 30,
-        passPercentage: 70
-      });
-      
-      const examId = examResponse.data?.id || examResponse.id;
-      
-      for (const q of questions) {
-        await apiAddQuestion(examId, {
-          question_text: q.text,
-          type: q.type,
-          options: q.type === 'objective' ? q.options : [],
-          correct_option: q.type === 'objective' ? q.correct_option : 0,
+      if (examId) {
+        // Update existing exam
+        await adminUpdateExam(examId, {
+          passPercentage,
+          questions: questions.map(q => ({
+            question_text: q.text,
+            type: q.type,
+            options: q.type === 'objective' ? q.options : [],
+            correct_option: q.type === 'objective' ? q.correct_option : 0,
+            points: q.type === 'theory' ? (q.points || 10) : 0
+          }))
         });
+        alert(`Success: Exam updated!`);
+      } else {
+        // Create new exam
+        const examResponse = await createExam(selectedCourseId, {
+          passPercentage
+        });
+
+        const newExamId = examResponse.data?.id || examResponse.id;
+
+        for (const q of questions) {
+          await apiAddQuestion(newExamId, {
+            question_text: q.text,
+            type: q.type,
+            options: q.type === 'objective' ? q.options : [],
+            correct_option: q.type === 'objective' ? q.correct_option : 0,
+            points: q.type === 'theory' ? (q.points || 10) : 0
+          });
+        }
+        setExamId(newExamId);
+        alert(`Success: Exam published!`);
       }
-      
-      alert(`Success: Exam published!`);
       fetchCourses();
-      setQuestions([]);
     } catch (err) {
       setError(err.response?.data?.message || "Failed to sync exam.");
     } finally {
@@ -107,8 +165,17 @@ const AdminExamBuilder = () => {
             <select value={selectedCourseId} onChange={(e) => setSelectedCourseId(e.target.value)} className="w-full sm:w-auto p-2.5 bg-slate-50 border border-slate-100 rounded-xl text-[10px] font-black uppercase tracking-widest outline-none text-slate-600">
               {courses.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
             </select>
-            <button 
-              onClick={handlePublishExam} 
+            <div className="flex items-center gap-2 bg-slate-50 border border-slate-100 px-3 py-1.5 rounded-xl">
+              <span className="text-[10px] font-black uppercase text-slate-400">Pass %</span>
+              <input
+                type="number"
+                value={passPercentage}
+                onChange={(e) => setPassPercentage(parseInt(e.target.value))}
+                className="w-12 bg-transparent text-[10px] font-black text-brand-blue outline-none border-none p-0"
+              />
+            </div>
+            <button
+              onClick={handlePublishExam}
               disabled={isLoading}
               className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 bg-emerald-500 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50"
             >

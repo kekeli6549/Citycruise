@@ -1,6 +1,14 @@
 import { create } from 'zustand';
 import { getAllCourses, getCourseById, getMyCourses } from '../api/courseService';
-import { adminGetCategories, adminCreateCategory, adminDeleteCategory, adminDeleteCourse } from '../api/adminService';
+import { 
+  adminGetCategories, 
+  adminCreateCategory, 
+  adminDeleteCategory, 
+  adminDeleteCourse, 
+  adminToggleCourseStatus,
+  adminDeleteLesson,
+  adminGetCourses
+} from '../api/adminService';
 
 export const useCourseStore = create((set, get) => ({
   courses: [],
@@ -23,7 +31,8 @@ export const useCourseStore = create((set, get) => ({
   fetchCourses: async () => {
     set({ isLoading: true, error: null });
     try {
-      const data = await getAllCourses();
+      // Use admin endpoint for comprehensive list if available
+      const data = await adminGetCourses();
       set({ 
         courses: (data.data || data).map(c => ({
           ...c,
@@ -44,16 +53,15 @@ export const useCourseStore = create((set, get) => ({
   fetchCategories: async () => {
     try {
       const data = await adminGetCategories();
-      // Only set if we actually get a response to avoid 404 UI breaks
-      if (data) set({ categories: data.data || data });
+      set({ categories: data.data || data }); 
     } catch (err) {
       console.warn("Categories endpoint not found or server error", err.message);
     }
   },
 
-  addCategory: async (name) => {
+  addCategory: async (name, tag) => {
     try {
-      const data = await adminCreateCategory(name);
+      const data = await adminCreateCategory(name, tag);
       const newCat = data.data || data;
       set((state) => ({ categories: [...state.categories, newCat] }));
     } catch (err) {
@@ -87,11 +95,20 @@ export const useCourseStore = create((set, get) => ({
     courses: state.courses.map((c) => (c.id === id ? { ...c, ...updates } : c)),
   })),
 
-  toggleStatus: (id) => set((state) => ({
-    courses: state.courses.map((c) => 
-      c.id === id ? { ...c, status: c.status === 'Published' ? 'Draft' : 'Published' } : c
-    ),
-  })),
+  toggleStatus: async (id, status) => {
+    set({ isLoading: true, error: null });
+    try {
+      await adminToggleCourseStatus(id, status);
+      set((state) => ({
+        courses: state.courses.map((c) => 
+          c.id === id ? { ...c, status: status } : c
+        ),
+        isLoading: false
+      }));
+    } catch (err) {
+      set({ error: err.message, isLoading: false });
+    }
+  },
 
   deleteCourse: async (id) => {
     try {
@@ -99,6 +116,16 @@ export const useCourseStore = create((set, get) => ({
       set((state) => ({
         courses: state.courses.filter((c) => c.id !== id)
       }));
+    } catch (err) {
+      throw err;
+    }
+  },
+
+  deleteLesson: async (lessonId) => {
+    try {
+      await adminDeleteLesson(lessonId);
+      // We don't have a lessons list in the store, but we might need to refresh course details
+      // or the component will handle the local state update.
     } catch (err) {
       throw err;
     }

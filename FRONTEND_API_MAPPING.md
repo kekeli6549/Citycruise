@@ -82,8 +82,6 @@ All API responses follow this consistent structure:
   | `title` | string | Lesson title |
   | `content` | string | Markdown/HTML content |
   | `video_link` | string | External video URL (fallback) |
-  <!-- | `video_id` | string | Bunny.net Video ID (for player) |
-  | `library_id` | string | Bunny.net Library ID (for player) | -->
 
 ### 5. Mark Lesson Complete
 - **Endpoint:** `POST /lessons/:id/complete`
@@ -151,9 +149,6 @@ All API responses follow this consistent structure:
   | `content` | string | Required |
   | `orderIndex`| integer| Required |
   | `video_link` | string | (Optional) External video URL mostly like youtube link |
-  | `video` | file | (Optional) Direct upload to Bunny.net |
-  | `videoId` | string | (Optional) Manual Bunny.net ID |
-  | `libraryId`| string | (Optional) Manual Bunny.net ID |
 
 ### 3. Exam Grading Flow
 - **Fetch Pending:** `GET /admin/exams/pending`

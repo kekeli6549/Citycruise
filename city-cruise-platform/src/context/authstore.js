@@ -10,12 +10,6 @@ export const useAuthStore = create(
       isLoading: false,
       error: null,
       
-      purchasedCourses: [],
-      completedCourses: [],
-      completedLessons: [],
-      certificates: [],
-      examResults: [],
-      activityLog: [],
 
       signup: async (formData) => {
         set({ isLoading: true, error: null });
@@ -26,8 +20,6 @@ export const useAuthStore = create(
             user: userData, 
             isAuthenticated: true, 
             isLoading: false,
-            purchasedCourses: userData.purchasedCourses || [],
-            completedCourses: userData.completedCourses || []
           });
           return { success: true };
         } catch (err) {
@@ -46,12 +38,7 @@ export const useAuthStore = create(
             user: userData,
             token: response.data.token || response.token,
             isAuthenticated: true,
-            isLoading: false,
-            purchasedCourses: userData.purchasedCourses || [],
-            completedCourses: userData.completedCourses || [],
-            completedLessons: userData.completedLessons || [],
-            certificates: userData.certificates || [],
-            examResults: userData.examResults || [],
+            isLoading: false,           
           });
           return { success: true };
         } catch (err) {

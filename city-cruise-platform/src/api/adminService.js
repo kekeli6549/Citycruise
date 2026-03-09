@@ -19,6 +19,11 @@ export const adminUpdateCourse = async (courseId, formData) => {
     return response.data;
 };
 
+export const adminGetCourses = async () => {
+    const response = await apiClient.get('/admin/courses');
+    return response.data;
+};
+
 export const adminDeleteCourse = async (courseId) => {
     const response = await apiClient.delete(`/admin/courses/${courseId}`);
     return response.data;
@@ -43,14 +48,18 @@ export const adminUpdateLesson = async (lessonId, formData) => {
     return response.data;
 };
 
-// Categories / Disciplines
-export const adminGetCategories = async () => {
-    const response = await apiClient.get('/admin/categories');
+export const adminDeleteLesson = async (lessonId) => {
+    const response = await apiClient.delete(`/admin/lessons/${lessonId}`);
     return response.data;
 };
 
-export const adminCreateCategory = async (name) => {
-    const response = await apiClient.post('/admin/categories', { name });
+export const adminGetCategories = async () => {
+    const response = await apiClient.get('/categories');
+    return response.data;
+};
+
+export const adminCreateCategory = async (name, tag) => {
+    const response = await apiClient.post('/admin/categories', { name, tag });
     return response.data;
 };
 
@@ -80,12 +89,42 @@ export const createExam = async (courseId, examData) => {
     return response.data;
 };
 
+export const adminGetExamDetails = async (courseId) => {
+    const response = await apiClient.get(`/courses/${courseId}/exam`);
+    return response.data;
+};
+
 export const addQuestion = async (examId, questionData) => {
     const response = await apiClient.post(`/admin/exams/${examId}/questions`, questionData);
     return response.data;
 };
 
-export const getStudents = async () => {
-    const response = await apiClient.get('/admin/users');
+export const adminUpdateExam = async (examId, examData) => {
+    const response = await apiClient.patch(`/admin/exams/${examId}`, examData);
+    return response.data;
+};
+
+export const getStudents = async (query = '', limit = 20, offset = 0) => {
+    const response = await apiClient.get(`/admin/users?q=${query}&limit=${limit}&offset=${offset}`);
+    return response.data;
+};
+
+export const adminToggleUserStatus = async (userId, isActive) => {
+    const response = await apiClient.patch(`/admin/users/${userId}/status`, { isActive });
+    return response.data;
+};
+
+export const adminGetStats = async () => {
+    const response = await apiClient.get('/admin/stats');
+    return response.data;
+};
+
+export const adminGetActivityLogs = async (limit = 50, offset = 0) => {
+    const response = await apiClient.get(`/admin/activity-logs?limit=${limit}&offset=${offset}`);
+    return response.data;
+};
+
+export const adminToggleCourseStatus = async (courseId, status) => {
+    const response = await apiClient.patch(`/admin/courses/${courseId}/status`, { status });
     return response.data;
 };

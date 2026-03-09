@@ -22,20 +22,18 @@ const AdminUserManagement = () => {
   const handleToggleStatus = async () => {
     if (!selectedUser) return;
     const userId = selectedUser.id;
-    await toggleUserStatus(userId);
+    const targetStatus = !selectedUser.isActive;
+    await toggleUserStatus(userId, targetStatus);
     
     // Update local state for immediate feedback
     setSelectedUser(prev => ({
       ...prev,
-      status: prev.status === 'Banned' ? 'Active' : 'Banned'
+      isActive: targetStatus
     }));
     setIsConfirmOpen(false);
   };
 
-  const filteredStudents = (students || []).filter(u => 
-    u.username?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    u.email?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredStudents = students || [];
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6 px-4 md:px-0">
@@ -46,7 +44,12 @@ const AdminUserManagement = () => {
             type="text"
             placeholder="Search students..."
             className="w-full pl-12 pr-4 py-3 bg-slate-50 border-none rounded-xl text-sm focus:ring-2 ring-brand-blue/20 outline-none transition-all"
-            onChange={(e) => setSearchTerm(e.target.value)}
+            value={searchTerm}
+            onChange={(e) => {
+              const val = e.target.value;
+              setSearchTerm(val);
+              fetchStudents(val);
+            }}
           />
         </div>
         <button className="w-full md:w-auto flex items-center justify-center gap-2 px-5 py-3 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 transition-all">
@@ -84,8 +87,8 @@ const AdminUserManagement = () => {
                         </div>
                       </td>
                       <td className="p-5">
-                        <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${user.status === 'Active' || !user.status ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
-                          {user.status || 'Active'}
+                        <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${user.isActive !== false ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
+                          {user.isActive !== false ? 'Active' : 'Banned'}
                         </span>
                       </td>
                       <td className="p-5 text-sm text-slate-500 font-medium">
@@ -119,8 +122,8 @@ const AdminUserManagement = () => {
                     <div className="min-w-0">
                       <p className="text-sm font-bold text-slate-900 truncate">{user.username}</p>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className={`w-1.5 h-1.5 rounded-full ${user.status === 'Active' || !user.status ? 'bg-emerald-500' : 'bg-red-500'}`}></span>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">{user.status || 'Active'}</p>
+                        <span className={`w-1.5 h-1.5 rounded-full ${user.isActive !== false ? 'bg-emerald-500' : 'bg-red-500'}`}></span>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">{user.isActive !== false ? 'Active' : 'Banned'}</p>
                       </div>
                     </div>
                   </div>
@@ -194,9 +197,9 @@ const AdminUserManagement = () => {
                 </button>
                 <button 
                   onClick={() => setIsConfirmOpen(true)} 
-                  className={`w-full flex items-center justify-center gap-3 py-4 rounded-2xl font-bold text-xs uppercase tracking-widest transition-all ${selectedUser.status === 'Banned' ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100' : 'bg-red-50 text-red-600 hover:bg-red-100'}`}
+                  className={`w-full flex items-center justify-center gap-3 py-4 rounded-2xl font-bold text-xs uppercase tracking-widest transition-all ${selectedUser.isActive === false ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100' : 'bg-red-50 text-red-600 hover:bg-red-100'}`}
                 >
-                  {selectedUser.status === 'Banned' ? <><CheckCircle2 size={16} /> Activate Access</> : <><Ban size={16} /> Restrict Access</>}
+                  {selectedUser.isActive === false ? <><CheckCircle2 size={16} /> Activate Access</> : <><Ban size={16} /> Restrict Access</>}
                 </button>
               </div>
             </motion.div>
@@ -208,10 +211,10 @@ const AdminUserManagement = () => {
         isOpen={isConfirmOpen}
         onClose={() => setIsConfirmOpen(false)}
         onConfirm={handleToggleStatus}
-        title={selectedUser?.status === 'Banned' ? "Reactivate User?" : "Restrict Access?"}
-        message={selectedUser?.status === 'Banned' ? `You are about to restore full access for ${selectedUser?.username}.` : `You are about to ban ${selectedUser?.username}. They will no longer be able to access their courses.`}
-        confirmText={selectedUser?.status === 'Banned' ? "Restore Access" : "Restrict Now"}
-        type={selectedUser?.status === 'Banned' ? 'warning' : 'danger'}
+        title={selectedUser?.isActive === false ? "Reactivate User?" : "Restrict Access?"}
+        message={selectedUser?.isActive === false ? `You are about to restore full access for ${selectedUser?.username}.` : `You are about to ban ${selectedUser?.username}. They will no longer be able to access their courses.`}
+        confirmText={selectedUser?.isActive === false ? "Restore Access" : "Restrict Now"}
+        type={selectedUser?.isActive === false ? 'warning' : 'danger'}
       />
     </motion.div>
   );
