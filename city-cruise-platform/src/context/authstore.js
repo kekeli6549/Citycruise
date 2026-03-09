@@ -5,13 +5,11 @@ import { registerUser, loginUser } from '../api/authService';
 export const useAuthStore = create(
   persist(
     (set) => ({
-      // --- INITIAL STATE ---
       user: null,
       isAuthenticated: false,
       isLoading: false,
       error: null,
       
-      // Separate lists for local tracking (can be synced with API later)
       purchasedCourses: [],
       completedCourses: [],
       completedLessons: [],
@@ -24,12 +22,10 @@ export const useAuthStore = create(
         try {
           const response = await registerUser(formData);
           const userData = response.data?.user || response.data;
-
           set({ 
             user: userData, 
             isAuthenticated: true, 
             isLoading: false,
-            // Ensure lists aren't wiped out on signup
             purchasedCourses: userData.purchasedCourses || [],
             completedCourses: userData.completedCourses || []
           });
@@ -45,9 +41,7 @@ export const useAuthStore = create(
         set({ isLoading: true, error: null });
         try {
           const response = await loginUser(credentials);
-          
           const userData = response.data?.user || response; 
-          
           set({
             user: userData,
             token: response.data.token || response.token,
@@ -59,7 +53,6 @@ export const useAuthStore = create(
             certificates: userData.certificates || [],
             examResults: userData.examResults || [],
           });
-
           return { success: true };
         } catch (err) {
           const message = err.response?.data?.message || "Invalid credentials";
@@ -83,7 +76,6 @@ export const useAuthStore = create(
         localStorage.removeItem('city-cruise-auth');
       },
 
-      // --- COURSE & ACTIVITY ACTIONS ---
       purchaseCourse: (courseId) => set((state) => {
         const newLog = {
           id: Date.now(),
@@ -124,18 +116,15 @@ export const useAuthStore = create(
           target: title,
           time: "Just now"
         };
-
         const updatedCertificates = passed
           ? [...new Set([...(state.certificates || []), courseId])]
           : state.certificates;
-
         const newResult = {
           courseId,
           score,
           passed,
           date: new Date().toISOString()
         };
-
         return {
           certificates: updatedCertificates,
           examResults: [newResult, ...(state.examResults || [])],
@@ -143,8 +132,6 @@ export const useAuthStore = create(
         };
       })
     }),
-    { 
-      name: 'city-cruise-auth',
-    }
+    { name: 'city-cruise-auth' }
   )
 );

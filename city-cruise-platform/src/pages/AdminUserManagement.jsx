@@ -1,34 +1,44 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search, Filter, ChevronRight, X, User,
   Calendar, CreditCard, Edit3, Ban, CheckCircle2, RefreshCcw
 } from 'lucide-react';
-import { useAdminStore } from '../context/adminStore'; // Live Store
+import { useAdminStore } from '../context/adminStore';
+import ConfirmationModal from '../components/ConfirmationModal';
 
 const AdminUserManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedUser, setSelectedUser] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
   const { students, toggleUserStatus, fetchStudents, isLoading } = useAdminStore();
 
-  React.useEffect(() => {
+  useEffect(() => {
     fetchStudents();
-  }, []);
+  }, [fetchStudents]);
 
-  const handleToggleStatus = (id) => {
-    toggleUserStatus(id);
-    if (selectedUser?.id === id) {
-      setSelectedUser(prev => ({
-        ...prev,
-        status: prev.status === 'Banned' ? 'Active' : 'Banned'
-      }));
-    }
+  const handleToggleStatus = async () => {
+    if (!selectedUser) return;
+    const userId = selectedUser.id;
+    await toggleUserStatus(userId);
+    
+    // Update local state for immediate feedback
+    setSelectedUser(prev => ({
+      ...prev,
+      status: prev.status === 'Banned' ? 'Active' : 'Banned'
+    }));
+    setIsConfirmOpen(false);
   };
 
+  const filteredStudents = (students || []).filter(u => 
+    u.username?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    u.email?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6 px-4 md:px-0">
       <div className="flex flex-col md:flex-row gap-4 justify-between items-center bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
         <div className="relative w-full md:w-96">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
@@ -39,7 +49,7 @@ const AdminUserManagement = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <button className="flex items-center gap-2 px-5 py-3 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 transition-all">
+        <button className="w-full md:w-auto flex items-center justify-center gap-2 px-5 py-3 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 transition-all">
           <Filter size={16} /> Filter
         </button>
       </div>
@@ -48,46 +58,39 @@ const AdminUserManagement = () => {
         {isLoading ? (
           <div className="p-20 flex justify-center"><RefreshCcw className="animate-spin text-brand-blue" size={32} /></div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-50/50 border-b border-slate-100">
-                  <th className="p-5 text-[10px] font-bold uppercase tracking-widest text-slate-400">Student</th>
-                  <th className="p-5 text-[10px] font-bold uppercase tracking-widest text-slate-400">Status</th>
-                  <th className="p-5 text-[10px] font-bold uppercase tracking-widest text-slate-400">Joined</th>
-                  <th className="p-5 text-[10px] font-bold uppercase tracking-widest text-slate-400 text-right">Profile</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {students
-                  .filter(u => u.username.toLowerCase().includes(searchTerm.toLowerCase()) || u.email.toLowerCase().includes(searchTerm.toLowerCase()))
-                  .map((user) => (
+          <>
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-50/50 border-b border-slate-100">
+                    <th className="p-5 text-[10px] font-bold uppercase tracking-widest text-slate-400">Student</th>
+                    <th className="p-5 text-[10px] font-bold uppercase tracking-widest text-slate-400">Status</th>
+                    <th className="p-5 text-[10px] font-bold uppercase tracking-widest text-slate-400">Joined</th>
+                    <th className="p-5 text-[10px] font-bold uppercase tracking-widest text-slate-400 text-right">Profile</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {filteredStudents.map((user) => (
                     <tr key={user.id} className="hover:bg-slate-50/50 transition-colors group">
                       <td className="p-5">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-brand-blue/10 flex items-center justify-center text-brand-blue font-bold text-xs">
+                          <div className="w-10 h-10 rounded-full bg-brand-blue/10 flex items-center justify-center text-brand-blue font-bold text-xs uppercase">
                             {user.username?.charAt(0) || 'U'}
                           </div>
-                          <div>
-                            <p className="text-sm font-bold text-slate-900">{user.username}</p>
-                            <p className="text-xs text-slate-400">{user.email}</p>
+                          <div className="min-w-0">
+                            <p className="text-sm font-bold text-slate-900 truncate">{user.username}</p>
+                            <p className="text-xs text-slate-400 truncate">{user.email}</p>
                           </div>
                         </div>
                       </td>
                       <td className="p-5">
-                        <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${user.status === 'Active' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'
-                          }`}>
+                        <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${user.status === 'Active' || !user.status ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
                           {user.status || 'Active'}
                         </span>
                       </td>
-                      <td className="p-5 text-sm text-slate-500 font-medium">{new Date(user.created_at).toLocaleString('en-US', {
-                        month: 'short',
-                        day: '2-digit',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        hour12: true
-                      }) || 'Recent'}</td>
+                      <td className="p-5 text-sm text-slate-500 font-medium">
+                        {user.created_at ? new Date(user.created_at).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }) : 'Recent'}
+                      </td>
                       <td className="p-5 text-right">
                         <button
                           onClick={() => { setSelectedUser(user); setIsModalOpen(true); }}
@@ -98,54 +101,101 @@ const AdminUserManagement = () => {
                       </td>
                     </tr>
                   ))}
-              </tbody>
-            </table>
-          </div>
+                </tbody>
+              </table>
+            </div>
+
+            <div className="md:hidden divide-y divide-slate-100">
+              {filteredStudents.map((user) => (
+                <div 
+                  key={user.id} 
+                  onClick={() => { setSelectedUser(user); setIsModalOpen(true); }}
+                  className="p-4 active:bg-slate-50 transition-colors flex items-center justify-between"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-12 h-12 rounded-xl bg-slate-50 flex items-center justify-center text-brand-blue font-bold text-sm uppercase shrink-0 border border-slate-100">
+                      {user.username?.charAt(0) || 'U'}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-slate-900 truncate">{user.username}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className={`w-1.5 h-1.5 rounded-full ${user.status === 'Active' || !user.status ? 'bg-emerald-500' : 'bg-red-500'}`}></span>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">{user.status || 'Active'}</p>
+                      </div>
+                    </div>
+                  </div>
+                  <ChevronRight size={18} className="text-slate-300" />
+                </div>
+              ))}
+            </div>
+
+            {filteredStudents.length === 0 && (
+              <div className="p-20 text-center text-slate-400 font-mono text-xs uppercase tracking-widest">No matching students found.</div>
+            )}
+          </>
         )}
       </div>
 
       <AnimatePresence>
         {isModalOpen && selectedUser && (
           <>
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsModalOpen(false)} className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[150]" />
-            <motion.div initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ type: 'spring', damping: 25, stiffness: 200 }} className="fixed right-0 top-0 h-full w-full max-w-md bg-white z-[151] shadow-2xl p-8 flex flex-col">
-              <div className="flex justify-between items-center mb-10">
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }} 
+              onClick={() => setIsModalOpen(false)} 
+              className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[150]" 
+            />
+            <motion.div 
+              initial={{ x: '100%' }} 
+              animate={{ x: 0 }} 
+              exit={{ x: '100%' }} 
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }} 
+              className="fixed right-0 top-0 h-full w-full max-w-md bg-white z-[151] shadow-2xl p-6 md:p-8 flex flex-col"
+            >
+              <div className="flex justify-between items-center mb-8 md:mb-10">
                 <h3 className="text-xl font-bold text-slate-900">User Intelligence</h3>
                 <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-slate-100 rounded-full transition-colors"><X size={20} /></button>
               </div>
 
-              <div className="flex flex-col items-center mb-10">
-                <div className="w-20 h-20 rounded-2xl bg-slate-50 flex items-center justify-center text-brand-blue mb-4 border border-slate-100 shadow-inner"><User size={40} /></div>
-                <h4 className="text-2xl font-bold text-slate-900">{selectedUser.username}</h4>
-                <p className="text-slate-400 text-sm">{selectedUser.email}</p>
+              <div className="flex flex-col items-center mb-8 md:mb-10">
+                <div className="w-20 h-20 rounded-2xl bg-slate-50 flex items-center justify-center text-brand-blue mb-4 border border-slate-100 shadow-inner">
+                  <User size={40} />
+                </div>
+                <h4 className="text-2xl font-bold text-slate-900 text-center">{selectedUser.username}</h4>
+                <p className="text-slate-400 text-sm break-all text-center px-4">{selectedUser.email}</p>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 mb-10">
-                <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100 text-center">
+              <div className="grid grid-cols-2 gap-4 mb-8 md:mb-10">
+                <div className="p-4 md:p-5 bg-slate-50 rounded-2xl border border-slate-100 text-center">
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Courses</p>
-                  <p className="text-xl font-black text-slate-900">{selectedUser.courses}</p>
+                  <p className="text-xl font-black text-slate-900">{selectedUser.courses || 0}</p>
                 </div>
-                <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100 text-center">
+                <div className="p-4 md:p-5 bg-slate-50 rounded-2xl border border-slate-100 text-center">
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Spent</p>
-                  <p className="text-xl font-black text-slate-900">${selectedUser.spent}</p>
+                  <p className="text-xl font-black text-slate-900">${selectedUser.spent || 0}</p>
                 </div>
               </div>
 
-              <div className="space-y-6">
-                <div className="flex items-center gap-4 text-slate-500"><Calendar size={18} /><span className="text-sm font-medium">Joined {new Date(selectedUser.created_at).toLocaleString('en-US', {
-                  month: 'short',
-                  day: '2-digit',
-                  year: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit',
-                  hour12: true
-                })}</span></div>
-                <div className="flex items-center gap-4 text-slate-500"><CreditCard size={18} /><span className="text-sm font-medium">Tier: Standard</span></div>
+              <div className="space-y-6 px-2">
+                <div className="flex items-center gap-4 text-slate-500">
+                  <Calendar size={18} />
+                  <span className="text-xs md:text-sm font-medium">Joined {selectedUser.created_at ? new Date(selectedUser.created_at).toLocaleDateString('en-US', { month: 'long', day: '2-digit', year: 'numeric' }) : 'Recent'}</span>
+                </div>
+                <div className="flex items-center gap-4 text-slate-500">
+                  <CreditCard size={18} />
+                  <span className="text-xs md:text-sm font-medium">Tier: Standard Access</span>
+                </div>
               </div>
 
               <div className="pt-8 border-t border-slate-100 mt-auto space-y-3">
-                <button className="w-full flex items-center justify-center gap-3 py-4 bg-slate-900 text-white rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg shadow-slate-200"><Edit3 size={16} /> Edit Profile</button>
-                <button onClick={() => handleToggleStatus(selectedUser.id)} className={`w-full flex items-center justify-center gap-3 py-4 rounded-2xl font-bold text-xs uppercase tracking-widest transition-all ${selectedUser.status === 'Banned' ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100' : 'bg-red-50 text-red-600 hover:bg-red-100'}`}>
+                <button className="w-full flex items-center justify-center gap-3 py-4 bg-slate-900 text-white rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg shadow-slate-200">
+                  <Edit3 size={16} /> Edit Profile
+                </button>
+                <button 
+                  onClick={() => setIsConfirmOpen(true)} 
+                  className={`w-full flex items-center justify-center gap-3 py-4 rounded-2xl font-bold text-xs uppercase tracking-widest transition-all ${selectedUser.status === 'Banned' ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100' : 'bg-red-50 text-red-600 hover:bg-red-100'}`}
+                >
                   {selectedUser.status === 'Banned' ? <><CheckCircle2 size={16} /> Activate Access</> : <><Ban size={16} /> Restrict Access</>}
                 </button>
               </div>
@@ -153,6 +203,16 @@ const AdminUserManagement = () => {
           </>
         )}
       </AnimatePresence>
+
+      <ConfirmationModal 
+        isOpen={isConfirmOpen}
+        onClose={() => setIsConfirmOpen(false)}
+        onConfirm={handleToggleStatus}
+        title={selectedUser?.status === 'Banned' ? "Reactivate User?" : "Restrict Access?"}
+        message={selectedUser?.status === 'Banned' ? `You are about to restore full access for ${selectedUser?.username}.` : `You are about to ban ${selectedUser?.username}. They will no longer be able to access their courses.`}
+        confirmText={selectedUser?.status === 'Banned' ? "Restore Access" : "Restrict Now"}
+        type={selectedUser?.status === 'Banned' ? 'warning' : 'danger'}
+      />
     </motion.div>
   );
 };

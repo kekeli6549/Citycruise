@@ -42,14 +42,10 @@ export const useAdminStore = create(
         pendingSubmissions: [submission, ...state.pendingSubmissions]
       })),
 
-      // ACTION: Used by Admin to finalize a grade
       finalizeGrading: async (subId, theoryScore, authStoreAction) => {
         set({ isLoading: true, error: null });
         try {
-          // 1. Grade Theory
           await gradeTheory(subId, theoryScore);
-          
-          // 2. Approve (which triggers certificate)
           const approvalData = await approveSubmission(subId);
           const { finalScore, passed } = approvalData.data || approvalData;
 
