@@ -22,7 +22,7 @@ const AdminExamBuilder = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [view, setView] = useState('builder');
-  const [selectedCourseId, setSelectedCourseId] = useState(courses[0]?.id);
+  const [selectedCourseId, setSelectedCourseId] = useState("");
   const [examId, setExamId] = useState(null);
   const [passPercentage, setPassPercentage] = useState(70);
 
@@ -35,17 +35,24 @@ const AdminExamBuilder = () => {
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [gradingScore, setGradingScore] = useState("");
 
+  // Sync initial course selection
   useEffect(() => {
     fetchCourses();
   }, []);
 
+  useEffect(() => {
+    if (courses.length > 0 && !selectedCourseId) {
+      setSelectedCourseId(courses[0].id);
+    }
+  }, [courses]);
+
+  // Fetch Exam logic
   useEffect(() => {
     if (selectedCourseId) {
       const fetchExam = async () => {
         setIsLoading(true);
         try {
           const examData = await adminGetExamDetails(selectedCourseId);
-          // Standardize data extraction
           const data = examData.data || examData;
           const exam = data.exam || data;
           const fetchedQuestions = data.questions || exam.questions || [];
@@ -55,7 +62,11 @@ const AdminExamBuilder = () => {
             setPassPercentage(exam.pass_percentage || 70);
             const standardizedQuestions = fetchedQuestions.map(q => ({
               ...q,
-              text: q.question_text || q.text || ''
+              text: q.question_text || q.text || '',
+              type: q.type || 'objective',
+              options: q.options || ['', '', '', ''],
+              correct_option: q.correct_option || 0,
+              points: q.points || 0
             }));
             setQuestions(standardizedQuestions.length > 0 ? standardizedQuestions : dummyQuestions);
           } else {
@@ -63,7 +74,7 @@ const AdminExamBuilder = () => {
             setQuestions(dummyQuestions);
           }
         } catch (err) {
-          console.error("No exam found or error fetching exam", err);
+          console.error("No exam found for this course.");
           setExamId(null);
           setQuestions(dummyQuestions);
         } finally {
@@ -96,38 +107,29 @@ const AdminExamBuilder = () => {
 
     setIsLoading(true);
     try {
-      if (examId) {
-        // Update existing exam
-        await adminUpdateExam(examId, {
-          passPercentage,
-          questions: questions.map(q => ({
-            question_text: q.text,
-            type: q.type,
-            options: q.type === 'objective' ? q.options : [],
-            correct_option: q.type === 'objective' ? q.correct_option : 0,
-            points: q.type === 'theory' ? (q.points || 10) : 0
-          }))
-        });
-        alert(`Success: Exam updated!`);
-      } else {
-        // Create new exam
-        const examResponse = await createExam(selectedCourseId, {
-          passPercentage
-        });
+      const payload = {
+        passPercentage,
+        questions: questions.map(q => ({
+          question_text: q.text,
+          type: q.type,
+          options: q.type === 'objective' ? q.options : [],
+          correct_option: q.type === 'objective' ? q.correct_option : 0,
+          points: q.type === 'theory' ? (q.points || 10) : 0
+        }))
+      };
 
+      if (examId) {
+        await adminUpdateExam(examId, payload);
+        alert(`Success: ${targetCourse.title} exam updated!`);
+      } else {
+        const examResponse = await createExam(selectedCourseId, { passPercentage });
         const newExamId = examResponse.data?.id || examResponse.id;
 
-        for (const q of questions) {
-          await apiAddQuestion(newExamId, {
-            question_text: q.text,
-            type: q.type,
-            options: q.type === 'objective' ? q.options : [],
-            correct_option: q.type === 'objective' ? q.correct_option : 0,
-            points: q.type === 'theory' ? (q.points || 10) : 0
-          });
+        for (const q of payload.questions) {
+          await apiAddQuestion(newExamId, q);
         }
         setExamId(newExamId);
-        alert(`Success: Exam published!`);
+        alert(`Success: ${targetCourse.title} exam published!`);
       }
       fetchCourses();
     } catch (err) {
@@ -139,13 +141,17 @@ const AdminExamBuilder = () => {
 
   const handleFinalizeGrade = async (submission) => {
     if (!gradingScore) return alert("Please assign a theory score first.");
+    setIsLoading(true);
     try {
-      await finalizeGrading(submission.id, parseInt(gradingScore), recordExamResult);
-      alert("Grading Complete.");
-      setGradingScore("");
-      fetchCourses(); // Refresh list
+      const result = await finalizeGrading(submission.id, parseInt(gradingScore), recordExamResult);
+      if (result) {
+        alert(`Grading Complete. Final Score: ${result.finalScore}%`);
+        setGradingScore("");
+      }
     } catch (err) {
-      alert("Error during grading.");
+      alert("Error during grading protocol.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -188,7 +194,6 @@ const AdminExamBuilder = () => {
       <AnimatePresence mode="wait">
         {view === 'builder' ? (
           <motion.div key="builder" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="flex flex-col lg:flex-row lg:h-[75vh] bg-white rounded-[24px] md:rounded-[40px] border border-slate-200 overflow-hidden shadow-sm">
-            {/* SCHEMA SIDEBAR */}
             <div className="w-full lg:w-80 border-b lg:border-r border-slate-100 flex flex-col bg-slate-50/30">
               <div className="p-4 md:p-6 border-b border-slate-100 bg-white"><h3 className="font-black text-slate-900 text-sm flex items-center gap-2 uppercase tracking-tighter"><Layers size={18} className="text-brand-blue" /> Exam Schema</h3></div>
               <div className="flex lg:flex-col overflow-x-auto lg:overflow-y-auto p-4 space-x-3 lg:space-x-0 lg:space-y-2">
@@ -205,13 +210,12 @@ const AdminExamBuilder = () => {
               </div>
             </div>
 
-            {/* EDITOR AREA */}
             <div className="flex-1 overflow-y-auto bg-white p-6 md:p-12">
               {questions[selectedIdx] ? (
                 <div className="max-w-2xl mx-auto space-y-8 md:space-y-10">
                   <div className="flex justify-between items-center">
                     <span className="px-4 py-1.5 bg-slate-900 text-white rounded-full text-[10px] font-black uppercase tracking-widest">{questions[selectedIdx].type}</span>
-                    <button onClick={() => { const f = questions.filter(q => q.id !== questions[selectedIdx].id); setQuestions(f); setSelectedIdx(0); }} className="text-red-400 p-2 hover:bg-red-50 rounded-xl"><Trash2 size={20} /></button>
+                    <button onClick={() => { const f = questions.filter((_, idx) => idx !== selectedIdx); setQuestions(f); setSelectedIdx(0); }} className="text-red-400 p-2 hover:bg-red-50 rounded-xl"><Trash2 size={20} /></button>
                   </div>
                   <div className="space-y-4">
                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Question Intelligence</label>
@@ -262,7 +266,13 @@ const AdminExamBuilder = () => {
                     <label className="text-[10px] font-black text-slate-400 uppercase block mb-3">Competency Points (0-50)</label>
                     <input type="number" value={gradingScore} onChange={(e) => setGradingScore(e.target.value)} className="w-full p-5 bg-slate-50 border-none rounded-[20px] font-black text-brand-blue" placeholder="e.g. 45" />
                   </div>
-                  <button onClick={() => handleFinalizeGrade(sub)} className="w-full sm:w-auto h-[64px] px-10 bg-slate-900 text-white rounded-[24px] text-[10px] font-black uppercase tracking-widest hover:bg-brand-blue transition-all">Authorize Grade</button>
+                  <button 
+                    onClick={() => handleFinalizeGrade(sub)} 
+                    disabled={isLoading}
+                    className="w-full sm:w-auto h-[64px] px-10 bg-slate-900 text-white rounded-[24px] text-[10px] font-black uppercase tracking-widest hover:bg-brand-blue transition-all disabled:opacity-50"
+                  >
+                    {isLoading ? 'Authorizing...' : 'Authorize Grade'}
+                  </button>
                 </div>
               </div>
             )) : (

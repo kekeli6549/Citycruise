@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation, Navigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LayoutDashboard, BookOpen, Award, X, Menu, LogOut, ChevronRight, User } from 'lucide-react';
+import { 
+  LayoutDashboard, BookOpen, Award, X, Menu, LogOut, 
+  ChevronRight, User, ArrowRight, Github, Twitter, Linkedin 
+} from 'lucide-react';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import Features from './components/Features';
@@ -18,7 +21,7 @@ import ExamsHub from './pages/ExamsHub';
 import AdminDashboard from './pages/AdminDashboard'; 
 import AdminLogin from './pages/AdminLogin'; 
 import { useAuthStore } from './context/authStore';
-import ErrorBoundary from './components/ErrorBoundary'; // Added this
+import ErrorBoundary from './components/ErrorBoundary';
 
 const ScrollToTop = () => {
   const { pathname } = useLocation();
@@ -106,16 +109,20 @@ const AppLayout = ({ darkMode, setDarkMode }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const location = useLocation();
   
-  const isMinimalUI = ['/dashboard', '/checkout', '/course', '/exam', '/courses', '/exams'].some(path => location.pathname.startsWith(path));
+  // Logic to determine when to show UI elements
+  const isInternalAppPath = ['/dashboard', '/checkout', '/course', '/exam', '/courses', '/exams'].some(path => location.pathname.startsWith(path));
   const isAdminArea = location.pathname.startsWith('/admin');
   const isFocusMode = location.pathname.startsWith('/exam/') || location.pathname.startsWith('/checkout/') || location.pathname.startsWith('/course/');
   const isRightAlignNav = ['/courses', '/exams'].some(path => location.pathname.startsWith(path));
+  
+  // Show global footer only on Landing Page and Auth pages, but hide in dashboards/exams
+  const showGlobalFooter = !isInternalAppPath && !isAdminArea;
 
   return (
     <div className="relative min-h-screen bg-white dark:bg-brand-dark transition-colors duration-500">
-      {!isMinimalUI && !isAdminArea && <Navbar darkMode={darkMode} setDarkMode={setDarkMode} />}
+      {!isInternalAppPath && !isAdminArea && <Navbar darkMode={darkMode} setDarkMode={setDarkMode} />}
       
-      {isMinimalUI && !isFocusMode && !isAdminArea && (
+      {isInternalAppPath && !isFocusMode && !isAdminArea && (
         <>
           <button onClick={() => setIsSidebarOpen(true)} className={`lg:hidden fixed top-6 z-[120] p-3.5 bg-white/80 dark:bg-brand-dark/80 backdrop-blur-lg border border-slate-100 dark:border-slate-800 rounded-2xl shadow-2xl text-slate-600 dark:text-white transition-all active:scale-95 ${isRightAlignNav ? 'right-6' : 'left-6'}`}>
             <Menu size={22} />
@@ -125,11 +132,10 @@ const AppLayout = ({ darkMode, setDarkMode }) => {
       )}
 
       <div className={`${
-        (!isMinimalUI && !isAdminArea) ? "pt-20" : 
+        (!isInternalAppPath && !isAdminArea) ? "pt-20" : 
         (isFocusMode || isAdminArea) ? "pl-0" : 
         "lg:pl-80"
       }`}>
-        {/* Wrap Routes in ErrorBoundary to catch page-level crashes */}
         <ErrorBoundary>
           <Routes>
             <Route path="/" element={<><Hero /><Features /><Mentors /><Contact /></>} />
@@ -149,15 +155,67 @@ const AppLayout = ({ darkMode, setDarkMode }) => {
         </ErrorBoundary>
       </div>
 
-      {!isMinimalUI && !isAdminArea && (
-        <footer className="bg-white dark:bg-[#0B0F1A] border-t border-slate-100 dark:border-slate-800 pt-20 pb-10">
-          <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-4 gap-12 mb-16">
-            <div className="md:col-span-1">
+      {showGlobalFooter && (
+        <footer className="bg-white dark:bg-brand-dark border-t border-slate-100 dark:border-slate-800 relative overflow-hidden">
+          {/* CTA Section - Optimized for Registrations */}
+          <div className="max-w-7xl mx-auto px-6 pt-24 pb-16">
+            <div className="bg-brand-blue rounded-[32px] p-8 md:p-16 text-center relative overflow-hidden group shadow-2xl shadow-brand-blue/20">
+              <div className="relative z-10">
+                <h2 className="text-3xl md:text-5xl font-heading font-black text-white mb-6 tracking-tighter leading-none">
+                  JOIN THE NEXT <br className="hidden md:block"/>FRONTIER.
+                </h2>
+                <p className="text-blue-100 text-sm md:text-lg mb-10 max-w-xl mx-auto font-body opacity-90">
+                  Secure your spot in our professional ecosystem. Gain access to elite mentorship and high-impact tech curriculum.
+                </p>
+                <Link to="/signup" className="inline-flex items-center gap-3 bg-white text-brand-blue px-10 py-5 rounded-2xl font-heading font-bold uppercase text-xs tracking-[0.2em] hover:bg-blue-50 transition-all shadow-xl active:scale-95 group/cta">
+                  Create Your Free Account 
+                  <ArrowRight size={18} className="group-hover/cta:translate-x-1 transition-transform" />
+                </Link>
+              </div>
+              
+              {/* Decorative elements */}
+              <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/3 w-96 h-96 bg-white/10 blur-[100px] rounded-full" />
+              <div className="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/3 w-96 h-96 bg-brand-dark/20 blur-[100px] rounded-full" />
+            </div>
+          </div>
+
+          {/* Links Section - Scoped to Landing Content */}
+          <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-12 pb-16 border-b border-slate-100 dark:border-slate-800">
+            <div className="col-span-1 md:col-span-2">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-8 h-8 bg-brand-blue rounded-lg flex items-center justify-center text-white font-heading text-lg font-bold">C</div>
-                <span className="text-slate-900 dark:text-white font-heading text-lg font-bold tracking-tight">City Cruise</span>
+                <span className="text-slate-900 dark:text-white font-heading text-xl font-bold tracking-tight uppercase">City Cruise</span>
               </div>
-              <p className="text-slate-500 text-sm leading-relaxed font-body">Empowering the African Diaspora through elite mentorship.</p>
+              <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed max-w-sm font-body">
+                Empowering the African Diaspora through elite mentorship, high-impact tech curriculum, and a professional community that spans the globe.
+              </p>
+            </div>
+            
+            <div>
+              <h4 className="text-slate-900 dark:text-white font-heading font-bold uppercase text-[10px] tracking-[0.2em] mb-6">Platform</h4>
+              <ul className="space-y-4">
+                <li><Link to="/courses" className="text-slate-500 dark:text-slate-400 text-xs font-bold hover:text-brand-blue transition-colors uppercase tracking-widest">Curriculum</Link></li>
+                <li><Link to="/exams" className="text-slate-500 dark:text-slate-400 text-xs font-bold hover:text-brand-blue transition-colors uppercase tracking-widest">Certifications</Link></li>
+                <li><Link to="/login" className="text-slate-500 dark:text-slate-400 text-xs font-bold hover:text-brand-blue transition-colors uppercase tracking-widest">Sign In</Link></li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="text-slate-900 dark:text-white font-heading font-bold uppercase text-[10px] tracking-[0.2em] mb-6">Follow The Journey</h4>
+              <div className="flex gap-4">
+                <a href="#" className="p-3 bg-slate-50 dark:bg-slate-900 rounded-xl text-slate-400 hover:text-brand-blue hover:bg-brand-blue/5 transition-all"><Twitter size={18} /></a>
+                <a href="#" className="p-3 bg-slate-50 dark:bg-slate-900 rounded-xl text-slate-400 hover:text-brand-blue hover:bg-brand-blue/5 transition-all"><Linkedin size={18} /></a>
+                <a href="#" className="p-3 bg-slate-50 dark:bg-slate-900 rounded-xl text-slate-400 hover:text-brand-blue hover:bg-brand-blue/5 transition-all"><Github size={18} /></a>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom Bar */}
+          <div className="max-w-7xl mx-auto px-6 py-10 flex flex-col md:flex-row items-center justify-between gap-6">
+            <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">© 2026 City Cruise International. All Rights Reserved.</p>
+            <div className="flex gap-8">
+              <a href="#" className="text-slate-400 text-[9px] font-bold uppercase tracking-widest hover:text-slate-600 transition-colors">Privacy Policy</a>
+              <a href="#" className="text-slate-400 text-[9px] font-bold uppercase tracking-widest hover:text-slate-600 transition-colors">Terms of Service</a>
             </div>
           </div>
         </footer>

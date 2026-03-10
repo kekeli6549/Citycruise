@@ -56,7 +56,7 @@ const AdminCourseManager = () => {
     try {
       const tag = newDisciplineName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
       await addCategory(newDisciplineName, tag);
-      setNewCourseData({ ...newCourseData, category: newDisciplineName });
+      setNewCourseData({ ...newCourseData, category: tag });
       setNewDisciplineName("");
       setIsAddingDiscipline(false);
     } catch (err) {
@@ -85,10 +85,11 @@ const AdminCourseManager = () => {
       description: course.description || '',
       intro: course.intro || '',
       price: course.price || '',
-      category: course.category || (categories[0]?.name || ''),
+      category: course.category || (categories[0]?.category_tag || ''),
       lessons: course.lessons || []
     });
     setPreviewUrl(course.image || null);
+    setImageFile(null); // Reset file selection for new uploads
     setModalStep(1);
     setIsModalOpen(true);
   };
@@ -101,7 +102,7 @@ const AdminCourseManager = () => {
         description: '', 
         intro: '', 
         price: '', 
-        category: categories[0]?.name || '', 
+        category: categories[0]?.category_tag || '', 
         lessons: [] 
     });
     setPreviewUrl(null);
@@ -167,20 +168,18 @@ const AdminCourseManager = () => {
         await adminUpdateCourse(editingCourseId, courseForm);
       } else {
         const courseResponse = await adminCreateCourse(courseForm);
-        // Checking for nested data based on your service response
         currentCourseId = courseResponse.data?.id || courseResponse.id;
       }
 
-      // Process lessons sequentially to avoid race conditions
-      for (const lesson of newCourseData.lessons) {
+      // Sync Lessons
+      for (let i = 0; i < newCourseData.lessons.length; i++) {
+        const lesson = newCourseData.lessons[i];
         const lessonForm = new FormData();
         lessonForm.append('title', lesson.title);
         lessonForm.append('content', lesson.summary);
-        lessonForm.append('orderIndex', newCourseData.lessons.indexOf(lesson));
+        lessonForm.append('orderIndex', i);
         lessonForm.append('video_link', lesson.videoUrl);
 
-        // Logic: If the lesson ID is numeric (Date.now()), it's a new unsaved lesson. 
-        // If it's a string/UUID, it already exists in the DB.
         if (isEditMode && lesson.id && typeof lesson.id !== 'number') {
             await adminUpdateLesson(lesson.id, lessonForm);
         } else {

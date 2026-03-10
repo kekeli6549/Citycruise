@@ -5,6 +5,22 @@ import { Search, SlidersHorizontal, PlayCircle, Star, Users, ArrowUpRight, Searc
 import { useCourseStore } from '../context/courseStore';
 import { useAuthStore } from '../context/authStore';
 
+const CourseSkeleton = () => (
+  <div className="bg-slate-50 dark:bg-slate-900/40 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 overflow-hidden flex flex-col animate-pulse">
+    <div className="h-64 bg-slate-200 dark:bg-slate-800" />
+    <div className="p-8 space-y-4">
+      <div className="h-6 bg-slate-200 dark:bg-slate-800 rounded-lg w-3/4" />
+      <div className="flex gap-4">
+        <div className="h-4 bg-slate-200 dark:bg-slate-800 rounded-lg w-1/4" />
+        <div className="h-4 bg-slate-200 dark:bg-slate-800 rounded-lg w-1/4" />
+      </div>
+      <div className="pt-6 border-t border-slate-100 dark:border-slate-800 space-y-3">
+        <div className="h-10 bg-slate-200 dark:bg-slate-800 rounded-xl w-full" />
+      </div>
+    </div>
+  </div>
+);
+
 const CoursesPage = () => {
   const navigate = useNavigate();
   const { purchasedCourses } = useAuthStore();
@@ -20,7 +36,6 @@ const CoursesPage = () => {
     fetchCategories();
   }, [fetchCourses, fetchCategories]);
 
-  // Merge "All" with dynamically created categories from the admin side
   const occupations = ["All", ...categories.map(cat => cat.name)];
   const filterOptions = ["Alphabetical", "Most Viewed"];
 
@@ -32,14 +47,6 @@ const CoursesPage = () => {
       if (filter === "Most Viewed") return (b.views || 0) - (a.views || 0);
       return 0;
     });
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-brand-dark">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-blue"></div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-white dark:bg-brand-dark p-6 md:p-12">
@@ -125,68 +132,87 @@ const CoursesPage = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          <AnimatePresence mode="popLayout">
-            {filteredCourses.length > 0 ? filteredCourses.map((course) => {
-              const isOwned = purchasedCourses?.some(id => String(id) === String(course.id));
-              return (
-                <motion.div
-                  layout
-                  key={course.id}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  whileHover={{ y: -10 }}
-                  className="group relative bg-white dark:bg-slate-900/40 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 overflow-hidden flex flex-col"
-                >
-                  <div className={`h-64 ${course.img} flex items-center justify-center relative overflow-hidden`}>
-                    <PlayCircle className="text-brand-blue opacity-0 group-hover:opacity-100 transition-all scale-75 group-hover:scale-100 duration-500" size={64} />
-                    <div className="absolute top-6 left-6 px-4 py-1.5 bg-white/90 backdrop-blur-md rounded-full text-[9px] font-bold uppercase tracking-widest text-brand-dark">
-                      {course.category}
+          {isLoading ? (
+            Array(6).fill(0).map((_, i) => <CourseSkeleton key={i} />)
+          ) : (
+            <AnimatePresence mode="popLayout">
+              {filteredCourses.length > 0 ? filteredCourses.map((course) => {
+                const isOwned = purchasedCourses?.some(id => String(id) === String(course.id));
+                return (
+                  <motion.div
+                    layout
+                    key={course.id}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    whileHover={{ y: -12 }}
+                    className="group relative bg-white dark:bg-slate-900/40 rounded-[2.5rem] border border-slate-100 dark:border-slate-800/60 overflow-hidden flex flex-col transition-all duration-500 hover:border-brand-blue/30 hover:shadow-[0_20px_40px_-15px_rgba(59,130,246,0.15)]"
+                  >
+                    <div className={`h-64 ${course.img || 'bg-slate-800'} flex items-center justify-center relative overflow-hidden`}>
+                      <div className="absolute inset-0 bg-slate-900/20 group-hover:bg-slate-900/0 transition-colors duration-500" />
+                      <PlayCircle className="text-white opacity-0 group-hover:opacity-100 transition-all scale-75 group-hover:scale-100 duration-500 drop-shadow-2xl" size={64} />
+                      
+                      <div className="absolute top-6 left-6 px-4 py-1.5 bg-white/10 backdrop-blur-xl border border-white/20 rounded-full text-[8px] font-black uppercase tracking-[0.2em] text-white">
+                        {course.category}
+                      </div>
                     </div>
+
+                    <div className="p-8 flex flex-col flex-1">
+                      <div className="flex justify-between items-start mb-4">
+                        <h3 className="text-xl font-heading font-bold text-slate-900 dark:text-white group-hover:text-brand-blue transition-colors leading-tight">{course.title}</h3>
+                        <div className="p-2 bg-slate-50 dark:bg-slate-800/50 rounded-xl group-hover:bg-brand-blue group-hover:text-white transition-all shrink-0">
+                          <ArrowUpRight size={16} />
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-6 mb-8">
+                        <div className="flex items-center gap-2">
+                          <Users size={14} className="text-slate-400 group-hover:text-brand-blue transition-colors" />
+                          <span className="text-[11px] text-slate-400 font-bold uppercase tracking-tighter">{(course.views / 1000).toFixed(1)}k Students</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Star size={14} className="text-amber-400 fill-amber-400" />
+                          <span className="text-[11px] text-slate-400 font-bold uppercase tracking-tighter">4.9 Rating</span>
+                        </div>
+                      </div>
+
+                      {/* Repositioned Footer for long pricing */}
+                      <div className="mt-auto pt-6 border-t border-slate-50 dark:border-slate-800/60 flex flex-col gap-4">
+                        <div className="flex flex-col">
+                          <p className="text-[8px] font-mono text-slate-400 uppercase tracking-widest mb-1">Investment Value</p>
+                          <p className="text-2xl font-black dark:text-white tracking-tighter break-all">
+                            {isOwned ? (
+                              <span className="text-emerald-500 flex items-center gap-1.5"><Check size={18} /> OWNED</span>
+                            ) : (
+                              `$${Number(course.price || 0).toLocaleString()}`
+                            )}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => isOwned ? navigate(`/course/${course.id}`) : navigate(`/checkout/${course.id}`, { state: { course } })}
+                          className={`w-full py-4 rounded-2xl font-black uppercase text-[10px] tracking-[0.2em] transition-all active:scale-95 ${
+                            isOwned 
+                            ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 border border-slate-200 dark:border-slate-700' 
+                            : 'bg-slate-900 dark:bg-brand-blue text-white shadow-lg shadow-brand-blue/20 hover:shadow-brand-blue/40'
+                          }`}
+                        >
+                          {isOwned ? "Access Course" : "Enroll Now"}
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              }) : (
+                <div className="col-span-full py-32 flex flex-col items-center text-center">
+                  <div className="w-20 h-20 bg-slate-50 dark:bg-slate-900 rounded-full flex items-center justify-center mb-6 border border-slate-100 dark:border-slate-800">
+                    <SearchX className="text-slate-300" size={40} />
                   </div>
-
-                  <div className="p-8 flex flex-col flex-1">
-                    <div className="flex justify-between items-start mb-4">
-                      <h3 className="text-xl font-heading font-bold text-slate-900 dark:text-white group-hover:text-brand-blue transition-colors">{course.title}</h3>
-                      <ArrowUpRight className="text-slate-300 group-hover:text-brand-blue transition-all" />
-                    </div>
-
-                    <div className="flex items-center gap-4 mb-8">
-                      <div className="flex items-center gap-1.5">
-                        <Users size={14} className="text-slate-400" />
-                        <span className="text-xs text-slate-400 font-medium">{(course.views / 1000).toFixed(1)}k</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <Star size={14} className="text-amber-400 fill-amber-400" />
-                        <span className="text-xs text-slate-400 font-medium">4.9</span>
-                      </div>
-                    </div>
-
-                    <div className="mt-auto pt-6 border-t border-slate-50 dark:border-slate-800 flex justify-between items-center">
-                      <div>
-                        <p className="text-[9px] font-mono text-slate-400 uppercase tracking-tighter">Investment</p>
-                        <p className="text-2xl font-bold dark:text-white">{isOwned ? "Owned" : `$${course.price || '0'}`}</p>
-                      </div>
-                      <button
-                        onClick={() => isOwned ? navigate(`/course/${course.id}`) : navigate(`/checkout/${course.id}`, { state: { course } })}
-                        className={`px-6 py-3 rounded-xl font-bold uppercase text-[9px] tracking-widest transition-all active:scale-95 ${isOwned ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-slate-900 dark:bg-brand-blue text-white hover:shadow-xl'}`}
-                      >
-                        {isOwned ? "Go to Course" : "Enroll Now"}
-                      </button>
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            }) : (
-              <div className="col-span-full py-32 flex flex-col items-center text-center">
-                <div className="w-20 h-20 bg-slate-50 dark:bg-slate-900 rounded-full flex items-center justify-center mb-6">
-                  <SearchX className="text-slate-300" size={40} />
+                  <h3 className="text-2xl font-heading font-bold dark:text-white">No courses found</h3>
+                  <p className="text-slate-400 text-sm mt-2">Try adjusting your filters or search keywords.</p>
                 </div>
-                <h3 className="text-2xl font-heading font-bold dark:text-white">No courses found</h3>
-                <p className="text-slate-400 text-sm mt-2">Try adjusting your filters or search keywords.</p>
-              </div>
-            )}
-          </AnimatePresence>
+              )}
+            </AnimatePresence>
+          )}
         </div>
       </div>
     </div>

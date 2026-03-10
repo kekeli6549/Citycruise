@@ -17,12 +17,8 @@ export const useAdminStore = create(
       pendingSubmissions: [],
       gradedNotifications: [], 
       error: null,
-      stats: {
-        totalStudents: 0,
-        revenue: 0,
-        pendingExams: 0,
-        trends: {}
-      },
+      isLoading: false,
+      stats: { totalStudents: 0, revenue: 0, pendingExams: 0, trends: {} },
       activityLogs: [],
 
       fetchStudents: async (query = '') => {
@@ -60,13 +56,10 @@ export const useAdminStore = create(
         }
       },
 
-      addSubmission: (submission) => set((state) => ({
-        pendingSubmissions: [submission, ...state.pendingSubmissions]
-      })),
-
       finalizeGrading: async (subId, theoryScore, authStoreAction) => {
         set({ isLoading: true, error: null });
         try {
+          // Calling both required endpoints from adminService
           await gradeTheory(subId, theoryScore);
           const approvalData = await approveSubmission(subId);
           const { finalScore, passed } = approvalData.data || approvalData;
@@ -106,8 +99,6 @@ export const useAdminStore = create(
       clearNotification: (notifId) => set((state) => ({
         gradedNotifications: state.gradedNotifications.filter(n => n.id !== notifId)
       })),
-
-      updateRevenue: (amount) => set((state) => ({ revenue: (get().stats.revenue || 0) + amount })),
 
       fetchStats: async () => {
         set({ isLoading: true, error: null });

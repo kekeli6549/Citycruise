@@ -12,7 +12,7 @@ import {
 
 export const useCourseStore = create((set, get) => ({
   courses: [],
-  categories: [], // Dynamic Disciplines
+  categories: [],
   enrolledCourses: [],
   selectedCourse: null,
   isLoading: false,
@@ -31,7 +31,6 @@ export const useCourseStore = create((set, get) => ({
   fetchCourses: async () => {
     set({ isLoading: true, error: null });
     try {
-      // Use admin endpoint for comprehensive list if available
       const data = await adminGetCourses();
       set({ 
         courses: (data.data || data).map(c => ({
@@ -49,13 +48,12 @@ export const useCourseStore = create((set, get) => ({
     }
   },
 
-  // Discipline Management
   fetchCategories: async () => {
     try {
       const data = await adminGetCategories();
       set({ categories: data.data || data }); 
     } catch (err) {
-      console.warn("Categories endpoint not found or server error", err.message);
+      console.warn("Categories fetch failed:", err.message);
     }
   },
 
@@ -91,10 +89,6 @@ export const useCourseStore = create((set, get) => ({
     }
   },
 
-  updateCourse: (id, updates) => set((state) => ({
-    courses: state.courses.map((c) => (c.id === id ? { ...c, ...updates } : c)),
-  })),
-
   toggleStatus: async (id, status) => {
     set({ isLoading: true, error: null });
     try {
@@ -124,33 +118,8 @@ export const useCourseStore = create((set, get) => ({
   deleteLesson: async (lessonId) => {
     try {
       await adminDeleteLesson(lessonId);
-      // We don't have a lessons list in the store, but we might need to refresh course details
-      // or the component will handle the local state update.
     } catch (err) {
       throw err;
     }
-  },
-
-  addCourse: (newCourse) => set((state) => ({
-    courses: [...state.courses, { ...newCourse, id: `course-${Date.now()}`, students: 0, status: 'Draft', submissions: [] }]
-  })),
-
-  submitExamToAdmin: (courseId, submissionData) => set((state) => ({
-    courses: state.courses.map((c) => 
-      c.id === courseId 
-        ? { ...c, submissions: [{ ...submissionData, id: `sub-${Date.now()}` }, ...(c.submissions || [])] } 
-        : c
-    ),
-  })),
-
-  updateSubmissionStatus: (courseId, submissionId, updates) => set((state) => ({
-    courses: state.courses.map((c) => 
-      c.id === courseId 
-        ? { 
-            ...c, 
-            submissions: (c.submissions || []).map(s => s.id === submissionId ? { ...s, ...updates } : s) 
-          } 
-        : c
-    ),
-  })),
+  }
 }));

@@ -9,7 +9,13 @@ export const useAuthStore = create(
       isAuthenticated: false,
       isLoading: false,
       error: null,
-      
+      // Initializing lists to prevent map errors in UI
+      purchasedCourses: [],
+      completedCourses: [],
+      completedLessons: [],
+      certificates: [],
+      examResults: [],
+      activityLog: [],
 
       signup: async (formData) => {
         set({ isLoading: true, error: null });
@@ -33,10 +39,11 @@ export const useAuthStore = create(
         set({ isLoading: true, error: null });
         try {
           const response = await loginUser(credentials);
+          // Syncing with authService data return
           const userData = response.data?.user || response; 
           set({
             user: userData,
-            token: response.data.token || response.token,
+            token: response.data?.token || response.token,
             isAuthenticated: true,
             isLoading: false,           
           });
@@ -66,7 +73,7 @@ export const useAuthStore = create(
       purchaseCourse: (courseId) => set((state) => {
         const newLog = {
           id: Date.now(),
-          user: `${state.user?.username}`,
+          user: `${state.user?.username || 'User'}`,
           action: "Purchased",
           target: courseId,
           time: "Just now"

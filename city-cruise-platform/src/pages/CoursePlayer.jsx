@@ -3,12 +3,15 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, Play, CheckCircle, Award, FileText, Info, Download, ArrowRight, ShieldCheck } from 'lucide-react';
 import { useAuthStore } from '../context/authStore';
-import { markLessonComplete, getLessonDetails } from '../api/courseService';
+import { useCourseStore } from '../context/courseStore'; // Added Store Import
+import { getLessonDetails } from '../api/courseService';
 
 const CoursePlayer = () => {
   const { courseId } = useParams();
   const navigate = useNavigate();
-  const { courses, fetchCourseDetails, isLoading: storeLoading } = useCourseStore();
+  
+  // Connect to the synchronized stores
+  const { courses, fetchCourseDetails, isLoading: storeLoading, completeLesson } = useCourseStore();
   const { completeCourse, completedCourses, completedLessons: globalCompletedLessons, addCompletedLesson } = useAuthStore();
   
   const [isLoading, setIsLoading] = useState(!courses.find(c => c.id === courseId));
@@ -19,11 +22,13 @@ const CoursePlayer = () => {
   useEffect(() => {
     if (!course) {
       fetchCourseDetails(courseId).finally(() => setIsLoading(false));
+    } else {
+      setIsLoading(false);
     }
   }, [courseId, course, fetchCourseDetails]);
 
   useEffect(() => {
-    if (course && !activeLessonId) {
+    if (course && !activeLessonId && course.lessons?.length > 0) {
       setActiveLessonId(course.lessons[0]?.id);
     }
   }, [course, activeLessonId]);
@@ -34,15 +39,14 @@ const CoursePlayer = () => {
     }
   }, [activeLessonId]);
   
-  // Track completed lessons for this specific course
   const courseLessons = course?.lessons || [];
   const completedInThisCourse = courseLessons.filter(lesson => globalCompletedLessons.includes(lesson.id));
-  const allLessonsDone = courseLessons.length > 0 && completedInThisCourse.length === courseLessons.length;
-
-  // Fix: Calculate progressPercentage
+  
   const progressPercentage = courseLessons.length > 0 
     ? Math.round((completedInThisCourse.length / courseLessons.length) * 100) 
     : 0;
+
+  const allLessonsDone = courseLessons.length > 0 && completedInThisCourse.length === courseLessons.length;
 
   const activeLesson = lessonData || course?.lessons.find(l => l.id === activeLessonId) || course?.lessons[0];
   const activeIndex = course?.lessons.findIndex(l => l.id === activeLessonId);
@@ -63,32 +67,22 @@ const CoursePlayer = () => {
 
   const handleLessonComplete = async () => {
     try {
-      await markLessonComplete(activeLessonId);
+      // Use the store action to keep everything in sync
+      const success = await completeLesson(activeLessonId, addCompletedLesson);
       
-      // Save to global auth store
-      if (!globalCompletedLessons.includes(activeLessonId)) {
-        addCompletedLesson(activeLessonId);
-      }
-
-      // Auto-advance logic
-      if (activeIndex < course.lessons.length - 1) {
-        const nextLessonId = course.lessons[activeIndex + 1].id;
-        setTimeout(() => {
-          setActiveLessonId(nextLessonId);
-        }, 600);
+      if (success) {
+        // Auto-advance logic
+        if (activeIndex < course.lessons.length - 1) {
+          const nextLessonId = course.lessons[activeIndex + 1].id;
+          setTimeout(() => {
+            setActiveLessonId(nextLessonId);
+          }, 600);
+        }
       }
     } catch (err) {
       console.error("Failed to mark lesson as complete:", err);
     }
   };
-
-  if (isLoading || storeLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-brand-dark">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-blue"></div>
-      </div>
-    );
-  }
 
   const handleFinishCourse = () => {
     completeCourse(courseId);
@@ -102,11 +96,18 @@ const CoursePlayer = () => {
     }
   };
 
+  if (isLoading || storeLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-brand-dark">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-blue"></div>
+      </div>
+    );
+  }
+
   const embedUrl = getYouTubeEmbedUrl(activeLesson?.videoUrl);
 
   return (
     <div className="min-h-screen bg-white dark:bg-brand-dark flex flex-col">
-      {/* Enhanced Header UI */}
       <div className="border-b border-slate-100 dark:border-slate-800/50 p-6 flex justify-between items-center bg-white/40 dark:bg-brand-dark/40 backdrop-blur-xl sticky top-0 z-50">
         <div className="flex items-center gap-6">
           <button 
@@ -172,9 +173,7 @@ const CoursePlayer = () => {
       </div>
 
       <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
-        {/* Main Content Area */}
         <div className="flex-1 overflow-y-auto no-scrollbar">
-          {/* Video Player */}
           <div className="bg-black aspect-video flex items-center justify-center relative group overflow-hidden">
             {embedUrl ? (
               <iframe
@@ -197,7 +196,6 @@ const CoursePlayer = () => {
             )}
           </div>
 
-          {/* Lesson Details */}
           <div className="p-6 md:p-12 max-w-4xl mx-auto">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
                 <div className="flex items-center gap-4">
@@ -233,7 +231,6 @@ const CoursePlayer = () => {
                 </p>
             </div>
 
-            {/* Resources Section */}
             <div className="space-y-6">
                 <div className="flex items-center gap-3">
                   <div className="h-px flex-1 bg-slate-100 dark:bg-slate-800" />
@@ -266,7 +263,6 @@ const CoursePlayer = () => {
           </div>
         </div>
 
-        {/* Sidebar Curriculum */}
         <div className="w-full lg:w-[400px] border-l border-slate-100 dark:border-slate-800/50 p-8 bg-slate-50/20 dark:bg-brand-dark/20 overflow-y-auto no-scrollbar h-auto lg:h-full">
           <div className="flex items-center justify-between mb-8">
             <h3 className="font-black text-xs uppercase tracking-[0.2em] dark:text-white">Curriculum Map</h3>
