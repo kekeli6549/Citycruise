@@ -11,10 +11,15 @@ export const adminCreateCourse = async (formData) => {
 };
 
 export const adminUpdateCourse = async (courseId, formData) => {
+    if (!courseId || courseId === 'undefined') {
+        throw new Error("Missing Course ID in frontend request.");
+    }
+
     const response = await apiClient.patch(`/admin/courses/${courseId}`, formData, {
         headers: {
             'Content-Type': 'multipart/form-data',
-        },
+        },      
+        timeout: 30000,
     });
     return response.data;
 };

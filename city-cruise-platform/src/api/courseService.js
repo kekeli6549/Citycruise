@@ -15,6 +15,11 @@ export const getMyCourses = async () => {
     return response.data;
 };
 
+export const GetCourseLessons = async (courseId) => {
+    const response = await apiClient.get(`/courses/${courseId}/lessons`);
+    return response.data;
+};
+
 export const getLessonDetails = async (id) => {
     const response = await apiClient.get(`/lessons/${id}`);
     return response.data;

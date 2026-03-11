@@ -24,7 +24,7 @@ const AdminUserManagement = () => {
     const userId = selectedUser.id;
     const targetStatus = !selectedUser.isActive;
     await toggleUserStatus(userId, targetStatus);
-    
+
     // Update local state for immediate feedback
     setSelectedUser(prev => ({
       ...prev,
@@ -68,6 +68,7 @@ const AdminUserManagement = () => {
                   <tr className="bg-slate-50/50 border-b border-slate-100">
                     <th className="p-5 text-[10px] font-bold uppercase tracking-widest text-slate-400">Student</th>
                     <th className="p-5 text-[10px] font-bold uppercase tracking-widest text-slate-400">Status</th>
+                    <th className="p-5 text-[10px] font-bold uppercase tracking-widest text-slate-400">Role</th>
                     <th className="p-5 text-[10px] font-bold uppercase tracking-widest text-slate-400">Joined</th>
                     <th className="p-5 text-[10px] font-bold uppercase tracking-widest text-slate-400 text-right">Profile</th>
                   </tr>
@@ -86,11 +87,12 @@ const AdminUserManagement = () => {
                           </div>
                         </div>
                       </td>
-                      <td className="p-5">
+                      <td className="p-5 text-sm font-medium">
                         <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${user.isActive !== false ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
                           {user.isActive !== false ? 'Active' : 'Banned'}
                         </span>
                       </td>
+                      <td className="p-5">{user.role}</td>
                       <td className="p-5 text-sm text-slate-500 font-medium">
                         {user.created_at ? new Date(user.created_at).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }) : 'Recent'}
                       </td>
@@ -110,8 +112,8 @@ const AdminUserManagement = () => {
 
             <div className="md:hidden divide-y divide-slate-100">
               {filteredStudents.map((user) => (
-                <div 
-                  key={user.id} 
+                <div
+                  key={user.id}
                   onClick={() => { setSelectedUser(user); setIsModalOpen(true); }}
                   className="p-4 active:bg-slate-50 transition-colors flex items-center justify-between"
                 >
@@ -142,18 +144,18 @@ const AdminUserManagement = () => {
       <AnimatePresence>
         {isModalOpen && selectedUser && (
           <>
-            <motion.div 
-              initial={{ opacity: 0 }} 
-              animate={{ opacity: 1 }} 
-              exit={{ opacity: 0 }} 
-              onClick={() => setIsModalOpen(false)} 
-              className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[150]" 
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsModalOpen(false)}
+              className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[150]"
             />
-            <motion.div 
-              initial={{ x: '100%' }} 
-              animate={{ x: 0 }} 
-              exit={{ x: '100%' }} 
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }} 
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
               className="fixed right-0 top-0 h-full w-full max-w-md bg-white z-[151] shadow-2xl p-6 md:p-8 flex flex-col"
             >
               <div className="flex justify-between items-center mb-8 md:mb-10">
@@ -195,8 +197,8 @@ const AdminUserManagement = () => {
                 <button className="w-full flex items-center justify-center gap-3 py-4 bg-slate-900 text-white rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg shadow-slate-200">
                   <Edit3 size={16} /> Edit Profile
                 </button>
-                <button 
-                  onClick={() => setIsConfirmOpen(true)} 
+                <button
+                  onClick={() => setIsConfirmOpen(true)}
                   className={`w-full flex items-center justify-center gap-3 py-4 rounded-2xl font-bold text-xs uppercase tracking-widest transition-all ${selectedUser.isActive === false ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100' : 'bg-red-50 text-red-600 hover:bg-red-100'}`}
                 >
                   {selectedUser.isActive === false ? <><CheckCircle2 size={16} /> Activate Access</> : <><Ban size={16} /> Restrict Access</>}
@@ -207,7 +209,7 @@ const AdminUserManagement = () => {
         )}
       </AnimatePresence>
 
-      <ConfirmationModal 
+      <ConfirmationModal
         isOpen={isConfirmOpen}
         onClose={() => setIsConfirmOpen(false)}
         onConfirm={handleToggleStatus}

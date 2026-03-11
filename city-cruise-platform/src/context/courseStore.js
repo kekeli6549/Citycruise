@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { getAllCourses, getCourseById, getMyCourses } from '../api/courseService';
+import { getAllCourses, getCourseById, GetCourseLessons, getMyCourses } from '../api/courseService';
 import { 
   adminGetCategories, 
   adminCreateCategory, 
@@ -12,6 +12,7 @@ import {
 
 export const useCourseStore = create((set, get) => ({
   courses: [],
+  courseLessons: [],
   categories: [],
   enrolledCourses: [],
   selectedCourse: null,
@@ -52,6 +53,15 @@ export const useCourseStore = create((set, get) => ({
     try {
       const data = await adminGetCategories();
       set({ categories: data.data || data }); 
+    } catch (err) {
+      console.warn("Categories fetch failed:", err.message);
+    }
+  },
+  
+  fetchCourseLessons: async (id) => {
+    try {
+      const data = await GetCourseLessons(id);
+      set({ courseLessons: data.data || data }); 
     } catch (err) {
       console.warn("Categories fetch failed:", err.message);
     }

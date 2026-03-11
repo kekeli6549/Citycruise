@@ -110,7 +110,7 @@ export const useAdminStore = create(
         }
       },
 
-      fetchActivityLogs: async (limit = 50, offset = 0) => {
+      fetchActivityLogs: async (limit = 20, offset = 0) => {
         set({ isLoading: true, error: null });
         try {
           const data = await adminGetActivityLogs(limit, offset);
