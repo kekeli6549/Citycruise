@@ -114,6 +114,11 @@ export const adminUpdateQuestion = async (questionId, questionData) => {
     return response.data;
 };
 
+export const adminDeleteQuestion = async (questionId) => {
+    const response = await apiClient.delete(`/admin/questions/${questionId}`);
+    return response.data;
+};
+
 export const getStudents = async (query = '', limit = 20, offset = 0) => {
     const response = await apiClient.get(`/admin/users?q=${query}&limit=${limit}&offset=${offset}`);
     return response.data;

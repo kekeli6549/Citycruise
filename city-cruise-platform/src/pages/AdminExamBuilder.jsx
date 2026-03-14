@@ -9,7 +9,8 @@ import {
   addQuestion as apiAddQuestion,
   adminUpdateExam,
   adminGetExamDetails,
-  adminUpdateQuestion
+  adminUpdateQuestion,
+  adminDeleteQuestion
 } from '../api/adminService';
 import { useCourseStore } from '../context/courseStore';
 import { useAdminStore } from '../context/adminStore';
@@ -116,7 +117,7 @@ const AdminExamBuilder = () => {
 
   const addNewQuestionToUI = (type) => {
     const newQ = type === 'objective'
-      ? { id: Date.now(), type: 'objective', text: '', OPTIONS: ['', '', '', ''], correct_option: 0 }
+      ? { id: Date.now(), type: 'objective', text: '', OPTIONS: ['', '', '', ''], correct_option: 1 }
       : { id: Date.now(), type: 'theory', text: '', points: 10 };
     setQuestions([...questions, newQ]);
     setSelectedIdx(questions.length);
@@ -258,7 +259,35 @@ const AdminExamBuilder = () => {
                 <div className="max-w-2xl mx-auto space-y-8 md:space-y-10">
                   <div className="flex justify-between items-center">
                     <span className="px-4 py-1.5 bg-slate-900 text-white rounded-full text-[10px] font-black uppercase tracking-widest">{questions[selectedIdx].type}</span>
-                    <button onClick={() => { const f = questions.filter((_, idx) => idx !== selectedIdx); setQuestions(f); setSelectedIdx(0); }} className="text-red-400 p-2 hover:bg-red-50 rounded-xl"><Trash2 size={20} /></button>
+                    <button
+                      onClick={() => {
+                        const confirmDelete = window.confirm("Are you sure you want to delete this question? This action cannot be undone.");
+
+                        if (!confirmDelete) return;
+
+                        const questionToDelete = questions[selectedIdx];
+                        const questionId = questionToDelete.id;
+
+                        const f = questions.filter((_, idx) => idx !== selectedIdx);
+                        setQuestions(f);
+                        setSelectedIdx(0);
+
+                        if (typeof questionId === 'number' && questionId < 1000000000) {
+                          adminDeleteQuestion(questionId)
+                            .then(() => {
+                              console.log("Question deleted from database");
+                            })
+                            .catch((err) => {
+                              alert("Failed to delete from server. Please refresh.");
+                              console.error(err);
+                            });
+                        }
+                      }}
+                      className="text-red-400 p-2 hover:bg-red-50 rounded-xl transition-colors"
+                      title="Delete Question"
+                    >
+                      <Trash2 size={20} />
+                    </button>
                   </div>
                   <div className="space-y-4">
                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Question Intelligence</label>
@@ -302,13 +331,12 @@ const AdminExamBuilder = () => {
                                 className="flex-1 p-4 md:p-5 bg-slate-50 border-none rounded-[16px] md:rounded-[20px] text-[13px] md:text-sm font-bold text-slate-900"
                                 onChange={(e) => {
                                   const u = [...questions];
-                                  // Ensure we are working with an array locally
                                   const newOptions = [...safeOptions];
                                   newOptions[oIdx] = e.target.value;
 
                                   u[selectedIdx] = {
                                     ...u[selectedIdx],
-                                    OPTIONS: newOptions // Save as array locally for immediate React state update
+                                    OPTIONS: newOptions
                                   };
                                   setQuestions(u);
                                 }}
