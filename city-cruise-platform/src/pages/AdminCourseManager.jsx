@@ -248,12 +248,12 @@ const AdminCourseManager = () => {
               )}
               <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
               <div className="absolute top-4 left-4 flex flex-wrap gap-2 pr-4">
-                <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest backdrop-blur-md shadow-lg ${course.status === 'active' || course.status === 'Published' ? 'bg-emerald-500 text-white' : 'bg-slate-900/80 text-white'}`}>
-                  {course.status === 'active' || course.status === 'Published' ? 'Active' : 'Inactive'}
+                <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest backdrop-blur-md shadow-lg ${course.STATUS === 'active' || course.STATUS === 'Published' ? 'bg-emerald-500 text-white' : 'bg-slate-900/80 text-white'}`}>
+                  {course.STATUS === 'active' || course.STATUS === 'Published' ? 'Active' : 'Inactive'}
                 </span>
               </div>
 
-              {(course.status === 'Inactive' || course.status === 'inactive' || course.status === 'Draft') && (
+              {(course.STATUS === 'inactive') && (
                 <button
                   onClick={() => openDeleteModal(course.id, course.title)}
                   className="absolute top-4 right-4 p-2.5 bg-white/90 backdrop-blur-md text-red-500 rounded-xl shadow-lg hover:bg-red-500 hover:text-white transition-all z-10"
@@ -276,11 +276,11 @@ const AdminCourseManager = () => {
                   <Edit2 size={14} /> Edit
                 </button>
                 <button
-                  onClick={() => {
-                    const newStatus = (course.status === 'Published' || course.status === 'active') ? 'inactive' : 'active';
-                    toggleStatus(course.id, newStatus);
+                  onClick={async() => {
+                    const newStatus = (course.STATUS === 'Published' || course.STATUS === 'active') ? 'inactive' : 'active';
+                    await toggleStatus(course.id, newStatus);
                   }}
-                  className={`p-3.5 rounded-xl transition-all ${course.status === 'Published' || course.status === 'active' ? 'text-red-500 bg-red-50 hover:bg-red-100' : 'text-emerald-500 bg-emerald-50 hover:bg-emerald-100'}`}
+                  className={`p-3.5 rounded-xl transition-all ${course.STATUS === 'Published' || course.STATUS === 'active' ? 'text-red-500 bg-red-50 hover:bg-red-100' : 'text-emerald-500 bg-emerald-50 hover:bg-emerald-100'}`}
                 >
                   <Power size={18} />
                 </button>
@@ -469,7 +469,7 @@ const AdminCourseManager = () => {
                               </button>
                             </div>
                           ))
-                        ) : editingCourseId &&(
+                        ) : editingCourseId && (
                           <div className="w-full p-5 my-2 mb-5 flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-[24px] text-center">
                             <p className="text-xs font-bold text-slate-500">No lessons previous lessons available</p>
                           </div>

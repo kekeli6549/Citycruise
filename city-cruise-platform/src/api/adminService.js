@@ -18,7 +18,7 @@ export const adminUpdateCourse = async (courseId, formData) => {
     const response = await apiClient.patch(`/admin/courses/${courseId}`, formData, {
         headers: {
             'Content-Type': 'multipart/form-data',
-        },      
+        },
         timeout: 30000,
     });
     return response.data;
@@ -106,6 +106,11 @@ export const addQuestion = async (examId, questionData) => {
 
 export const adminUpdateExam = async (examId, examData) => {
     const response = await apiClient.patch(`/admin/exams/${examId}`, examData);
+    return response.data;
+};
+
+export const adminUpdateQuestion = async (questionId, questionData) => {
+    const response = await apiClient.patch(`/admin/questions/${questionId}`, questionData);
     return response.data;
 };
 

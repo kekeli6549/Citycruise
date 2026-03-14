@@ -8,7 +8,8 @@ import {
   createExam,
   addQuestion as apiAddQuestion,
   adminUpdateExam,
-  adminGetExamDetails
+  adminGetExamDetails,
+  adminUpdateQuestion
 } from '../api/adminService';
 import { useCourseStore } from '../context/courseStore';
 import { useAdminStore } from '../context/adminStore';
@@ -27,15 +28,14 @@ const AdminExamBuilder = () => {
   const [passPercentage, setPassPercentage] = useState(70);
 
   const dummyQuestions = [
-    { id: 1, type: 'objective', text: 'Objective: Identify the fundamental principle that governs the primary objective of this module.', options: ['Core Principle A', 'Secondary Theory B', 'Hybrid Approach C', 'All of the above'], correct_option: 3 },
-    { id: 2, type: 'theory', text: 'Theory: Synthesize the relationship between the theoretical frameworks discussed and their practical implementation in a professional ecosystem.', points: 20 }
+    { id: "temp1", type: 'objective', text: 'Objective: Identify the fundamental principle that governs the primary objective of this module.', OPTIONS: ['Core Principle A', 'Secondary Theory B', 'Hybrid Approach C', 'All of the above'], correct_option: 3 },
+    { id: "temp2", type: 'theory', text: 'Theory: Synthesize the relationship between the theoretical frameworks discussed and their practical implementation in a professional ecosystem.', points: 20 }
   ];
 
   const [questions, setQuestions] = useState(dummyQuestions);
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [gradingScore, setGradingScore] = useState("");
 
-  // Sync initial course selection
   useEffect(() => {
     fetchCourses();
   }, []);
@@ -51,6 +51,10 @@ const AdminExamBuilder = () => {
     if (selectedCourseId) {
       const fetchExam = async () => {
         setIsLoading(true);
+        setExamId(null);
+        setSelectedIdx(0);
+        setQuestions([]);
+
         try {
           const examData = await adminGetExamDetails(selectedCourseId);
           const data = examData.data || examData;
@@ -60,23 +64,41 @@ const AdminExamBuilder = () => {
           if (exam && exam.id) {
             setExamId(exam.id);
             setPassPercentage(exam.pass_percentage || 70);
-            const standardizedQuestions = fetchedQuestions.map(q => ({
-              ...q,
-              text: q.question_text || q.text || '',
-              type: q.type || 'objective',
-              options: q.options || ['', '', '', ''],
-              correct_option: q.correct_option || 0,
-              points: q.points || 0
-            }));
+
+            const standardizedQuestions = fetchedQuestions.map(q => {
+              let rawOptions = q.OPTIONS || q.options;
+              let parsedOptions = ['', '', '', ''];
+
+              try {
+                if (typeof rawOptions === 'string' && rawOptions !== "") {
+                  let firstPass = JSON.parse(rawOptions);
+
+                  if (typeof firstPass === 'string') {
+                    parsedOptions = JSON.parse(firstPass);
+                  } else {
+                    parsedOptions = firstPass;
+                  }
+                } else if (Array.isArray(rawOptions)) {
+                  parsedOptions = rawOptions;
+                }
+              } catch (e) {
+                console.error("Parsing Error for Q:", q.id, e);
+              }
+
+              return {
+                ...q,
+                id: q.id,
+                text: q.question_text || q.text || '',
+                type: q.TYPE || 'objective',
+                OPTIONS: Array.isArray(parsedOptions) ? parsedOptions : ['', '', '', ''],
+                correct_option: Number(q.correct_option) || 0,
+                points: q.points || 0
+              };
+            });
             setQuestions(standardizedQuestions.length > 0 ? standardizedQuestions : dummyQuestions);
-          } else {
-            setExamId(null);
-            setQuestions(dummyQuestions);
           }
         } catch (err) {
-          console.error("No exam found for this course.");
-          setExamId(null);
-          setQuestions(dummyQuestions);
+          console.warn("No existing exam for this course.");
         } finally {
           setIsLoading(false);
         }
@@ -92,9 +114,9 @@ const AdminExamBuilder = () => {
     return [...acc, ...pending];
   }, []);
 
-  const addQuestion = (type) => {
+  const addNewQuestionToUI = (type) => {
     const newQ = type === 'objective'
-      ? { id: Date.now(), type: 'objective', text: '', options: ['', '', '', ''], correct_option: 0 }
+      ? { id: Date.now(), type: 'objective', text: '', OPTIONS: ['', '', '', ''], correct_option: 0 }
       : { id: Date.now(), type: 'theory', text: '', points: 10 };
     setQuestions([...questions, newQ]);
     setSelectedIdx(questions.length);
@@ -103,26 +125,45 @@ const AdminExamBuilder = () => {
   const handlePublishExam = async () => {
     const targetCourse = courses.find(c => String(c.id) === String(selectedCourseId));
     if (!targetCourse) return alert("Please select a valid course.");
-    if (questions.length === 0) return alert("Please add at least one question.");
 
     setIsLoading(true);
     try {
       const payload = {
         passPercentage,
-        questions: questions.map(q => ({
-          question_text: q.text,
-          type: q.type,
-          options: q.type === 'objective' ? q.options : [],
-          correct_option: q.type === 'objective' ? q.correct_option : 0,
-          points: q.type === 'theory' ? (q.points || 10) : 0
-        }))
+        title: targetCourse.title,
+        duration: 30,
+        questions: questions.map(q => {
+          const isObjective = q.type === 'objective';
+
+          const optionsArray = isObjective ? (q.OPTIONS || []) : [];
+
+          return {
+            id: q.id,
+            question_text: q.text || "",
+            type: q.type || 'objective',
+            options: optionsArray,
+            OPTIONS: optionsArray,
+            correct_option: isObjective ? Number(q.correct_option ?? 0) : 0,
+            points: q.type === 'theory' ? Number(q.points || 0) : 0
+          };
+        })
       };
 
       if (examId) {
-        await adminUpdateExam(examId, payload);
+        await adminUpdateExam(examId, { passPercentage: payload.passPercentage });
+
+        const questionPromises = payload.questions.map(q => {
+          if (typeof q.id === 'number' && q.id < 1000000000) {
+            return adminUpdateQuestion(q.id, q);
+          } else {
+            return apiAddQuestion(examId, q);
+          }
+        });
+
+        await Promise.all(questionPromises);
         alert(`Success: ${targetCourse.title} exam updated!`);
       } else {
-        const examResponse = await createExam(selectedCourseId, { passPercentage });
+        const examResponse = await createExam(selectedCourseId, { passPercentage: payload.passPercentage });
         const newExamId = examResponse.data?.id || examResponse.id;
 
         for (const q of payload.questions) {
@@ -131,9 +172,11 @@ const AdminExamBuilder = () => {
         setExamId(newExamId);
         alert(`Success: ${targetCourse.title} exam published!`);
       }
+
       fetchCourses();
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to sync exam.");
+      console.error("Critical Sync Error:", err);
+      alert("Failed to save: " + (err.response?.data?.message || err.message));
     } finally {
       setIsLoading(false);
     }
@@ -205,8 +248,8 @@ const AdminExamBuilder = () => {
                 ))}
               </div>
               <div className="p-4 bg-white border-t border-slate-100 grid grid-cols-2 gap-2">
-                <button onClick={() => addQuestion('objective')} className="p-3 md:p-4 bg-slate-900 text-white rounded-xl text-[8px] md:text-[9px] font-black uppercase flex items-center justify-center gap-2 hover:bg-brand-blue"><Plus size={14} /> Objective</button>
-                <button onClick={() => addQuestion('theory')} className="p-3 md:p-4 border-2 border-slate-100 text-slate-600 rounded-xl text-[8px] md:text-[9px] font-black uppercase flex items-center justify-center gap-2 hover:bg-slate-50"><Plus size={14} /> Theory</button>
+                <button onClick={() => addNewQuestionToUI('objective')} className="p-3 md:p-4 bg-slate-900 text-white rounded-xl text-[8px] md:text-[9px] font-black uppercase flex items-center justify-center gap-2 hover:bg-brand-blue"><Plus size={14} /> Objective</button>
+                <button onClick={() => addNewQuestionToUI('theory')} className="p-3 md:p-4 border-2 border-slate-100 text-slate-600 rounded-xl text-[8px] md:text-[9px] font-black uppercase flex items-center justify-center gap-2 hover:bg-slate-50"><Plus size={14} /> Theory</button>
               </div>
             </div>
 
@@ -225,12 +268,55 @@ const AdminExamBuilder = () => {
                     <div className="space-y-4">
                       <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Response Keys</label>
                       <div className="grid gap-4">
-                        {questions[selectedIdx].options.map((opt, oIdx) => (
-                          <div key={oIdx} className="flex gap-3 md:gap-4 items-center">
-                            <button onClick={() => { const u = [...questions]; u[selectedIdx].correct_option = oIdx; setQuestions(u); }} className={`w-12 h-12 md:w-14 md:h-14 shrink-0 rounded-[16px] md:rounded-[20px] flex items-center justify-center border-2 font-black transition-all ${questions[selectedIdx].correct_option === oIdx ? 'bg-brand-blue border-brand-blue text-white shadow-lg' : 'border-slate-100 text-slate-300'}`}>{String.fromCharCode(65 + oIdx)}</button>
-                            <input type="text" value={opt} className="flex-1 p-4 md:p-5 bg-slate-50 border-none rounded-[16px] md:rounded-[20px] text-[13px] md:text-sm font-bold text-slate-900" onChange={(e) => { const u = [...questions]; u[selectedIdx].options[oIdx] = e.target.value; setQuestions(u); }} placeholder={`Option ${String.fromCharCode(65 + oIdx)}`} />
-                          </div>
-                        ))}
+                        {(() => {
+                          let currentOptions = questions[selectedIdx].OPTIONS;
+                          if (typeof currentOptions === 'string') {
+                            try {
+                              currentOptions = JSON.parse(currentOptions);
+                            } catch (e) {
+                              currentOptions = ['', '', '', ''];
+                            }
+                          }
+
+                          const safeOptions = Array.isArray(currentOptions) ? currentOptions : ['', '', '', ''];
+
+                          return safeOptions.map((opt, oIdx) => (
+                            <div key={oIdx} className="flex gap-3 md:gap-4 items-center">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const u = [...questions];
+                                  u[selectedIdx] = { ...u[selectedIdx], correct_option: oIdx };
+                                  setQuestions(u);
+                                }}
+                                className={`w-12 h-12 md:w-14 md:h-14 shrink-0 rounded-[16px] md:rounded-[20px] flex items-center justify-center border-2 font-black transition-all ${Number(questions[selectedIdx].correct_option) === oIdx
+                                  ? 'bg-brand-blue border-brand-blue text-white shadow-lg'
+                                  : 'border-slate-100 text-slate-300'
+                                  }`}
+                              >
+                                {String.fromCharCode(65 + oIdx)}
+                              </button>
+                              <input
+                                type="text"
+                                value={opt || ""}
+                                className="flex-1 p-4 md:p-5 bg-slate-50 border-none rounded-[16px] md:rounded-[20px] text-[13px] md:text-sm font-bold text-slate-900"
+                                onChange={(e) => {
+                                  const u = [...questions];
+                                  // Ensure we are working with an array locally
+                                  const newOptions = [...safeOptions];
+                                  newOptions[oIdx] = e.target.value;
+
+                                  u[selectedIdx] = {
+                                    ...u[selectedIdx],
+                                    OPTIONS: newOptions // Save as array locally for immediate React state update
+                                  };
+                                  setQuestions(u);
+                                }}
+                                placeholder={`Option ${String.fromCharCode(65 + oIdx)}`}
+                              />
+                            </div>
+                          ));
+                        })()}
                       </div>
                     </div>
                   ) : (
@@ -266,8 +352,8 @@ const AdminExamBuilder = () => {
                     <label className="text-[10px] font-black text-slate-400 uppercase block mb-3">Competency Points (0-50)</label>
                     <input type="number" value={gradingScore} onChange={(e) => setGradingScore(e.target.value)} className="w-full p-5 bg-slate-50 border-none rounded-[20px] font-black text-brand-blue" placeholder="e.g. 45" />
                   </div>
-                  <button 
-                    onClick={() => handleFinalizeGrade(sub)} 
+                  <button
+                    onClick={() => handleFinalizeGrade(sub)}
                     disabled={isLoading}
                     className="w-full sm:w-auto h-[64px] px-10 bg-slate-900 text-white rounded-[24px] text-[10px] font-black uppercase tracking-widest hover:bg-brand-blue transition-all disabled:opacity-50"
                   >

@@ -1,10 +1,10 @@
 import { create } from 'zustand';
 import { getAllCourses, getCourseById, GetCourseLessons, getMyCourses } from '../api/courseService';
-import { 
-  adminGetCategories, 
-  adminCreateCategory, 
-  adminDeleteCategory, 
-  adminDeleteCourse, 
+import {
+  adminGetCategories,
+  adminCreateCategory,
+  adminDeleteCategory,
+  adminDeleteCourse,
   adminToggleCourseStatus,
   adminDeleteLesson,
   adminGetCourses
@@ -33,16 +33,16 @@ export const useCourseStore = create((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const data = await adminGetCourses();
-      set({ 
+      set({
         courses: (data.data || data).map(c => ({
           ...c,
           progress: c.progress || 0,
           examStatus: c.examStatus || 'not_started',
           students: c.students || 0,
           status: c.status || 'Published',
-          submissions: c.submissions || [] 
+          submissions: c.submissions || []
         })),
-        isLoading: false 
+        isLoading: false
       });
     } catch (err) {
       set({ error: err.message, isLoading: false });
@@ -52,16 +52,16 @@ export const useCourseStore = create((set, get) => ({
   fetchCategories: async () => {
     try {
       const data = await adminGetCategories();
-      set({ categories: data.data || data }); 
+      set({ categories: data.data || data });
     } catch (err) {
       console.warn("Categories fetch failed:", err.message);
     }
   },
-  
+
   fetchCourseLessons: async (id) => {
     try {
       const data = await GetCourseLessons(id);
-      set({ courseLessons: data.data || data }); 
+      set({ courseLessons: data.data || data });
     } catch (err) {
       console.warn("Categories fetch failed:", err.message);
     }
@@ -99,18 +99,22 @@ export const useCourseStore = create((set, get) => ({
     }
   },
 
-  toggleStatus: async (id, status) => {
-    set({ isLoading: true, error: null });
+  toggleStatus: async (id, newStatus) => {
+    const previousCourses = get().courses;
+
+    set((state) => ({
+      courses: state.courses.map((c) =>
+        c.id === id ? { ...c, STATUS: newStatus } : c
+      ),
+    }));
     try {
-      await adminToggleCourseStatus(id, status);
-      set((state) => ({
-        courses: state.courses.map((c) => 
-          c.id === id ? { ...c, status: status } : c
-        ),
-        isLoading: false
-      }));
+      await adminToggleCourseStatus(id, newStatus);
     } catch (err) {
-      set({ error: err.message, isLoading: false });
+      set({
+        courses: previousCourses,
+        error: err.message
+      });
+      alert("Failed to update status on server. Reverting change.");
     }
   },
 

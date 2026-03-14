@@ -211,7 +211,7 @@ const AdminDashboard = () => {
                 <div className="p-6 md:p-8 border-b border-slate-100 flex justify-between items-center bg-white sticky top-0 z-10">
                   <h3 className="font-bold text-slate-900 flex items-center gap-3">
                     <div className={`w-2 h-2 rounded-full ${activityLogs.length > 0 ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`} />
-                    System Pulse
+                    System Logs
                   </h3>
                 </div>
                 <div className="divide-y divide-slate-50 px-4 overflow-y-auto max-h-[450px] no-scrollbar">
@@ -224,7 +224,7 @@ const AdminDashboard = () => {
                         <div className="min-w-0">
                           <p className="text-sm font-bold text-slate-800 truncate">{log.username}</p>
                           <p className="text-xs text-slate-500 truncate">
-                            {log.ACTION || log.action} <span className="text-brand-blue font-bold">{log.details}</span>
+                            {log.ACTION} <span className="text-brand-blue font-bold">{log.details}</span>
                           </p>
                         </div>
                       </div>
