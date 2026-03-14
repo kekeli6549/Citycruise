@@ -1,22 +1,44 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Send, MapPin, Mail, Phone } from 'lucide-react';
+import { MapPin, Mail, Loader2 } from 'lucide-react';
+import { sendEnquiry } from '../api/emailService';
 
 const Contact = () => {
+  const [formData, setFormData] = useState({
+    fullname: '',
+    email: '',
+    message: ''
+  });
   const [status, setStatus] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setStatus('Message sent successfully!');
-    setTimeout(() => setStatus(''), 3000);
+    setIsSubmitting(true);
+    setStatus('');
+
+    try {
+      await sendEnquiry(formData.email, formData.fullname, formData.message);
+
+      setStatus('Message sent successfully!');
+      setFormData({ fullname: '', email: '', message: '' });
+    } catch (error) {
+      setStatus('Failed to send message. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <section id="contact" className="py-24 px-6 bg-white relative overflow-hidden">
       <div className="max-w-7xl mx-auto">
         <div className="bg-white rounded-[3rem] shadow-2xl overflow-hidden flex flex-col md:flex-row border border-slate-100">
-          
-          {/* Left Panel: Info (High-End Blue) */}
+
+          {/* Left Panel: Info */}
           <div className="md:w-2/5 bg-brand-blue p-12 lg:p-16 text-white flex flex-col justify-between relative">
             <div className="relative z-10 space-y-8">
               <div>
@@ -46,8 +68,6 @@ const Contact = () => {
                 </div>
               </div>
             </div>
-
-            {/* Background Orbs */}
             <div className="absolute top-[-10%] right-[-10%] w-64 h-64 bg-white/10 rounded-full blur-3xl" />
           </div>
 
@@ -57,26 +77,63 @@ const Contact = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
                 <div className="space-y-2">
                   <label className="text-[10px] font-mono uppercase tracking-widest text-slate-400">Full Name</label>
-                  <input type="text" placeholder="John Doe" required className="w-full bg-slate-50 border border-slate-100 p-4 rounded-xl outline-none focus:ring-2 focus:ring-brand-blue/20 transition-all" />
+                  <input
+                    type="text"
+                    name="fullname"
+                    value={formData.fullname}
+                    onChange={handleChange}
+                    placeholder="John Doe"
+                    required
+                    className="w-full bg-slate-50 border border-slate-100 p-4 rounded-xl outline-none focus:ring-2 focus:ring-brand-blue/20 transition-all"
+                  />
                 </div>
                 <div className="space-y-2">
                   <label className="text-[10px] font-mono uppercase tracking-widest text-slate-400">Email Address</label>
-                  <input type="email" placeholder="john@example.com" required className="w-full bg-slate-50 border border-slate-100 p-4 rounded-xl outline-none focus:ring-2 focus:ring-brand-blue/20 transition-all" />
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    placeholder="john@example.com"
+                    required
+                    className="w-full bg-slate-50 border border-slate-100 p-4 rounded-xl outline-none focus:ring-2 focus:ring-brand-blue/20 transition-all"
+                  />
                 </div>
               </div>
-              
+
               <div className="space-y-2">
                 <label className="text-[10px] font-mono uppercase tracking-widest text-slate-400">Message</label>
-                <textarea placeholder="How can we help you?" rows="4" required className="w-full bg-slate-50 border border-slate-100 p-4 rounded-xl outline-none focus:ring-2 focus:ring-brand-blue/20 transition-all resize-none"></textarea>
+                <textarea
+                  name="message"
+                  value={formData.message}
+                  onChange={handleChange}
+                  placeholder="How can we help you?"
+                  rows="4"
+                  required
+                  className="w-full bg-slate-50 border border-slate-100 p-4 rounded-xl outline-none focus:ring-2 focus:ring-brand-blue/20 transition-all resize-none"
+                ></textarea>
               </div>
 
-              <motion.button 
+              <motion.button
+                disabled={isSubmitting}
                 whileTap={{ scale: 0.98 }}
-                className="w-full bg-brand-dark text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-brand-blue transition-all shadow-xl shadow-slate-200"
+                className={`w-full text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-xl shadow-slate-200 ${isSubmitting ? 'bg-slate-400' : 'bg-brand-dark hover:bg-brand-blue'}`}
               >
-                Request Call Back
+                {isSubmitting ? (
+                  <>
+                    <Loader2 size={18} className="animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  'Request Call Back'
+                )}
               </motion.button>
-              {status && <p className="text-green-600 font-mono text-xs text-center">{status}</p>}
+
+              {status && (
+                <p className={`font-mono text-xs text-center ${status.includes('Failed') ? 'text-red-500' : 'text-green-600'}`}>
+                  {status}
+                </p>
+              )}
             </form>
           </div>
         </div>
