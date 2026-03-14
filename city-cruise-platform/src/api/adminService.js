@@ -95,7 +95,7 @@ export const createExam = async (courseId, examData) => {
 };
 
 export const adminGetExamDetails = async (courseId) => {
-    const response = await apiClient.get(`/courses/${courseId}/exam`);
+    const response = await apiClient.get(`/admin/courses/${courseId}/exam`);
     return response.data;
 };
 
