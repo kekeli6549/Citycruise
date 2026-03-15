@@ -86,7 +86,7 @@ const AdminCourseManager = () => {
       description: course.description || '',
       intro: course.intro || '',
       price: course.price || '',
-      category_tag: categories[0]?.category_tag || '',
+      category_tag: course.category_tag || '',
       lessons: course.lessons || []
     });
     setPreviewUrl(course.image || null);
@@ -181,7 +181,7 @@ const AdminCourseManager = () => {
       courseForm.append('description', newCourseData.description);
       courseForm.append('price', newCourseData.price);
       courseForm.append('category_tag', newCourseData.category_tag);
-      if (imageFile) courseForm.append('coverImage', imageFile);
+      if (imageFile) courseForm.append('cover_image', imageFile);
 
       let currentCourseId = editingCourseId;
 
@@ -363,11 +363,11 @@ const AdminCourseManager = () => {
                           </div>
                         ) : (
                           <select
-                            value={newCourseData.category_tag}
+                            value={newCourseData.category_tag || ""}
                             onChange={(e) => setNewCourseData({ ...newCourseData, category_tag: e.target.value })}
                             className="w-full p-4 md:p-5 bg-slate-50 border-transparent border-2 rounded-[20px] md:rounded-[24px] focus:border-brand-blue/20 outline-none appearance-none font-bold"
                           >
-                            <option value="" disabled>Select Discipline</option>
+                            <option value="" disabled>Select Discipline</option>                       
                             {categories.map(cat => (
                               <option key={cat.id} value={cat.category_tag}>{cat.NAME}</option>
                             ))}
