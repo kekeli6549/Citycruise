@@ -239,8 +239,8 @@ const AdminCourseManager = () => {
         {courses.map((course) => (
           <div key={course.id} className="bg-white rounded-[32px] border border-slate-200 shadow-sm overflow-hidden group hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-500">
             <div className="h-48 bg-slate-100 relative overflow-hidden">
-              {course.image ? (
-                <img src={course.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt="" />
+              {course.cover_image ? (
+                <img src={`${import.meta.env.VITE_API_URL}${course.cover_image}`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt="" />
               ) : (
                 <div className={`w-full h-full bg-slate-200 flex items-center justify-center`}>
                   <ImageIcon className="text-slate-400" size={40} />
