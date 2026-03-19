@@ -1,5 +1,5 @@
-import { create } from 'zustand';
-import { getAllCourses, getCourseById, GetCourseLessons, getMyCourses } from '../api/courseService';
+  import { create } from 'zustand';
+import { getAllCourses, getCourseById, GetCourseLessons, getMyCourses, markLessonComplete } from '../api/courseService';
 import {
   adminGetCategories,
   adminCreateCategory,
@@ -12,7 +12,7 @@ import {
 
 export const useCourseStore = create((set, get) => ({
   courses: [],
-  courseLessons: [],
+  userCourseLessons: [],
   categories: [],
   enrolledCourses: [],
   selectedCourse: null,
@@ -23,6 +23,7 @@ export const useCourseStore = create((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const data = await getMyCourses();
+      console.log("Raw Backend Response:", data);
       set({ enrolledCourses: data.data || data, isLoading: false });
     } catch (err) {
       set({ error: err.message, isLoading: false });
@@ -33,6 +34,26 @@ export const useCourseStore = create((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const data = await adminGetCourses();
+      set({
+        courses: (data.data || data).map(c => ({
+          ...c,
+          progress: c.progress || 0,
+          examStatus: c.examStatus || 'not_started',
+          students: c.students || 0,
+          status: c.status || 'Published',
+          submissions: c.submissions || []
+        })),
+        isLoading: false
+      });
+    } catch (err) {
+      set({ error: err.message, isLoading: false });
+    }
+  },
+  
+  userFetchCourses: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const data = await getAllCourses();
       set({
         courses: (data.data || data).map(c => ({
           ...c,
@@ -61,7 +82,7 @@ export const useCourseStore = create((set, get) => ({
   fetchCourseLessons: async (id) => {
     try {
       const data = await GetCourseLessons(id);
-      set({ courseLessons: data.data || data });
+      set({ userCourseLessons: data.data || data });
     } catch (err) {
       console.warn("Categories fetch failed:", err.message);
     }
@@ -115,6 +136,21 @@ export const useCourseStore = create((set, get) => ({
         error: err.message
       });
       alert("Failed to update status on server. Reverting change.");
+    }
+  },
+
+  completeLesson: async (lessonId, addCompletedLesson) => {
+    try {
+      await markLessonComplete(lessonId);
+      
+      if (addCompletedLesson) {
+        addCompletedLesson(lessonId);
+      }
+      
+      return true;
+    } catch (err) {
+      console.error("Store error marking lesson complete:", err);
+      return false;
     }
   },
 

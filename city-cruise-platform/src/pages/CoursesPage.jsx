@@ -24,7 +24,7 @@ const CourseSkeleton = () => (
 const CoursesPage = () => {
   const navigate = useNavigate();
   const { purchasedCourses } = useAuthStore();
-  const { courses, categories, fetchCourses, fetchCategories, isLoading } = useCourseStore();
+  const { courses, categories, userFetchCourses, fetchCategories, isLoading } = useCourseStore();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState("Alphabetical");
@@ -32,9 +32,9 @@ const CoursesPage = () => {
   const [occupation, setOccupation] = useState("All");
 
   useEffect(() => {
-    fetchCourses();
+    userFetchCourses();
     fetchCategories();
-  }, [fetchCourses, fetchCategories]);
+  }, [userFetchCourses, fetchCategories]);
 
   const occupations = ["All", ...categories.map(cat => cat.name)];
   const filterOptions = ["Alphabetical", "Most Viewed"];
@@ -148,27 +148,28 @@ const CoursesPage = () => {
                     whileHover={{ y: -12 }}
                     className="group relative bg-white dark:bg-slate-900/40 rounded-[2.5rem] border border-slate-100 dark:border-slate-800/60 overflow-hidden flex flex-col transition-all duration-500 hover:border-brand-blue/30 hover:shadow-[0_20px_40px_-15px_rgba(59,130,246,0.15)]"
                   >
-                    <div className={`h-64 ${course.img || 'bg-slate-800'} flex items-center justify-center relative overflow-hidden`}>
-                      <div className="absolute inset-0 bg-slate-900/20 group-hover:bg-slate-900/0 transition-colors duration-500" />
+                    <div className={`h-64 flex items-center justify-center relative overflow-hidden`}>
+                      <div className={`absolute inset-0 bg-cover bg-center`} style={{ backgroundImage: `url(${import.meta.env.VITE_API_URL}${course.cover_image})` }} />
                       <PlayCircle className="text-white opacity-0 group-hover:opacity-100 transition-all scale-75 group-hover:scale-100 duration-500 drop-shadow-2xl" size={64} />
-                      
+
                       <div className="absolute top-6 left-6 px-4 py-1.5 bg-white/10 backdrop-blur-xl border border-white/20 rounded-full text-[8px] font-black uppercase tracking-[0.2em] text-white">
                         {course.category}
                       </div>
                     </div>
 
                     <div className="p-8 flex flex-col flex-1">
-                      <div className="flex justify-between items-start mb-4">
+                      <div className="flex justify-between items-start">
                         <h3 className="text-xl font-heading font-bold text-slate-900 dark:text-white group-hover:text-brand-blue transition-colors leading-tight">{course.title}</h3>
                         <div className="p-2 bg-slate-50 dark:bg-slate-800/50 rounded-xl group-hover:bg-brand-blue group-hover:text-white transition-all shrink-0">
                           <ArrowUpRight size={16} />
                         </div>
                       </div>
 
+                      <h3 className="text-xs mb-4 font-heading font-light text-slate-900 dark:text-white group-hover:text-brand-blue transition-colors leading-tight">{course.title}</h3>
                       <div className="flex items-center gap-6 mb-8">
                         <div className="flex items-center gap-2">
                           <Users size={14} className="text-slate-400 group-hover:text-brand-blue transition-colors" />
-                          <span className="text-[11px] text-slate-400 font-bold uppercase tracking-tighter">{(course.views / 1000).toFixed(1)}k Students</span>
+                          <span className="text-[11px] text-slate-400 font-bold uppercase tracking-tighter">{(course.views / 1000).toFixed(1)} Students</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <Star size={14} className="text-amber-400 fill-amber-400" />
@@ -190,11 +191,10 @@ const CoursesPage = () => {
                         </div>
                         <button
                           onClick={() => isOwned ? navigate(`/course/${course.id}`) : navigate(`/checkout/${course.id}`, { state: { course } })}
-                          className={`w-full py-4 rounded-2xl font-black uppercase text-[10px] tracking-[0.2em] transition-all active:scale-95 ${
-                            isOwned 
-                            ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 border border-slate-200 dark:border-slate-700' 
-                            : 'bg-slate-900 dark:bg-brand-blue text-white shadow-lg shadow-brand-blue/20 hover:shadow-brand-blue/40'
-                          }`}
+                          className={`w-full py-4 rounded-2xl font-black uppercase text-[10px] tracking-[0.2em] transition-all active:scale-95 ${isOwned
+                              ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 border border-slate-200 dark:border-slate-700'
+                              : 'bg-slate-900 dark:bg-brand-blue text-white shadow-lg shadow-brand-blue/20 hover:shadow-brand-blue/40'
+                            }`}
                         >
                           {isOwned ? "Access Course" : "Enroll Now"}
                         </button>

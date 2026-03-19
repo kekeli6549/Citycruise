@@ -2,30 +2,27 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../context/authStore';
-import { useAdminStore } from '../context/adminStore'; 
+import { useAdminStore } from '../context/adminStore';
 import { useCourseStore } from '../context/courseStore';
 import CertificateGenerator, { downloadCertificate } from '../components/CertificateGenerator';
-import { 
-  PlayCircle, Award, BookOpen, User, X, 
-  LogOut, Camera, KeyRound, Sparkles, 
+import {
+  PlayCircle, Award, BookOpen, User, X,
+  LogOut, Camera, KeyRound, Sparkles,
   FileText, RefreshCcw, ClipboardCheck,
   Trophy, AlertTriangle, ShieldCheck, Zap
 } from 'lucide-react';
 
 const Dashboard = () => {
-  // 1. Store Connections
   const { user, logout, login, certificates = [], completedLessons = [] } = useAuthStore();
-  const { gradedNotifications = [], clearNotification } = useAdminStore(); 
-  const { enrolledCourses = [], fetchMyCourses, isLoading } = useCourseStore();
+  const { gradedNotifications = [], clearNotification } = useAdminStore();
+  const { enrolledCourses, userCourseLessons, fetchCourseLessons, fetchMyCourses, isLoading } = useCourseStore();
   const navigate = useNavigate();
-  
-  // 2. UI State
+
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [activeNotification, setActiveNotification] = useState(null);
-  
-  // 3. Profile Form State
-  const [editName, setEditName] = useState(user?.username || user?.firstName || '');
+
+  const [editName, setEditName] = useState(user?.username || '');
   const [profileImage, setProfileImage] = useState(null);
   const fileInputRef = useRef(null);
   const certificateRef = useRef(null);
@@ -83,7 +80,7 @@ const Dashboard = () => {
     if (!course) return;
     setSelectedCourseForCert(course);
     setIsDownloading(true);
-    
+
     // Small delay to allow CertificateGenerator to register the new course prop
     setTimeout(async () => {
       try {
@@ -99,24 +96,24 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-white dark:bg-brand-dark flex flex-col selection:bg-brand-blue selection:text-white">
       {/* Hidden Certificate Engine */}
-      <CertificateGenerator 
-        user={user} 
-        course={selectedCourseForCert} 
-        certificateRef={certificateRef} 
+      <CertificateGenerator
+        user={user}
+        course={selectedCourseForCert}
+        certificateRef={certificateRef}
       />
 
       {/* Notifications Overlay (Exam Results) */}
       <AnimatePresence>
         {activeNotification && (
           <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-sm">
-            <motion.div 
-              initial={{ scale: 0.9, opacity: 0, y: 20 }} 
-              animate={{ scale: 1, opacity: 1, y: 0 }} 
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
               className="bg-white dark:bg-slate-900 w-full max-w-md rounded-[3rem] p-10 shadow-2xl border border-white/20 text-center relative overflow-hidden"
             >
               <div className={`absolute top-0 left-0 w-full h-2 ${activeNotification.passed ? 'bg-emerald-500' : 'bg-red-500'}`} />
-              
+
               <div className={`w-20 h-20 rounded-3xl mx-auto mb-6 flex items-center justify-center ${activeNotification.passed ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-500'}`}>
                 {activeNotification.passed ? <Trophy size={40} /> : <AlertTriangle size={40} />}
               </div>
@@ -125,7 +122,7 @@ const Dashboard = () => {
               <h2 className="text-3xl font-heading font-bold text-slate-900 dark:text-white mb-4">
                 {activeNotification.passed ? 'Assessment Passed' : 'Assessment Failed'}
               </h2>
-              
+
               <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-2xl mb-8">
                 <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Course: {activeNotification.courseName}</p>
                 <p className="text-4xl font-black text-slate-900 dark:text-white">{activeNotification.score}%</p>
@@ -133,7 +130,7 @@ const Dashboard = () => {
 
               <div className="space-y-3">
                 {activeNotification.passed ? (
-                  <button 
+                  <button
                     onClick={() => {
                       const courseObj = enrolledCourses.find(c => c.id === activeNotification.courseId);
                       handleDownload(courseObj || { title: activeNotification.courseName, id: activeNotification.courseId });
@@ -144,7 +141,7 @@ const Dashboard = () => {
                     Download Certificate
                   </button>
                 ) : (
-                  <button 
+                  <button
                     onClick={() => {
                       navigate(`/course/${activeNotification.courseId}`);
                       handleDismissNotification();
@@ -154,7 +151,7 @@ const Dashboard = () => {
                     Review Course Material
                   </button>
                 )}
-                <button 
+                <button
                   onClick={handleDismissNotification}
                   className="w-full py-4 text-slate-400 font-bold text-[10px] uppercase tracking-widest hover:text-slate-600 transition-colors"
                 >
@@ -171,8 +168,8 @@ const Dashboard = () => {
         <div>
           <p className="text-slate-400 font-mono text-[9px] uppercase tracking-[0.4em]">Navigator / Member Hub</p>
         </div>
-        <button 
-          onClick={() => setIsProfileOpen(true)} 
+        <button
+          onClick={() => setIsProfileOpen(true)}
           className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-brand-blue hover:ring-2 ring-brand-blue transition-all overflow-hidden shrink-0 shadow-lg"
         >
           {profileImage || user?.profilePic ? (
@@ -193,15 +190,15 @@ const Dashboard = () => {
             <div className="h-px w-12 bg-slate-200 dark:bg-slate-800" />
             <Sparkles size={14} className="text-amber-500 animate-pulse" />
           </motion.div>
-          
-          <motion.h1 
-            initial={{ opacity: 0, x: -20 }} 
-            animate={{ opacity: 1, x: 0 }} 
+
+          <motion.h1
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
             className="text-5xl md:text-7xl font-heading font-bold text-slate-900 dark:text-white leading-[1.1] tracking-tight"
           >
             Welcome & Progress, <br />
             <span className="text-brand-blue bg-clip-text inline-block italic">
-              {user?.username || user?.firstName || 'Innovator'}.
+              {user?.username || 'Innovator'}.
             </span>
           </motion.h1>
         </header>
@@ -224,8 +221,8 @@ const Dashboard = () => {
         </div>
 
         <div className="flex items-center justify-between mb-10">
-            <h2 className="text-2xl font-heading font-bold text-slate-900 dark:text-white">Active Curriculums</h2>
-            <div className="h-px flex-1 mx-8 bg-slate-100 dark:bg-slate-800" />
+          <h2 className="text-2xl font-heading font-bold text-slate-900 dark:text-white">Active Curriculums</h2>
+          <div className="h-px flex-1 mx-8 bg-slate-100 dark:bg-slate-800" />
         </div>
 
         {/* Courses Enrolled List */}
@@ -237,15 +234,23 @@ const Dashboard = () => {
             </div>
           ) : enrolledCourses.map((course, idx) => {
             const hasPassed = certificates?.includes(course.id);
-            const courseLessons = course?.lessons || [];
+            const courseLessons = userCourseLessons || [];
             const completedInThisCourse = courseLessons.filter(lesson => completedLessons.includes(lesson.id)).length;
-            const progressPercentage = courseLessons.length > 0 
-              ? Math.round((completedInThisCourse / courseLessons.length) * 100) 
+            const progressPercentage = courseLessons.length > 0
+              ? Math.round((completedInThisCourse / courseLessons.length) * 100)
               : 0;
-            
+
             return (
               <motion.div key={course.id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 + (idx * 0.1) }} className="group bg-white dark:bg-slate-900/40 rounded-[3rem] overflow-hidden border border-slate-100 dark:border-slate-800/60 flex flex-col md:flex-row shadow-sm hover:shadow-2xl transition-all duration-500">
                 <div className="w-full md:w-64 h-56 md:h-auto bg-slate-50 dark:bg-slate-800 flex items-center justify-center relative shrink-0 overflow-hidden">
+                  <div
+                    style={{
+                      backgroundImage: `url(${import.meta.env.VITE_API_URL}${course.cover_image})`,
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center'
+                    }}
+                    className="absolute inset-0 z-0"
+                  />
                   <div className="absolute inset-0 bg-gradient-to-br from-brand-blue/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                   {hasPassed ? <Award className="text-amber-500 drop-shadow-lg" size={64} /> : <PlayCircle className="text-brand-blue drop-shadow-lg" size={64} />}
                 </div>
@@ -253,7 +258,7 @@ const Dashboard = () => {
                   <div>
                     <h3 className="text-2xl font-heading font-bold text-slate-900 dark:text-white mb-3 group-hover:text-brand-blue transition-colors leading-tight">{course.title}</h3>
                     <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed mb-8 line-clamp-2">{course.description}</p>
-                    
+
                     {!hasPassed && (
                       <div className="mb-8">
                         <div className="flex justify-between items-end mb-3">
@@ -261,7 +266,7 @@ const Dashboard = () => {
                           <span className="text-xs font-mono font-bold text-brand-blue">{progressPercentage}%</span>
                         </div>
                         <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                          <motion.div 
+                          <motion.div
                             initial={{ width: 0 }}
                             animate={{ width: `${progressPercentage}%` }}
                             transition={{ duration: 1.5, ease: "circOut" }}
@@ -271,10 +276,10 @@ const Dashboard = () => {
                       </div>
                     )}
                   </div>
-                  
+
                   <div className="flex flex-wrap gap-3">
                     {hasPassed && (
-                      <button 
+                      <button
                         onClick={() => handleDownload(course)}
                         disabled={isDownloading}
                         className="flex items-center gap-2 px-6 py-3 bg-emerald-500 text-white rounded-2xl text-[10px] font-bold uppercase tracking-widest hover:shadow-lg hover:shadow-emerald-500/20 transition-all disabled:opacity-50"
@@ -311,19 +316,19 @@ const Dashboard = () => {
       <AnimatePresence>
         {isProfileOpen && (
           <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} 
-              onClick={() => setIsProfileOpen(false)} 
-              className="absolute inset-0 bg-slate-950/70 backdrop-blur-xl" 
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={() => setIsProfileOpen(false)}
+              className="absolute inset-0 bg-slate-950/70 backdrop-blur-xl"
             />
-            <motion.div 
-              initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} 
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
               className="relative bg-white dark:bg-slate-900 w-full max-w-md rounded-[3.5rem] p-10 shadow-[0_30px_100px_rgba(0,0,0,0.4)] overflow-y-auto max-h-[90vh] no-scrollbar border border-white/10"
             >
               <button onClick={() => setIsProfileOpen(false)} className="absolute top-8 right-8 text-slate-400 hover:text-brand-blue transition-all">
-                <X size={24}/>
+                <X size={24} />
               </button>
-              
+
               <div className="flex flex-col items-center mb-10">
                 <div className="relative group cursor-pointer" onClick={() => fileInputRef.current.click()}>
                   <div className="w-28 h-28 rounded-[2.5rem] bg-slate-50 dark:bg-slate-800 flex items-center justify-center overflow-hidden border-4 border-white dark:border-slate-800 shadow-2xl transition-transform group-hover:scale-105">
@@ -345,29 +350,29 @@ const Dashboard = () => {
               <form onSubmit={handleUpdateProfile} className="space-y-8">
                 <div className="space-y-3">
                   <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-1">Profile Username</label>
-                  <input 
-                    type="text" 
-                    value={editName} 
-                    onChange={(e) => setEditName(e.target.value)} 
-                    className="w-full p-5 bg-slate-50 dark:bg-slate-800 border-none rounded-[1.5rem] outline-none focus:ring-4 ring-brand-blue/10 dark:text-white text-base font-bold transition-all" 
+                  <input
+                    type="text"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    className="w-full p-5 bg-slate-50 dark:bg-slate-800 border-none rounded-[1.5rem] outline-none focus:ring-4 ring-brand-blue/10 dark:text-white text-base font-bold transition-all"
                     placeholder="Enter Username"
                   />
                 </div>
 
                 <div className="space-y-4">
                   <div className="flex items-center gap-2 text-slate-400">
-                    <KeyRound size={14} /> 
+                    <KeyRound size={14} />
                     <span className="text-[10px] font-black uppercase tracking-widest">Security Settings</span>
                   </div>
-                  <input 
-                    type="password" 
-                    placeholder="Old Password" 
-                    className="w-full p-5 bg-slate-50 dark:bg-slate-800 border-none rounded-[1.5rem] outline-none dark:text-white text-sm focus:ring-4 ring-brand-blue/10 transition-all" 
+                  <input
+                    type="password"
+                    placeholder="Old Password"
+                    className="w-full p-5 bg-slate-50 dark:bg-slate-800 border-none rounded-[1.5rem] outline-none dark:text-white text-sm focus:ring-4 ring-brand-blue/10 transition-all"
                   />
-                  <input 
-                    type="password" 
-                    placeholder="New Password" 
-                    className="w-full p-5 bg-slate-50 dark:bg-slate-800 border-none rounded-[1.5rem] outline-none dark:text-white text-sm focus:ring-4 ring-brand-blue/10 transition-all" 
+                  <input
+                    type="password"
+                    placeholder="New Password"
+                    className="w-full p-5 bg-slate-50 dark:bg-slate-800 border-none rounded-[1.5rem] outline-none dark:text-white text-sm focus:ring-4 ring-brand-blue/10 transition-all"
                   />
                 </div>
 
@@ -376,7 +381,7 @@ const Dashboard = () => {
                 </button>
               </form>
 
-              <button 
+              <button
                 onClick={logout}
                 className="w-full mt-6 flex items-center justify-center gap-3 text-red-500 font-bold text-[10px] uppercase tracking-widest p-5 rounded-[1.5rem] bg-red-50/50 dark:bg-red-900/10 hover:bg-red-50 transition-all"
               >
