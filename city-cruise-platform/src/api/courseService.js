@@ -25,6 +25,11 @@ export const getLessonDetails = async (id) => {
     return response.data;
 };
 
+export const getUserCourseProgress = async (courseId) => {
+    const response = await apiClient.get(`/courses/${courseId}/progress`);
+    return response.data; 
+};
+
 export const markLessonComplete = async (id) => {
     const response = await apiClient.post(`/lessons/${id}/complete`);
     return response.data;

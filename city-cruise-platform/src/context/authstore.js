@@ -1,15 +1,14 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { registerUser, loginUser } from '../api/authService';
+import { registerUser, loginUser, updateUserInfo } from '../api/authService';
 
 export const useAuthStore = create(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
       isAuthenticated: false,
       isLoading: false,
       error: null,
-      // Initializing lists to prevent map errors in UI
       purchasedCourses: [],
       completedCourses: [],
       completedLessons: [],
@@ -22,9 +21,9 @@ export const useAuthStore = create(
         try {
           const response = await registerUser(formData);
           const userData = response.data?.user || response.data;
-          set({ 
-            user: userData, 
-            isAuthenticated: true, 
+          set({
+            user: userData,
+            isAuthenticated: true,
             isLoading: false,
           });
           return { success: true };
@@ -40,16 +39,34 @@ export const useAuthStore = create(
         try {
           const response = await loginUser(credentials);
           // Syncing with authService data return
-          const userData = response.data?.user || response; 
+          const userData = response.data?.user || response;
           set({
             user: userData,
             token: response.data?.token || response.token,
             isAuthenticated: true,
-            isLoading: false,           
+            isLoading: false,
           });
           return { success: true };
         } catch (err) {
           const message = err.response?.data?.message || "Invalid credentials";
+          set({ error: message, isLoading: false });
+          return { success: false, message };
+        }
+      },
+
+      updateProfile: async (updateData) => {
+        set({ isLoading: true, error: null });
+        try {
+          const response = await updateUserInfo(updateData);
+          const updatedUser = response.data || response;
+
+          set((state) => ({
+            user: { ...state.user, ...updatedUser },
+            isLoading: false,
+          }));
+          return { success: true, message: response};
+        } catch (err) {
+          const message = err.response?.data?.message || "Update failed";
           set({ error: message, isLoading: false });
           return { success: false, message };
         }
@@ -69,6 +86,19 @@ export const useAuthStore = create(
         });
         localStorage.removeItem('city-cruise-auth');
       },
+
+      fetchUserProgress: async (courseId) => {
+        try {
+          const response = await getUserCourseProgress(courseId);
+          set({ completedLessons: response.data || [] });
+        } catch (err) {
+          console.error("Failed to fetch progress from DB:", err);
+        }
+      },
+
+      addCompletedLesson: (lessonId) => set((state) => ({
+        completedLessons: [...new Set([...(state.completedLessons || []), Number(lessonId)])]
+      })),
 
       purchaseCourse: (courseId) => set((state) => {
         const newLog = {

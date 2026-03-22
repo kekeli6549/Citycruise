@@ -13,9 +13,9 @@ import {
 } from 'lucide-react';
 
 const Dashboard = () => {
-  const { user, logout, login, certificates = [], completedLessons = [] } = useAuthStore();
+  const { user, logout, updateProfile, certificates = [], completedLessons = [] } = useAuthStore();
   const { gradedNotifications = [], clearNotification } = useAdminStore();
-  const { enrolledCourses, userCourseLessons, fetchCourseLessons, fetchMyCourses, isLoading } = useCourseStore();
+  const { enrolledCourses, fetchMyCourses, isLoading } = useCourseStore();
   const navigate = useNavigate();
 
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -23,10 +23,9 @@ const Dashboard = () => {
   const [activeNotification, setActiveNotification] = useState(null);
 
   const [editName, setEditName] = useState(user?.username || '');
-  const [profileImage, setProfileImage] = useState(null);
-  const fileInputRef = useRef(null);
   const certificateRef = useRef(null);
   const [selectedCourseForCert, setSelectedCourseForCert] = useState(null);
+  const [newPassword, setNewPassword] = useState('');
 
   // Dynamic Status Logic based on Certificates earned
   const getMemberStatus = () => {
@@ -61,19 +60,36 @@ const Dashboard = () => {
     }
   };
 
-  const handleImageUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => setProfileImage(reader.result);
-      reader.readAsDataURL(file);
-    }
+  const getInitials = (name) => {
+    if (!name) return "??";
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
   };
 
-  const handleUpdateProfile = (e) => {
+  const handleUpdateProfile = async (e) => {
     e.preventDefault();
-    login({ ...user, username: editName, profilePic: profileImage || user?.profilePic });
-    setIsProfileOpen(false);
+
+    const updateData = {
+      username: editName,
+    };
+
+    if (newPassword) {
+      updateData.password = newPassword;
+    }
+
+    const result = await updateProfile(updateData);
+
+    if (result.success) {
+      setIsProfileOpen(false);
+      setNewPassword('');
+      logout();
+    } else {
+      alert(result.message);
+    }
   };
 
   const handleDownload = async (course) => {
@@ -172,11 +188,11 @@ const Dashboard = () => {
           onClick={() => setIsProfileOpen(true)}
           className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-brand-blue hover:ring-2 ring-brand-blue transition-all overflow-hidden shrink-0 shadow-lg"
         >
-          {profileImage || user?.profilePic ? (
-            <img src={profileImage || user.profilePic} alt="Profile" className="w-full h-full object-cover" />
-          ) : (
-            <User size={20} />
-          )}
+          <div className="w-full h-full rounded-full bg-brand-blue flex items-center justify-center border-4 border-white dark:border-slate-800 shadow-2xl">
+            <span className="text-lg font-black text-white tracking-tighter">
+              {getInitials(editName)}
+            </span>
+          </div>
         </button>
       </nav>
 
@@ -234,11 +250,9 @@ const Dashboard = () => {
             </div>
           ) : enrolledCourses.map((course, idx) => {
             const hasPassed = certificates?.includes(course.id);
-            const courseLessons = userCourseLessons || [];
-            const completedInThisCourse = courseLessons.filter(lesson => completedLessons.includes(lesson.id)).length;
-            const progressPercentage = courseLessons.length > 0
-              ? Math.round((completedInThisCourse / courseLessons.length) * 100)
-              : 0;
+            const total = course.total_lessons || 0;
+            const completed = course.completed_lessons || 0;
+            const progressPercentage = total > 0 ? Math.round((completed / total) * 100) : 0;
 
             return (
               <motion.div key={course.id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 + (idx * 0.1) }} className="group bg-white dark:bg-slate-900/40 rounded-[3rem] overflow-hidden border border-slate-100 dark:border-slate-800/60 flex flex-col md:flex-row shadow-sm hover:shadow-2xl transition-all duration-500">
@@ -251,6 +265,7 @@ const Dashboard = () => {
                     }}
                     className="absolute inset-0 z-0"
                   />
+                  {/* <img src={import.meta.env.VITE_API_URL + course.cover_image} alt={course.title} /> */}
                   <div className="absolute inset-0 bg-gradient-to-br from-brand-blue/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                   {hasPassed ? <Award className="text-amber-500 drop-shadow-lg" size={64} /> : <PlayCircle className="text-brand-blue drop-shadow-lg" size={64} />}
                 </div>
@@ -323,26 +338,19 @@ const Dashboard = () => {
             />
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
-              className="relative bg-white dark:bg-slate-900 w-full max-w-md rounded-[3.5rem] p-10 shadow-[0_30px_100px_rgba(0,0,0,0.4)] overflow-y-auto max-h-[90vh] no-scrollbar border border-white/10"
+              className="relative bg-white dark:bg-slate-900 w-full max-w-md rounded-[3.5rem] p-10 shadow-2xl border border-white/10"
             >
-              <button onClick={() => setIsProfileOpen(false)} className="absolute top-8 right-8 text-slate-400 hover:text-brand-blue transition-all">
+              <button onClick={() => setIsProfileOpen(false)} className="absolute top-8 right-8 text-slate-400 hover:text-brand-blue">
                 <X size={24} />
               </button>
 
               <div className="flex flex-col items-center mb-10">
-                <div className="relative group cursor-pointer" onClick={() => fileInputRef.current.click()}>
-                  <div className="w-28 h-28 rounded-[2.5rem] bg-slate-50 dark:bg-slate-800 flex items-center justify-center overflow-hidden border-4 border-white dark:border-slate-800 shadow-2xl transition-transform group-hover:scale-105">
-                    {profileImage || user?.profilePic ? (
-                      <img src={profileImage || user.profilePic} alt="Preview" className="w-full h-full object-cover" />
-                    ) : (
-                      <User size={48} className="text-slate-200" />
-                    )}
-                  </div>
-                  <div className="absolute -bottom-2 -right-2 bg-brand-blue text-white p-3 rounded-2xl border-4 border-white dark:border-slate-900 shadow-lg transition-transform group-hover:rotate-12">
-                    <Camera size={16} />
-                  </div>
-                  <input type="file" ref={fileInputRef} onChange={handleImageUpload} className="hidden" accept="image/*" />
+                <div className="w-24 h-24 rounded-full bg-brand-blue flex items-center justify-center border-4 border-white dark:border-slate-800 shadow-2xl">
+                  <span className="text-3xl font-black text-white tracking-tighter">
+                    {getInitials(editName)}
+                  </span>
                 </div>
+
                 <h3 className="text-3xl font-heading font-bold mt-8 text-slate-900 dark:text-white">Identity Hub</h3>
                 <p className="text-[10px] font-mono text-slate-400 uppercase tracking-widest mt-1">Tier: {status.label}</p>
               </div>
@@ -355,36 +363,29 @@ const Dashboard = () => {
                     value={editName}
                     onChange={(e) => setEditName(e.target.value)}
                     className="w-full p-5 bg-slate-50 dark:bg-slate-800 border-none rounded-[1.5rem] outline-none focus:ring-4 ring-brand-blue/10 dark:text-white text-base font-bold transition-all"
-                    placeholder="Enter Username"
                   />
                 </div>
 
                 <div className="space-y-4">
                   <div className="flex items-center gap-2 text-slate-400">
                     <KeyRound size={14} />
-                    <span className="text-[10px] font-black uppercase tracking-widest">Security Settings</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest">Update Password</span>
                   </div>
                   <input
                     type="password"
-                    placeholder="Old Password"
-                    className="w-full p-5 bg-slate-50 dark:bg-slate-800 border-none rounded-[1.5rem] outline-none dark:text-white text-sm focus:ring-4 ring-brand-blue/10 transition-all"
-                  />
-                  <input
-                    type="password"
                     placeholder="New Password"
-                    className="w-full p-5 bg-slate-50 dark:bg-slate-800 border-none rounded-[1.5rem] outline-none dark:text-white text-sm focus:ring-4 ring-brand-blue/10 transition-all"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="w-full p-5 bg-slate-50 dark:bg-slate-800 border-none rounded-[1.5rem] outline-none dark:text-white text-sm focus:ring-4 ring-brand-blue/10"
                   />
                 </div>
 
-                <button type="submit" className="w-full bg-brand-blue text-white py-5 rounded-[1.5rem] font-bold uppercase text-[10px] tracking-[0.3em] shadow-2xl shadow-brand-blue/30 hover:bg-blue-600 hover:-translate-y-1 transition-all">
-                  Apply Updates
+                <button type="submit" disabled={isLoading} className="w-full bg-brand-blue text-white py-5 rounded-[1.5rem] font-bold uppercase text-[10px] tracking-[0.3em] shadow-2xl shadow-brand-blue/30 hover:bg-blue-600 transition-all">
+                  {isLoading ? "Updating..." : "Save Changes"}
                 </button>
               </form>
 
-              <button
-                onClick={logout}
-                className="w-full mt-6 flex items-center justify-center gap-3 text-red-500 font-bold text-[10px] uppercase tracking-widest p-5 rounded-[1.5rem] bg-red-50/50 dark:bg-red-900/10 hover:bg-red-50 transition-all"
-              >
+              <button onClick={logout} className="w-full mt-6 flex items-center justify-center gap-3 text-red-500 font-bold text-[10px] uppercase tracking-widest p-5 rounded-[1.5rem] bg-red-50/50 dark:bg-red-900/10 hover:bg-red-50">
                 <LogOut size={16} /> Sign Out
               </button>
             </motion.div>

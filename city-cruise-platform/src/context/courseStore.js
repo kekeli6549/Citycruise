@@ -1,4 +1,4 @@
-  import { create } from 'zustand';
+import { create } from 'zustand';
 import { getAllCourses, getCourseById, GetCourseLessons, getMyCourses, markLessonComplete } from '../api/courseService';
 import {
   adminGetCategories,
@@ -16,6 +16,7 @@ export const useCourseStore = create((set, get) => ({
   categories: [],
   enrolledCourses: [],
   selectedCourse: null,
+  progressSummary: [],
   isLoading: false,
   error: null,
 
@@ -29,6 +30,8 @@ export const useCourseStore = create((set, get) => ({
       set({ error: err.message, isLoading: false });
     }
   },
+
+
 
   fetchCourses: async () => {
     set({ isLoading: true, error: null });
@@ -49,7 +52,7 @@ export const useCourseStore = create((set, get) => ({
       set({ error: err.message, isLoading: false });
     }
   },
-  
+
   userFetchCourses: async () => {
     set({ isLoading: true, error: null });
     try {
@@ -142,11 +145,11 @@ export const useCourseStore = create((set, get) => ({
   completeLesson: async (lessonId, addCompletedLesson) => {
     try {
       await markLessonComplete(lessonId);
-      
+
       if (addCompletedLesson) {
         addCompletedLesson(lessonId);
       }
-      
+
       return true;
     } catch (err) {
       console.error("Store error marking lesson complete:", err);

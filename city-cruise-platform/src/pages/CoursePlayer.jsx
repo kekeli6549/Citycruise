@@ -10,21 +10,16 @@ const CoursePlayer = () => {
   const { courseId } = useParams();
   const navigate = useNavigate();
 
-  // 1. Normalize ID to Number immediately to prevent "=== mismatch"
   const numericCourseId = Number(courseId);
 
-  // 2. Extract state from stores
-  // Added userCourseLessons here as per your store update
   const { courses, enrolledCourses, fetchCourseLessons, userCourseLessons, isLoading: storeLoading, completeLesson } = useCourseStore();
-  const { completeCourse, completedCourses, completedLessons: globalCompletedLessons, addCompletedLesson } = useAuthStore();
+  const { completeCourse, completedCourses, completedLessons: globalCompletedLessons, addCompletedLesson, fetchUserProgress } = useAuthStore();
 
-  // 3. Find the course - checks both arrays just in case
   const course = useMemo(() => {
     const list = enrolledCourses?.length > 0 ? enrolledCourses : courses;
     return list.find(c => Number(c.id) === numericCourseId);
   }, [courses, enrolledCourses, numericCourseId]);
 
-  // 4. Lessons Logic: Priority to userCourseLessons, then course.lessons
   const courseLessons = useMemo(() => {
     return (userCourseLessons && userCourseLessons.length > 0) ? userCourseLessons : (course?.lessons || []);
   }, [userCourseLessons, course]);
@@ -36,7 +31,10 @@ const CoursePlayer = () => {
   // Effect: Fetch lessons if missing
   useEffect(() => {
     if (numericCourseId) {
-      fetchCourseLessons(numericCourseId).finally(() => setIsLoading(false));
+      Promise.all([
+        fetchCourseLessons(numericCourseId),
+        fetchUserProgress(numericCourseId)
+      ]).finally(() => setIsLoading(false));
     }
   }, [numericCourseId, fetchCourseLessons]);
 
@@ -55,9 +53,11 @@ const CoursePlayer = () => {
   }, [activeLessonId]);
 
   // Progress Calculations
-  const completedInThisCourse = courseLessons.filter(lesson =>
-    globalCompletedLessons.includes(Number(lesson.id)) || globalCompletedLessons.includes(String(lesson.id))
-  );
+  const completedInThisCourse = useMemo(() => {
+    return courseLessons.filter(lesson =>
+      globalCompletedLessons.some(id => Number(id) === Number(lesson.id))
+    );
+  }, [courseLessons, globalCompletedLessons]);
 
   const progressPercentage = courseLessons.length > 0
     ? Math.round((completedInThisCourse.length / courseLessons.length) * 100)
@@ -178,8 +178,8 @@ const CoursePlayer = () => {
                 onClick={handleLessonComplete}
                 disabled={globalCompletedLessons.includes(activeLessonId)}
                 className={`flex items-center gap-3 px-8 py-4 rounded-2xl font-bold text-[10px] uppercase tracking-widest transition-all ${globalCompletedLessons.includes(activeLessonId)
-                    ? 'bg-emerald-50 text-emerald-500 border border-emerald-100'
-                    : 'bg-slate-900 text-white hover:bg-brand-blue'
+                  ? 'bg-emerald-50 text-emerald-500 border border-emerald-100'
+                  : 'bg-slate-900 text-white hover:bg-brand-blue'
                   }`}
               >
                 {globalCompletedLessons.includes(activeLessonId) ? <><CheckCircle size={14} /> Content Secured</> : <><Play size={14} /> Mark as Complete & Next</>}
