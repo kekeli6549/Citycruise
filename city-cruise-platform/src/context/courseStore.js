@@ -9,6 +9,7 @@ import {
   adminDeleteLesson,
   adminGetCourses
 } from '../api/adminService';
+import { getExamHistory } from '../api/examService';
 
 export const useCourseStore = create((set, get) => ({
   courses: [],
@@ -17,6 +18,7 @@ export const useCourseStore = create((set, get) => ({
   enrolledCourses: [],
   selectedCourse: null,
   progressSummary: [],
+  examHistory: [],
   isLoading: false,
   error: null,
 
@@ -174,5 +176,15 @@ export const useCourseStore = create((set, get) => ({
     } catch (err) {
       throw err;
     }
-  }
+  },
+
+  fetchExamHistory: async () => {
+    try {
+      const response = await getExamHistory();
+      set({ examHistory: response.data?.data || [] });
+    } catch (err) {
+      console.error("History fetch error", err);
+    }
+  },
+
 }));

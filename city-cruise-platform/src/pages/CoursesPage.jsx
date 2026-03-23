@@ -152,8 +152,8 @@ const CoursesPage = () => {
                       <div className={`absolute inset-0 bg-cover bg-center`} style={{ backgroundImage: `url(${import.meta.env.VITE_API_URL}${course.cover_image})` }} />
                       <PlayCircle className="text-white opacity-0 group-hover:opacity-100 transition-all scale-75 group-hover:scale-100 duration-500 drop-shadow-2xl" size={64} />
 
-                      <div className="absolute top-6 left-6 px-4 py-1.5 bg-white/10 backdrop-blur-xl border border-white/20 rounded-full text-[8px] font-black uppercase tracking-[0.2em] text-white">
-                        {course.category}
+                      <div className="absolute top-6 left-6 px-4 py-1.5 bg-white/10 backdrop-blur-xl border border-white/20 rounded-full text-[8px] font-black uppercase tracking-[0.2em] text-black">
+                        {course.category_tag}
                       </div>
                     </div>
 
@@ -165,7 +165,7 @@ const CoursesPage = () => {
                         </div>
                       </div>
 
-                      <h3 className="text-xs mb-4 font-heading font-light text-slate-900 dark:text-white group-hover:text-brand-blue transition-colors leading-tight">{course.title}</h3>
+                      <h3 className="text-xs mb-4 font-heading font-light text-slate-900 dark:text-white group-hover:text-brand-blue transition-colors leading-tight">{course.description}</h3>
                       <div className="flex items-center gap-6 mb-8">
                         <div className="flex items-center gap-2">
                           <Users size={14} className="text-slate-400 group-hover:text-brand-blue transition-colors" />
