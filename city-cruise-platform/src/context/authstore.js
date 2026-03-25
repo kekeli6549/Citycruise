@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { registerUser, loginUser, updateUserInfo } from '../api/authService';
+import { registerUser, loginUser, updateUserInfo, logoutUser } from '../api/authService';
+import {getUserCourseProgress} from '../api/courseService'
 
 export const useAuthStore = create(
   persist(
@@ -38,7 +39,6 @@ export const useAuthStore = create(
         set({ isLoading: true, error: null });
         try {
           const response = await loginUser(credentials);
-          // Syncing with authService data return
           const userData = response.data?.user || response;
           set({
             user: userData,
@@ -64,7 +64,7 @@ export const useAuthStore = create(
             user: { ...state.user, ...updatedUser },
             isLoading: false,
           }));
-          return { success: true, message: response};
+          return { success: true, message: response };
         } catch (err) {
           const message = err.response?.data?.message || "Update failed";
           set({ error: message, isLoading: false });
@@ -72,19 +72,27 @@ export const useAuthStore = create(
         }
       },
 
-      logout: () => {
-        set({
-          user: null,
-          isAuthenticated: false,
-          purchasedCourses: [],
-          completedCourses: [],
-          completedLessons: [],
-          certificates: [],
-          examResults: [],
-          activityLog: [],
-          error: null
-        });
-        localStorage.removeItem('city-cruise-auth');
+      logout: async () => {
+        set({ isLoading: true });
+        try {
+          await logoutUser();
+        } catch (err) {
+          console.warn("Server-side logout failed, clearing local state anyway.");
+        } finally {
+          set({
+            user: null,
+            isAuthenticated: false,
+            purchasedCourses: [],
+            completedCourses: [],
+            completedLessons: [],
+            certificates: [],
+            examResults: [],
+            activityLog: [],
+            error: null,
+            isLoading: false
+          });
+          localStorage.removeItem('city-cruise-auth');
+        }
       },
 
       fetchUserProgress: async (courseId) => {
@@ -135,7 +143,7 @@ export const useAuthStore = create(
       recordExamResult: (courseId, title, passed, score) => set((state) => {
         const newLog = {
           id: Date.now(),
-          user: `${state.user?.firstName || 'Innovator'}`,
+          user: `${state.user?.username || 'Innovator'}`,
           action: passed ? "Passed Exam" : "Failed Exam",
           target: title,
           time: "Just now"

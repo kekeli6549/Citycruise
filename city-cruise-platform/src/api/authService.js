@@ -27,6 +27,9 @@ export const loginUser = async (credentials) => {
     return response.data;
 };
 
+export const logoutUser = async () => {
+    await apiClient.post('/auth/logout');
+};
 
 export const getProfile = async () => {
     const response = await apiClient.get('/auth/profile');
