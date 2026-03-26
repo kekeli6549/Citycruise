@@ -2,22 +2,33 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search, Filter, ChevronRight, X, User,
-  Calendar, CreditCard, Edit3, Ban, CheckCircle2, RefreshCcw
+  Calendar, CreditCard, Edit3, Ban, CheckCircle2, RefreshCcw, KeyRound
 } from 'lucide-react';
 import { useAdminStore } from '../context/adminStore';
 import ConfirmationModal from '../components/ConfirmationModal';
+import { adminUpdateUser } from '../api/adminService';
 
 const AdminUserManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedUser, setSelectedUser] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isProfileLoading, setIsProfileLoading] = useState(false);
+  const [editRole, setEditRole] = useState('student');
+  const [newPassword, setNewPassword] = useState('');
 
   const { students, toggleUserStatus, fetchStudents, isLoading } = useAdminStore();
 
   useEffect(() => {
     fetchStudents();
-  }, [fetchStudents]);
+  }, [fetchStudents, isProfileOpen]);
+
+  useEffect(() => {
+  if (selectedUser) {
+    setEditRole(selectedUser.role || 'student');
+  }
+}, [selectedUser]);
 
   const handleToggleStatus = async () => {
     if (!selectedUser) return;
@@ -25,12 +36,34 @@ const AdminUserManagement = () => {
     const targetStatus = !selectedUser.isActive;
     await toggleUserStatus(userId, targetStatus);
 
-    // Update local state for immediate feedback
     setSelectedUser(prev => ({
       ...prev,
       isActive: targetStatus
     }));
     setIsConfirmOpen(false);
+  };
+
+  const handleUpdateProfile = async (e) => {
+    e.preventDefault();
+    setIsProfileLoading(true);
+
+    const updateData = {
+      role: editRole
+    };
+
+    if (newPassword) {
+      updateData.password = newPassword;
+    }
+
+    const result = await adminUpdateUser(selectedUser.id, updateData);
+
+    if (result.success) {
+      setIsProfileLoading(false)
+      setIsProfileOpen(false);
+      setNewPassword('');
+    } else {
+      alert(result.message);
+    }
   };
 
   const filteredStudents = students || [];
@@ -194,9 +227,9 @@ const AdminUserManagement = () => {
               </div>
 
               <div className="pt-8 border-t border-slate-100 mt-auto space-y-3">
-                <button className="w-full flex items-center justify-center gap-3 py-4 bg-slate-900 text-white rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg shadow-slate-200">
+                <button onClick={() => setIsProfileOpen(true)} className="w-full flex items-center justify-center gap-3 py-4 bg-slate-900 text-white rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg shadow-slate-200">
                   <Edit3 size={16} /> Edit Profile
-                </button>
+                </button> 
                 <button
                   onClick={() => setIsConfirmOpen(true)}
                   className={`w-full flex items-center justify-center gap-3 py-4 rounded-2xl font-bold text-xs uppercase tracking-widest transition-all ${selectedUser.isActive === false ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100' : 'bg-red-50 text-red-600 hover:bg-red-100'}`}
@@ -206,6 +239,56 @@ const AdminUserManagement = () => {
               </div>
             </motion.div>
           </>
+        )}
+      </AnimatePresence>
+
+      {/* Identity Sidebar */}
+      <AnimatePresence>
+        {isProfileOpen && selectedUser && (
+          <div className="fixed inset-0 z-[160] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={() => setIsProfileOpen(false)}
+              className="absolute inset-0 bg-slate-950/70 backdrop-blur-xl"
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+              className="relative bg-white dark:bg-slate-900 w-full max-w-md rounded-[3.5rem] p-10 shadow-2xl border border-white/10"
+            >
+              <button onClick={() => setIsProfileOpen(false)} className="absolute top-8 right-8 text-slate-400 hover:text-brand-blue">
+                <X size={24} />
+              </button>
+
+              <form onSubmit={handleUpdateProfile} className="space-y-8">
+                <div className="space-y-3">
+                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-1">Change Role</label>
+                  <select value={editRole} name="role" id="role" onChange={(e) => setEditRole(e.target.value)} className="w-full p-5 bg-slate-50 dark:bg-slate-800 border-none rounded-[1.5rem] outline-none focus:ring-4 ring-brand-blue/10 dark:text-white text-base font-bold transition-all">
+                    <option>Switch role</option>
+                    <option value="student">Student</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 text-slate-400">
+                    <KeyRound size={14} />
+                    <span className="text-[10px] font-black uppercase tracking-widest">Change Password</span>
+                  </div>
+                  <input
+                    type="password"
+                    placeholder="New Password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="w-full p-5 bg-slate-50 dark:bg-slate-800 border-none rounded-[1.5rem] outline-none dark:text-white text-sm focus:ring-4 ring-brand-blue/10"
+                  />
+                </div>
+
+                <button type="submit" disabled={isProfileLoading} className="w-full bg-brand-blue text-white py-5 rounded-[1.5rem] font-bold uppercase text-[10px] tracking-[0.3em] shadow-2xl shadow-brand-blue/30 hover:bg-blue-600 transition-all">
+                  {isProfileLoading ? "Updating..." : "Save Changes"}
+                </button>
+              </form>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
 

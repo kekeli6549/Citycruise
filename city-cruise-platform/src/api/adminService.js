@@ -1,5 +1,18 @@
 import apiClient from './apiClient';
 
+export const adminUpdateUser = async (id, userData) => {
+    const payload = {};
+    if (userData.role) payload.role = userData.role;
+    if (userData.password) payload.password = userData.password;
+
+    const response = await apiClient.patch(`/admin/user/update/${id}`, payload, {
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    });
+    return response.data;
+};
+
 // Courses
 export const adminCreateCourse = async (formData) => {
     const response = await apiClient.post('/admin/courses', formData, {
@@ -79,13 +92,8 @@ export const getPendingExams = async () => {
     return response.data;
 };
 
-export const gradeTheory = async (submissionId, theoryScore) => {
-    const response = await apiClient.patch(`/admin/submissions/${submissionId}/grade`, { theoryScore });
-    return response.data;
-};
-
-export const approveSubmission = async (submissionId) => {
-    const response = await apiClient.post(`/admin/submissions/${submissionId}/approve`);
+export const finalizeSubmission = async (submissionId, theoryScore) => {
+    const response = await apiClient.patch(`/admin/submissions/${submissionId}/finalize`, { theoryScore });
     return response.data;
 };
 

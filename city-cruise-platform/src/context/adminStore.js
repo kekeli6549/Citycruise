@@ -3,9 +3,8 @@ import { persist } from 'zustand/middleware';
 import { 
   getStudents, 
   getPendingExams, 
-  gradeTheory, 
-  approveSubmission, 
   adminGetStats, 
+  finalizeSubmission,
   adminGetActivityLogs, 
   adminToggleUserStatus 
 } from '../api/adminService';
@@ -56,45 +55,48 @@ export const useAdminStore = create(
         }
       },
 
-      finalizeGrading: async (subId, theoryScore, authStoreAction) => {
-        set({ isLoading: true, error: null });
-        try {
-          // Calling both required endpoints from adminService
-          await gradeTheory(subId, theoryScore);
-          const approvalData = await approveSubmission(subId);
-          const { finalScore, passed } = approvalData.data || approvalData;
+finalizeGrading: async (subId, theoryScore, authStoreAction) => {
+    set({ isLoading: true, error: null });
+    try {
+        const result = await finalizeSubmission(subId, theoryScore);
+        
+        // Ensure we handle the nesting correctly based on your API response
+        const { finalScore, passed, certificateUuid } = result.data;
 
-          const state = get();
-          const submission = state.pendingSubmissions.find(s => s.id === subId);
-          
-          if (submission && authStoreAction) {
-            authStoreAction(submission.courseId, submission.course, passed, finalScore);
-          }
+        const state = get();
+        const submission = state.pendingSubmissions.find(s => s.id === subId);
+        
+        // Update user's progress in the auth store if provided
+        if (submission && authStoreAction) {
+            authStoreAction(submission.courseId, submission.courseTitle, passed, finalScore);
+        }
 
-          const newNotification = submission ? {
+        // Create the notification for the admin/student
+        const newNotification = submission ? {
             id: Date.now(),
-            studentId: submission.studentId,
-            courseName: submission.course,
-            courseId: submission.courseId,
+            studentId: submission.user_id,
+            courseName: submission.courseTitle,
             score: finalScore,
             passed: passed,
+            certId: certificateUuid,
             viewed: false
-          } : null;
+        } : null;
 
-          set({
+        set({
             pendingSubmissions: state.pendingSubmissions.filter(s => s.id !== subId),
             gradedNotifications: newNotification 
-              ? [newNotification, ...state.gradedNotifications]
-              : state.gradedNotifications,
+                ? [newNotification, ...state.gradedNotifications]
+                : state.gradedNotifications,
             isLoading: false
-          });
-          
-          return { finalScore, passed };
-        } catch (err) {
-          set({ error: err.message, isLoading: false });
-          return null;
-        }
-      },
+        });
+        
+        return { finalScore, passed };
+    } catch (err) {
+        const errMsg = err.response?.data?.message || "Failed to finalize grade";
+        set({ error: errMsg, isLoading: false });
+        return null;
+    }
+},
 
       clearNotification: (notifId) => set((state) => ({
         gradedNotifications: state.gradedNotifications.filter(n => n.id !== notifId)

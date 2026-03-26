@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 
 const Dashboard = () => {
-  const { user, logout, updateProfile, certificates = [], completedLessons = [] } = useAuthStore();
+  const { user, logout, updateProfile, certificates = [] } = useAuthStore();
   const { gradedNotifications = [], clearNotification } = useAdminStore();
   const { enrolledCourses, fetchMyCourses, isLoading } = useCourseStore();
   const navigate = useNavigate();

@@ -10,7 +10,8 @@ import {
   adminUpdateExam,
   adminGetExamDetails,
   adminUpdateQuestion,
-  adminDeleteQuestion
+  adminDeleteQuestion,
+  getPendingExams
 } from '../api/adminService';
 import { useCourseStore } from '../context/courseStore';
 import { useAdminStore } from '../context/adminStore';
@@ -27,6 +28,7 @@ const AdminExamBuilder = () => {
   const [selectedCourseId, setSelectedCourseId] = useState("");
   const [examId, setExamId] = useState(null);
   const [passPercentage, setPassPercentage] = useState(70);
+  const [pendingExams, setPendingExams] = useState([]);
 
   const dummyQuestions = [
     { id: "temp1", type: 'objective', text: 'Objective: Identify the fundamental principle that governs the primary objective of this module.', OPTIONS: ['Core Principle A', 'Secondary Theory B', 'Hybrid Approach C', 'All of the above'], correct_option: 3 },
@@ -108,11 +110,23 @@ const AdminExamBuilder = () => {
     }
   }, [selectedCourseId]);
 
-  const allPending = courses.reduce((acc, course) => {
-    const pending = (course.submissions || [])
-      .filter(s => s.status === 'Pending Review')
-      .map(s => ({ ...s, courseId: course.id, courseTitle: course.title }));
-    return [...acc, ...pending];
+  useEffect(() => {
+    const fetchPendingData = async () => {
+      try {
+        setIsLoading(true);
+        const response = await getPendingExams();
+        
+        if (response.success) {
+          setPendingExams(response.data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch pending exams:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchPendingData();
   }, []);
 
   const addNewQuestionToUI = (type) => {
@@ -206,7 +220,7 @@ const AdminExamBuilder = () => {
           <button onClick={() => setView('builder')} className={`flex-1 sm:flex-none px-5 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${view === 'builder' ? 'bg-brand-blue text-white' : 'text-slate-500 bg-slate-50'}`}>Builder</button>
           <button onClick={() => setView('grading')} className={`flex-1 sm:flex-none px-5 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest relative transition-all ${view === 'grading' ? 'bg-brand-blue text-white' : 'text-slate-500 bg-slate-50'}`}>
             Board Review
-            {allPending.length > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[8px] flex items-center justify-center rounded-full border-2 border-white">{allPending.length}</span>}
+            {pendingExams.length > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[8px] flex items-center justify-center rounded-full border-2 border-white">{pendingExams.length}</span>}
           </button>
         </div>
 
@@ -362,39 +376,69 @@ const AdminExamBuilder = () => {
           </motion.div>
         ) : (
           <motion.div key="grading" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
-            {allPending.length > 0 ? allPending.map(sub => (
-              <div key={sub.id} className="bg-white p-8 md:p-10 rounded-[32px] md:rounded-[40px] border border-slate-200 shadow-sm space-y-8">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h4 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">{sub.studentName}</h4>
-                    <p className="text-[10px] text-brand-blue font-black uppercase tracking-widest mt-2">{sub.courseTitle}</p>
-                  </div>
-                  <span className="hidden sm:inline-block px-4 py-1.5 bg-slate-50 text-slate-400 text-[10px] font-black uppercase rounded-full border border-slate-100">Review Required</span>
-                </div>
-                <div className="p-6 md:p-8 bg-slate-50 rounded-[24px] md:rounded-[32px] border border-slate-100">
-                  <p className="text-[10px] font-black text-brand-blue uppercase mb-4 tracking-widest">Candidate Argument</p>
-                  <p className="text-sm text-slate-700 leading-relaxed font-medium italic">"{Object.values(sub.answers)[0] || "No response provided."}"</p>
-                </div>
-                <div className="flex flex-col sm:flex-row items-end gap-6">
-                  <div className="w-full sm:flex-1">
-                    <label className="text-[10px] font-black text-slate-400 uppercase block mb-3">Competency Points (0-50)</label>
-                    <input type="number" value={gradingScore} onChange={(e) => setGradingScore(e.target.value)} className="w-full p-5 bg-slate-50 border-none rounded-[20px] font-black text-brand-blue" placeholder="e.g. 45" />
-                  </div>
-                  <button
-                    onClick={() => handleFinalizeGrade(sub)}
-                    disabled={isLoading}
-                    className="w-full sm:w-auto h-[64px] px-10 bg-slate-900 text-white rounded-[24px] text-[10px] font-black uppercase tracking-widest hover:bg-brand-blue transition-all disabled:opacity-50"
-                  >
-                    {isLoading ? 'Authorizing...' : 'Authorize Grade'}
-                  </button>
-                </div>
-              </div>
-            )) : (
-              <div className="col-span-full py-32 text-center opacity-30 flex flex-col items-center">
-                <CheckCircle2 size={64} className="mb-6 text-emerald-500" strokeWidth={1} />
-                <p className="text-xs font-black uppercase tracking-widest text-slate-900">Board Queue Cleared</p>
-              </div>
-            )}
+{pendingExams.length > 0 ? pendingExams.map(sub => (
+  <div key={sub.id} className="bg-white p-8 md:p-10 rounded-[32px] md:rounded-[40px] border border-slate-200 shadow-sm space-y-8">
+    <div className="flex justify-between items-start">
+      <div>
+        {/* Updated to match u.username from SQL */}
+        <h4 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">
+          {sub.username}
+        </h4>
+        <p className="text-[10px] text-slate-400 font-medium lowercase tracking-normal">
+          {sub.email}
+        </p>
+        {/* Updated to match c.title from SQL */}
+        <p className="text-[10px] text-brand-blue font-black uppercase tracking-widest mt-2">
+          {sub.courseTitle}
+        </p>
+      </div>
+      <span className="hidden sm:inline-block px-4 py-1.5 bg-slate-50 text-slate-400 text-[10px] font-black uppercase rounded-full border border-slate-100">
+        Review Required
+      </span>
+    </div>
+
+    <div className="p-6 md:p-8 bg-slate-50 rounded-[24px] md:rounded-[32px] border border-slate-100">
+      {/* Added the specific question text for context */}
+      <p className="text-[10px] font-black text-slate-400 uppercase mb-2 tracking-widest">
+        Question: {sub.question_text}
+      </p>
+      <p className="text-[10px] font-black text-brand-blue uppercase mb-4 tracking-widest">
+        Candidate Argument
+      </p>
+      <p className="text-sm text-slate-700 leading-relaxed font-medium italic">
+        {/* Pulls the actual text answer from the exam_answers table */}
+        "{sub.theory_answer || "No response provided."}"
+      </p>
+    </div>
+
+    <div className="flex flex-col sm:flex-row items-end gap-6">
+      <div className="w-full sm:flex-1">
+        <label className="text-[10px] font-black text-slate-400 uppercase block mb-3">
+          Competency Points (Objective Score: {sub.objective_score})
+        </label>
+        <input 
+          type="number" 
+          value={gradingScore} 
+          onChange={(e) => setGradingScore(e.target.value)} 
+          className="w-full p-5 bg-slate-50 border-none rounded-[20px] font-black text-brand-blue" 
+          placeholder="Score (0-50)" 
+        />
+      </div>
+      <button
+        onClick={() => handleFinalizeGrade(sub)}
+        disabled={isLoading}
+        className="w-full sm:w-auto h-[64px] px-10 bg-slate-900 text-white rounded-[24px] text-[10px] font-black uppercase tracking-widest hover:bg-brand-blue transition-all disabled:opacity-50"
+      >
+        {isLoading ? 'Authorizing...' : 'Authorize Grade'}
+      </button>
+    </div>
+  </div>
+)) : (
+  <div className="col-span-full py-32 text-center opacity-30 flex flex-col items-center">
+    <CheckCircle2 size={64} className="mb-6 text-emerald-500" strokeWidth={1} />
+    <p className="text-xs font-black uppercase tracking-widest text-slate-900">Board Queue Cleared</p>
+  </div>
+)}
           </motion.div>
         )}
       </AnimatePresence>
