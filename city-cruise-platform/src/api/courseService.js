@@ -34,3 +34,8 @@ export const markLessonComplete = async (id) => {
     const response = await apiClient.post(`/lessons/${id}/complete`);
     return response.data;
 };
+
+export const fetchCertificate = async (courseId) => {
+    const response = await apiClient.get(`/user/certificates/${courseId}`);
+    return response.data;
+};

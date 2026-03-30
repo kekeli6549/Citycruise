@@ -48,7 +48,7 @@ export const useAuthStore = create(
           });
           return { success: true };
         } catch (err) {
-          const message = err.response?.data?.message || "Invalid credentials";
+          const message = err.response?.message || "Invalid credentials (Check you internet connection)";
           set({ error: message, isLoading: false });
           return { success: false, message };
         }

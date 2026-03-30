@@ -1,12 +1,12 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { 
-  getStudents, 
-  getPendingExams, 
-  adminGetStats, 
+import {
+  getStudents,
+  getPendingExams,
+  adminGetStats,
   finalizeSubmission,
-  adminGetActivityLogs, 
-  adminToggleUserStatus 
+  adminGetActivityLogs,
+  adminToggleUserStatus
 } from '../api/adminService';
 
 export const useAdminStore = create(
@@ -14,7 +14,7 @@ export const useAdminStore = create(
     (set, get) => ({
       students: [],
       pendingSubmissions: [],
-      gradedNotifications: [], 
+      gradedNotifications: [],
       error: null,
       isLoading: false,
       stats: { totalStudents: 0, revenue: 0, pendingExams: 0, trends: {} },
@@ -45,7 +45,7 @@ export const useAdminStore = create(
         try {
           await adminToggleUserStatus(id, isActive);
           set((state) => ({
-            students: state.students.map(u => 
+            students: state.students.map(u =>
               u.id === id ? { ...u, isActive: isActive } : u
             ),
             isLoading: false
@@ -55,48 +55,52 @@ export const useAdminStore = create(
         }
       },
 
-finalizeGrading: async (subId, theoryScore, authStoreAction) => {
-    set({ isLoading: true, error: null });
-    try {
-        const result = await finalizeSubmission(subId, theoryScore);
-        
-        // Ensure we handle the nesting correctly based on your API response
-        const { finalScore, passed, certificateUuid } = result.data;
+      finalizeGrading: async (subId, theoryScore, authStoreAction) => {
+        set({ isLoading: true, error: null });
+        try {
+          const result = await finalizeSubmission(subId, theoryScore);
 
-        const state = get();
-        const submission = state.pendingSubmissions.find(s => s.id === subId);
-        
-        // Update user's progress in the auth store if provided
-        if (submission && authStoreAction) {
-            authStoreAction(submission.courseId, submission.courseTitle, passed, finalScore);
-        }
+          const { finalScore, passed, certificateUuid } = result.data;
 
-        // Create the notification for the admin/student
-        const newNotification = submission ? {
+          const state = get();
+          const submission = state.pendingSubmissions.find(s => s.id === subId);
+
+          if (submission && authStoreAction) {
+            authStoreAction(
+              submission.courseId,
+              submission.courseTitle,
+              passed,
+              finalScore
+            );
+          }
+
+          const newNotification = submission ? {
             id: Date.now(),
             studentId: submission.user_id,
+            courseId: submission.courseId, 
             courseName: submission.courseTitle,
             score: finalScore,
             passed: passed,
             certId: certificateUuid,
             viewed: false
-        } : null;
+          } : null;
 
-        set({
+          set({
             pendingSubmissions: state.pendingSubmissions.filter(s => s.id !== subId),
-            gradedNotifications: newNotification 
-                ? [newNotification, ...state.gradedNotifications]
-                : state.gradedNotifications,
+            gradedNotifications: newNotification
+              ? [newNotification, ...state.gradedNotifications]
+              : state.gradedNotifications,
             isLoading: false
-        });
-        
-        return { finalScore, passed };
-    } catch (err) {
-        const errMsg = err.response?.data?.message || "Failed to finalize grade";
-        set({ error: errMsg, isLoading: false });
-        return null;
-    }
-},
+          });
+
+          return { finalScore, passed };
+        } catch (err) {
+          console.error("Grading Store Error:", err);
+          const errMsg = err.response?.data?.message || "Failed to finalize grade";
+          set({ error: errMsg, isLoading: false });
+          return null;
+        }
+      },
 
       clearNotification: (notifId) => set((state) => ({
         gradedNotifications: state.gradedNotifications.filter(n => n.id !== notifId)

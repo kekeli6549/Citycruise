@@ -4,14 +4,14 @@ import { jsPDF } from 'jspdf';
 import { Award, ShieldCheck, Globe, Anchor, Star, Trophy } from 'lucide-react';
 
 /**
- * Logic to capture the certificate DOM and convert it to a high-quality PDF.
+ * Captures the certificate DOM and converts it to a high-quality PDF.
  */
 export const downloadCertificate = async (certificateRef, courseTitle) => {
   if (!certificateRef.current) return;
 
   try {
     const canvas = await html2canvas(certificateRef.current, {
-      scale: 3, // Ultra-high resolution
+      scale: 3, // Ultra-high resolution for professional printing
       useCORS: true,
       backgroundColor: '#ffffff',
       logging: false,
@@ -36,15 +36,22 @@ export const downloadCertificate = async (certificateRef, courseTitle) => {
 const CertificateGenerator = ({ user, course, certificateRef, isPreview = false }) => {
   if (!course || !user) return null;
 
-  const date = useMemo(() => new Date().toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  }), []);
+  // Use the official issue date from the backend if available, otherwise fallback to today
+  const dateString = useMemo(() => {
+    const d = course.issueDate ? new Date(course.issueDate) : new Date();
+    return d.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  }, [course.issueDate]);
 
-  const serialNumber = useMemo(() => 
-    `CCI-${course.id?.toString().toUpperCase().substring(0, 4)}-${Math.floor(100000 + Math.random() * 900000)}`
-  , [course.id]);
+  // Use the actual UUID from the DB (shortened for visual appeal)
+  const serialNumber = useMemo(() => {
+    if (!course.certId) return "CCI-VERIFYING...";
+    // Shorten UUID to first 8 chars for the certificate display
+    return `CCI-${course.certId.substring(0, 8).toUpperCase()}`;
+  }, [course.certId]);
 
   // Styling wrapper for hidden vs preview mode
   const wrapperClass = isPreview 
@@ -100,7 +107,7 @@ const CertificateGenerator = ({ user, course, certificateRef, isPreview = false 
             <h3 className="text-xl font-serif italic text-slate-600">This official credential is hereby bestowed upon</h3>
             
             <h1 className="text-7xl font-bold text-slate-900 tracking-tight border-b-2 border-slate-900 inline-block px-12 py-2 mb-4">
-              {user.firstName} {user.lastName || ''}
+              {user.username}
             </h1>
 
             <div className="max-w-3xl mx-auto pt-6">
@@ -122,7 +129,7 @@ const CertificateGenerator = ({ user, course, certificateRef, isPreview = false 
               <div className="flex items-center gap-8">
                 <div>
                   <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-2">Conferred On</p>
-                  <p className="font-bold text-slate-900 text-lg border-b border-slate-200 pb-1">{date}</p>
+                  <p className="font-bold text-slate-900 text-lg border-b border-slate-200 pb-1">{dateString}</p>
                 </div>
                 <div>
                   <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-2">Security Hash</p>
@@ -134,14 +141,13 @@ const CertificateGenerator = ({ user, course, certificateRef, isPreview = false 
               </div>
             </div>
 
-            {/* Official Seal */}
+            {/* Official Seal & Signature */}
             <div className="relative flex flex-col items-center">
                <div className="w-32 h-32 relative flex items-center justify-center">
                   <div className="absolute inset-0 border-4 border-amber-400/20 rounded-full animate-spin-slow" />
                   <div className="w-24 h-24 bg-amber-400/10 border-2 border-amber-500 rounded-full flex items-center justify-center">
                     <Trophy className="text-amber-600" size={40} />
                   </div>
-                  {/* Decorative curved text placeholder (SVG circles would go here) */}
                </div>
                <div className="mt-4 text-center">
                   <p className="font-serif italic text-2xl text-slate-900 mb-0 leading-none">A. S. Richardson</p>
@@ -149,7 +155,6 @@ const CertificateGenerator = ({ user, course, certificateRef, isPreview = false 
                   <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-500">Managing Director, CCI Ltd.</p>
                </div>
             </div>
-
           </div>
         </div>
       </div>

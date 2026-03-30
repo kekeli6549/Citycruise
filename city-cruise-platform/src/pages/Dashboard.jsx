@@ -23,9 +23,9 @@ const Dashboard = () => {
   const [activeNotification, setActiveNotification] = useState(null);
 
   const [editName, setEditName] = useState(user?.username || '');
+  const [newPassword, setNewPassword] = useState('');
   const certificateRef = useRef(null);
   const [selectedCourseForCert, setSelectedCourseForCert] = useState(null);
-  const [newPassword, setNewPassword] = useState('');
 
   // Dynamic Status Logic based on Certificates earned
   const getMemberStatus = () => {
@@ -94,19 +94,42 @@ const Dashboard = () => {
 
   const handleDownload = async (course) => {
     if (!course) return;
-    setSelectedCourseForCert(course);
+
     setIsDownloading(true);
 
-    // Small delay to allow CertificateGenerator to register the new course prop
-    setTimeout(async () => {
-      try {
-        await downloadCertificate(certificateRef, course.title);
-      } catch (error) {
-        console.error("Export failed", error);
-      } finally {
-        setIsDownloading(false);
-      }
-    }, 800);
+    try {
+      const result = await fetchCertificate(course.id);
+
+      const certData = result.data;
+
+      const completeCourseData = {
+        ...course,
+        title: certData.course_title,     // Use the official title from DB
+        certId: certData.certificate_uuid, // The actual UUID for the serial number
+        issueDate: certData.issue_date     // The actual date it was generated
+      };
+
+      setSelectedCourseForCert(completeCourseData);
+
+      setTimeout(async () => {
+        try {
+          await downloadCertificate(certificateRef, completeCourseData.title);
+        } catch (error) {
+          console.error("PDF Export failed:", error);
+        } finally {
+          setIsDownloading(false);
+          setSelectedCourseForCert(null);
+        }
+      }, 800);
+
+    } catch (error) {
+      console.error("Certificate fetch error:", error);
+
+      const errorMsg = error.response?.data?.message || "Your certificate is not ready for download yet.";
+      alert(errorMsg);
+
+      setIsDownloading(false);
+    }
   };
 
   return (
@@ -147,13 +170,10 @@ const Dashboard = () => {
               <div className="space-y-3">
                 {activeNotification.passed ? (
                   <button
-                    onClick={() => {
-                      const courseObj = enrolledCourses.find(c => c.id === activeNotification.courseId);
-                      handleDownload(courseObj || { title: activeNotification.courseName, id: activeNotification.courseId });
-                      handleDismissNotification();
-                    }}
-                    className="w-full py-4 bg-brand-blue text-white rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-xl shadow-brand-blue/20 hover:scale-[1.02] transition-transform"
+                    onClick={() => handleDownload(activeNotification)}
+                    className="w-full py-4 bg-brand-blue text-white rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-xl shadow-brand-blue/20 hover:scale-[1.02] transition-transform flex items-center justify-center gap-2"
                   >
+                    <Award size={16} />
                     Download Certificate
                   </button>
                 ) : (
