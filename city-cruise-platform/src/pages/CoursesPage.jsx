@@ -23,8 +23,7 @@ const CourseSkeleton = () => (
 
 const CoursesPage = () => {
   const navigate = useNavigate();
-  const { purchasedCourses } = useAuthStore();
-  const { courses, categories, userFetchCourses, fetchCategories, isLoading } = useCourseStore();
+  const { courses, categories, userFetchCourses, enrolledCourses, fetchMyCourses, fetchCategories, isLoading } = useCourseStore();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState("Alphabetical");
@@ -33,8 +32,9 @@ const CoursesPage = () => {
 
   useEffect(() => {
     userFetchCourses();
+    fetchMyCourses();
     fetchCategories();
-  }, [userFetchCourses, fetchCategories]);
+  }, [userFetchCourses, fetchMyCourses, fetchCategories]);
 
   const occupations = ["All", ...categories.map(cat => cat.name)];
   const filterOptions = ["Alphabetical", "Most Viewed"];
@@ -44,7 +44,7 @@ const CoursesPage = () => {
     .filter(c => c.title?.toLowerCase().includes(searchQuery.toLowerCase()))
     .sort((a, b) => {
       if (filter === "Alphabetical") return a.title?.localeCompare(b.title);
-      if (filter === "Most Viewed") return (b.views || 0) - (a.views || 0);
+      if (filter === "Most Viewed") return (b.enrollment_count || 0) - (a.enrollment_count || 0);
       return 0;
     });
 
@@ -137,8 +137,8 @@ const CoursesPage = () => {
           ) : (
             <AnimatePresence mode="popLayout">
               {filteredCourses.length > 0 ? filteredCourses.map((course) => {
-                const isOwned = purchasedCourses?.some(id => String(id) === String(course.id));
-                return (
+                const isOwned = enrolledCourses?.some(enrolled => String(enrolled.id) === String(course.id));
+                 return (
                   <motion.div
                     layout
                     key={course.id}
@@ -169,11 +169,11 @@ const CoursesPage = () => {
                       <div className="flex items-center gap-6 mb-8">
                         <div className="flex items-center gap-2">
                           <Users size={14} className="text-slate-400 group-hover:text-brand-blue transition-colors" />
-                          <span className="text-[11px] text-slate-400 font-bold uppercase tracking-tighter">{(course.views / 1000).toFixed(1)} Students</span>
+                          <span className="text-[11px] text-slate-400 font-bold uppercase tracking-tighter">{(course.enrollment_count / 1000).toFixed(1)} Students</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <Star size={14} className="text-amber-400 fill-amber-400" />
-                          <span className="text-[11px] text-slate-400 font-bold uppercase tracking-tighter">4.9 Rating</span>
+                          <span className="text-[11px] text-slate-400 font-bold uppercase tracking-tighter">5.0 Rating</span>
                         </div>
                       </div>
 
@@ -192,8 +192,8 @@ const CoursesPage = () => {
                         <button
                           onClick={() => isOwned ? navigate(`/course/${course.id}`) : navigate(`/checkout/${course.id}`, { state: { course } })}
                           className={`w-full py-4 rounded-2xl font-black uppercase text-[10px] tracking-[0.2em] transition-all active:scale-95 ${isOwned
-                              ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 border border-slate-200 dark:border-slate-700'
-                              : 'bg-slate-900 dark:bg-brand-blue text-white shadow-lg shadow-brand-blue/20 hover:shadow-brand-blue/40'
+                            ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 border border-slate-200 dark:border-slate-700'
+                            : 'bg-slate-900 dark:bg-brand-blue text-white shadow-lg shadow-brand-blue/20 hover:shadow-brand-blue/40'
                             }`}
                         >
                           {isOwned ? "Access Course" : "Enroll Now"}
