@@ -43,7 +43,7 @@ const Contact = () => {
             <div className="relative z-10 space-y-8">
               <div>
                 <h2 className="font-heading text-4xl mb-4">Let's shape your future.</h2>
-                <p className="font-body text-blue-100/70">Have questions about our programs? Our team in Abuja is ready to assist you.</p>
+                <p className="font-body text-blue-100/70">Have questions about our fleet or services? Our team in Abuja is ready to assist you.</p>
               </div>
 
               <div className="space-y-6">
@@ -52,7 +52,7 @@ const Contact = () => {
                     <MapPin size={20} className="text-white" />
                   </div>
                   <div>
-                    <p className="font-bold text-sm">Abuja Headquarters</p>
+                    <p className="font-bold text-sm">Headquarters</p>
                     <p className="text-xs text-blue-100/60 leading-relaxed">Central Business District, Abuja, Nigeria</p>
                   </div>
                 </div>
@@ -63,7 +63,7 @@ const Contact = () => {
                   </div>
                   <div>
                     <p className="font-bold text-sm">Email Us</p>
-                    <p className="text-xs text-blue-100/60 leading-relaxed">admissions@citycruise.com</p>
+                    <p className="text-xs text-blue-100/60 leading-relaxed">citycruisesupport@gmail.com</p>
                   </div>
                 </div>
               </div>
@@ -76,7 +76,8 @@ const Contact = () => {
             <form onSubmit={handleSubmit} className="space-y-8">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-mono uppercase tracking-widest text-slate-400">Full Name</label>
+                  {/* Increased size from text-[10px] to text-xs for better legibility */}
+                  <label className="text-xs font-mono uppercase tracking-[0.2em] text-slate-400 font-bold">Full Name</label>
                   <input
                     type="text"
                     name="fullname"
@@ -88,7 +89,8 @@ const Contact = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-mono uppercase tracking-widest text-slate-400">Email Address</label>
+                  {/* Increased size from text-[10px] to text-xs for better legibility */}
+                  <label className="text-xs font-mono uppercase tracking-[0.2em] text-slate-400 font-bold">Email Address</label>
                   <input
                     type="email"
                     name="email"
@@ -102,7 +104,8 @@ const Contact = () => {
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-mono uppercase tracking-widest text-slate-400">Message</label>
+                {/* Increased size from text-[10px] to text-xs for better legibility */}
+                <label className="text-xs font-mono uppercase tracking-[0.2em] text-slate-400 font-bold">Message</label>
                 <textarea
                   name="message"
                   value={formData.message}

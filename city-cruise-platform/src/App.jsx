@@ -45,8 +45,8 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
   const { logout, user } = useAuthStore();
   const menuItems = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-    { name: 'Courses', path: '/courses', icon: BookOpen },
-    { name: 'Exams', path: '/exams', icon: Award },
+    { name: 'Academy', path: '/courses', icon: BookOpen },
+    { name: 'Certifications', path: '/exams', icon: Award },
   ];
 
   const SidebarContent = () => (
@@ -54,7 +54,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       <div className="flex justify-between items-center mb-12">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-brand-blue rounded-lg flex items-center justify-center text-white font-bold text-lg">C</div>
-          <span className="font-heading font-bold dark:text-white uppercase tracking-tighter">Navigator</span>
+          <span className="font-heading font-bold dark:text-white uppercase tracking-tighter">City Cruise</span>
         </div>
         <button onClick={() => setIsOpen(false)} className="lg:hidden p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors dark:text-white">
           <X size={20} />
@@ -77,8 +77,8 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
             {user?.profilePic ? <img src={user.profilePic} className="w-full h-full object-cover" alt="Profile" /> : <User size={18} className="text-brand-blue" />}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-heading font-bold dark:text-white uppercase tracking-tight truncate">{user?.username || 'Innovator'}</p>
-            <p className="text-[9px] font-mono text-slate-400 uppercase">Standard Member</p>
+            <p className="text-xs font-heading font-bold dark:text-white uppercase tracking-tight truncate">{user?.username || 'Member'}</p>
+            <p className="text-[9px] font-mono text-slate-400 uppercase">RC: 9242337</p>
           </div>
         </div>
         <button onClick={logout} className="w-full flex items-center justify-center gap-3 p-4 rounded-2xl border border-red-100 dark:border-red-900/30 text-red-500 font-bold text-[10px] uppercase tracking-widest hover:bg-red-50 dark:hover:bg-red-900/10 transition-all"><LogOut size={14} /> End Session</button>
@@ -109,13 +109,11 @@ const AppLayout = ({ darkMode, setDarkMode }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const location = useLocation();
   
-  // Logic to determine when to show UI elements
   const isInternalAppPath = ['/dashboard', '/checkout', '/course', '/exam', '/courses', '/exams'].some(path => location.pathname.startsWith(path));
   const isAdminArea = location.pathname.startsWith('/admin');
   const isFocusMode = location.pathname.startsWith('/exam/') || location.pathname.startsWith('/checkout/') || location.pathname.startsWith('/course/');
   const isRightAlignNav = ['/courses', '/exams'].some(path => location.pathname.startsWith(path));
   
-  // Show global footer only on Landing Page and Auth pages, but hide in dashboards/exams
   const showGlobalFooter = !isInternalAppPath && !isAdminArea;
 
   return (
@@ -157,51 +155,49 @@ const AppLayout = ({ darkMode, setDarkMode }) => {
 
       {showGlobalFooter && (
         <footer className="bg-white dark:bg-brand-dark border-t border-slate-100 dark:border-slate-800 relative overflow-hidden">
-          {/* CTA Section - Optimized for Registrations */}
+          {/* CTA Section */}
           <div className="max-w-7xl mx-auto px-6 pt-24 pb-16">
             <div className="bg-brand-blue rounded-[32px] p-8 md:p-16 text-center relative overflow-hidden group shadow-2xl shadow-brand-blue/20">
               <div className="relative z-10">
                 <h2 className="text-3xl md:text-5xl font-heading font-black text-white mb-6 tracking-tighter leading-none">
-                  JOIN THE NEXT <br className="hidden md:block"/>FRONTIER.
+                  JOIN THE NEXT <br className="hidden md:block"/>GENERATION OF SERVICE.
                 </h2>
                 <p className="text-blue-100 text-sm md:text-lg mb-10 max-w-xl mx-auto font-body opacity-90">
-                  Secure your spot in our professional ecosystem. Gain access to elite mentorship and high-impact tech curriculum.
+                  Secure your future in the logistics and service industry. Access elite fleet training, professional cleaning certifications, and a global career network.
                 </p>
                 <Link to="/signup" className="inline-flex items-center gap-3 bg-white text-brand-blue px-10 py-5 rounded-2xl font-heading font-bold uppercase text-xs tracking-[0.2em] hover:bg-blue-50 transition-all shadow-xl active:scale-95 group/cta">
                   Create Your Free Account 
                   <ArrowRight size={18} className="group-hover/cta:translate-x-1 transition-transform" />
                 </Link>
               </div>
-              
-              {/* Decorative elements */}
               <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/3 w-96 h-96 bg-white/10 blur-[100px] rounded-full" />
               <div className="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/3 w-96 h-96 bg-brand-dark/20 blur-[100px] rounded-full" />
             </div>
           </div>
 
-          {/* Links Section - Scoped to Landing Content */}
+          {/* Links Section */}
           <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-12 pb-16 border-b border-slate-100 dark:border-slate-800">
             <div className="col-span-1 md:col-span-2">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-8 h-8 bg-brand-blue rounded-lg flex items-center justify-center text-white font-heading text-lg font-bold">C</div>
-                <span className="text-slate-900 dark:text-white font-heading text-xl font-bold tracking-tight uppercase">City Cruise</span>
+                <span className="text-slate-900 dark:text-white font-heading text-xl font-bold tracking-tight uppercase">City Cruise International</span>
               </div>
               <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed max-w-sm font-body">
-                Empowering the African Diaspora through elite mentorship, high-impact tech curriculum, and a professional community that spans the globe.
+                Leading the standard in elite car hire, corporate logistics, and professional service training across the African Diaspora. Guzape, FCT Abuja.
               </p>
             </div>
             
             <div>
-              <h4 className="text-slate-900 dark:text-white font-heading font-bold uppercase text-[10px] tracking-[0.2em] mb-6">Platform</h4>
+              <h4 className="text-slate-900 dark:text-white font-heading font-bold uppercase text-[10px] tracking-[0.2em] mb-6">Services</h4>
               <ul className="space-y-4">
-                <li><Link to="/courses" className="text-slate-500 dark:text-slate-400 text-xs font-bold hover:text-brand-blue transition-colors uppercase tracking-widest">Curriculum</Link></li>
+                <li><Link to="/courses" className="text-slate-500 dark:text-slate-400 text-xs font-bold hover:text-brand-blue transition-colors uppercase tracking-widest">Fleet Academy</Link></li>
                 <li><Link to="/exams" className="text-slate-500 dark:text-slate-400 text-xs font-bold hover:text-brand-blue transition-colors uppercase tracking-widest">Certifications</Link></li>
-                <li><Link to="/login" className="text-slate-500 dark:text-slate-400 text-xs font-bold hover:text-brand-blue transition-colors uppercase tracking-widest">Sign In</Link></li>
+                <li><Link to="/login" className="text-slate-500 dark:text-slate-400 text-xs font-bold hover:text-brand-blue transition-colors uppercase tracking-widest">Car Fleet Services</Link></li>
               </ul>
             </div>
 
             <div>
-              <h4 className="text-slate-900 dark:text-white font-heading font-bold uppercase text-[10px] tracking-[0.2em] mb-6">Follow The Journey</h4>
+              <h4 className="text-slate-900 dark:text-white font-heading font-bold uppercase text-[10px] tracking-[0.2em] mb-6">Connect</h4>
               <div className="flex gap-4">
                 <a href="#" className="p-3 bg-slate-50 dark:bg-slate-900 rounded-xl text-slate-400 hover:text-brand-blue hover:bg-brand-blue/5 transition-all"><Twitter size={18} /></a>
                 <a href="#" className="p-3 bg-slate-50 dark:bg-slate-900 rounded-xl text-slate-400 hover:text-brand-blue hover:bg-brand-blue/5 transition-all"><Linkedin size={18} /></a>
@@ -210,9 +206,8 @@ const AppLayout = ({ darkMode, setDarkMode }) => {
             </div>
           </div>
 
-          {/* Bottom Bar */}
           <div className="max-w-7xl mx-auto px-6 py-10 flex flex-col md:flex-row items-center justify-between gap-6">
-            <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">© 2026 City Cruise International. All Rights Reserved.</p>
+            <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">© 2026 City Cruise Car Fleet & Hire International Ltd. RC: 9242337</p>
             <div className="flex gap-8">
               <a href="#" className="text-slate-400 text-[9px] font-bold uppercase tracking-widest hover:text-slate-600 transition-colors">Privacy Policy</a>
               <a href="#" className="text-slate-400 text-[9px] font-bold uppercase tracking-widest hover:text-slate-600 transition-colors">Terms of Service</a>
