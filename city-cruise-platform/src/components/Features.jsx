@@ -19,27 +19,27 @@ const Features = () => {
     <section id="expertise" className="py-24 px-6 bg-white relative">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-16 space-y-4">
-          <h2 className="font-heading text-5xl text-slate-900">Why Choose City Cruise?</h2>
+          <h2 className="font-heading text-5xl text-slate-900">Why City Cruise International?</h2>
           <p className="font-body text-slate-500 max-w-2xl mx-auto text-lg">
-            We combine global diaspora excellence with local relevance to deliver an unmatched learning experience.
+            A registered leader in integrated logistics and facility management, providing elite standards across Nigeria.
           </p>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
           <FeatureCard 
+            icon="🚗"
+            title="Elite Car Hire"
+            desc="Our premier fleet offers luxury and reliability for individual and corporate needs. From city cruises to long-term hire, we redefine urban mobility."
+          />
+          <FeatureCard 
+            icon="✨"
+            title="Expert Cleaning"
+            desc="Offering specialized corporate and residential cleaning services. We use international standards to ensure your workspace is pristine and safe."
+          />
+          <FeatureCard 
             icon="🎓"
-            title="Expert Courses"
-            desc="Curated curriculums designed by industry leaders. Our content is updated quarterly to ensure global relevance."
-          />
-          <FeatureCard 
-            icon="🌐"
-            title="Global Expertise"
-            desc="Learn from professionals with international experience. Connect with mentors from top global institutions."
-          />
-          <FeatureCard 
-            icon="✅"
-            title="Proven Results"
-            desc="Trackable growth and certified achievements. Our graduates report significant career advancement within 6 months."
+            title="Service Academy"
+            desc="We train professional cleaning personnel and drivers. Our certified curriculum equips individuals with elite skills for the global service industry."
           />
         </div>
       </div>
