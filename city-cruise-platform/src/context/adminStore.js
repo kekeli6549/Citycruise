@@ -14,7 +14,6 @@ export const useAdminStore = create(
     (set, get) => ({
       students: [],
       pendingSubmissions: [],
-      gradedNotifications: [],
       error: null,
       isLoading: false,
       stats: { totalStudents: 0, revenue: 0, pendingExams: 0, trends: {} },
@@ -74,22 +73,8 @@ export const useAdminStore = create(
             );
           }
 
-          const newNotification = submission ? {
-            id: Date.now(),
-            studentId: submission.user_id,
-            courseId: submission.courseId, 
-            courseName: submission.courseTitle,
-            score: finalScore,
-            passed: passed,
-            certId: certificateUuid,
-            viewed: false
-          } : null;
-
           set({
             pendingSubmissions: state.pendingSubmissions.filter(s => s.id !== subId),
-            gradedNotifications: newNotification
-              ? [newNotification, ...state.gradedNotifications]
-              : state.gradedNotifications,
             isLoading: false
           });
 
@@ -101,10 +86,6 @@ export const useAdminStore = create(
           return null;
         }
       },
-
-      clearNotification: (notifId) => set((state) => ({
-        gradedNotifications: state.gradedNotifications.filter(n => n.id !== notifId)
-      })),
 
       fetchStats: async () => {
         set({ isLoading: true, error: null });

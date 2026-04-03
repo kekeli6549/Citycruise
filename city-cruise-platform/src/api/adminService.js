@@ -93,7 +93,7 @@ export const getPendingExams = async () => {
 };
 
 export const finalizeSubmission = async (submissionId, theoryScore) => {
-    const response = await apiClient.patch(`/admin/submissions/${submissionId}/finalize`, { theoryScore });
+    const response = await apiClient.patch(`/submissions/${submissionId}/finalize`, { theoryScore });
     return response.data;
 };
 

@@ -8,7 +8,7 @@ const ExamsHub = () => {
   const navigate = useNavigate();
   const { fetchExamHistory, examHistory } = useCourseStore();
   const { enrolledCourses, fetchMyCourses } = useCourseStore();
-  
+
   useEffect(() => {
     fetchMyCourses();
     fetchExamHistory();
@@ -16,21 +16,21 @@ const ExamsHub = () => {
 
   const availableExams = enrolledCourses
     ? enrolledCourses
-        .filter((course) => {          
-          const total = course.total_lessons || 0;
-          const completed = course.completed_lessons || 0;
-          const isPercentComplete = total > 0 && completed === total;
+      .filter((course) => {
+        const total = course.total_lessons || 0;
+        const completed = course.completed_lessons || 0;
+        const isPercentComplete = total > 0 && completed === total;
 
-          return isPercentComplete;
-        })
-        .map((course) => ({
-          id: course.course_id, 
-          title: course.title,
-          description: course.description,
-          courseId: course.id,
-          duration: "30 min",
-          difficulty: "Standard"
-        }))
+        return isPercentComplete;
+      })
+      .map((course) => ({
+        id: course.course_id,
+        title: course.title,
+        description: course.description,
+        courseId: course.id,
+        duration: "30 min",
+        difficulty: "Standard"
+      }))
     : [];
 
   return (
@@ -55,12 +55,14 @@ const ExamsHub = () => {
             <h2 className="text-xs font-black uppercase tracking-[0.3em] text-slate-500">Available Assessments</h2>
           </div>
           <div className="grid gap-6">
-            {availableExams.map((exam) => {
+            {availableExams.map((exam, i) => {
               const isUnlocked = true;
-              const result = examHistory?.find(r => r.course_id === exam.courseId && r.passed);
+              const result = examHistory?.find(r =>
+                Number(r.course_id) === Number(exam.courseId) && r.passed === true
+              );
 
               return (
-                <motion.div key={exam.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+                <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
                   className={`relative p-[1px] rounded-[2rem] md:rounded-[2.5rem] ${isUnlocked ? 'bg-gradient-to-r from-brand-blue/20 via-slate-200 to-brand-blue/20 dark:via-slate-800' : 'bg-slate-100 dark:bg-slate-800 opacity-60'}`}
                 >
                   <div className="bg-white dark:bg-brand-dark rounded-[1.9rem] md:rounded-[2.4rem] p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6">
@@ -111,25 +113,28 @@ const ExamsHub = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {examHistory.map((entry, index) => (
-                      <tr key={entry.id} className="border-b border-slate-100 dark:border-white/5 last:border-0 hover:bg-white/50 dark:hover:bg-white/5 transition-colors">
-                        <td className="p-6">
-                          <p className="text-sm font-bold text-slate-900 dark:text-white">{entry.course_title || entry.exam_title}</p>
-                          <p className="text-[10px] font-mono text-slate-400 uppercase">Ref: #{entry.id}</p>
-                        </td>
-                        <td className="p-6 text-sm text-slate-500 dark:text-slate-400">
-                          {new Date(entry.created_at).toLocaleDateString()}
-                        </td>
-                        <td className="p-6">
-                          <span className="text-sm font-mono font-bold text-slate-700 dark:text-slate-300">{entry.score}%</span>
-                        </td>
-                        <td className="p-6 text-right">
-                          <span className={`px-4 py-2 rounded-full text-[9px] font-black uppercase tracking-widest ${entry.passed ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}`}>
-                            {entry.passed ? 'Passed' : 'Failed'}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
+                    {examHistory.map((entry, index) => {
+                      const isPassed = entry.passed === true;
+                      return (
+                        <tr key={entry.id} className="border-b border-slate-100 dark:border-white/5 last:border-0 hover:bg-white/50 dark:hover:bg-white/5 transition-colors">
+                          <td className="p-6">
+                            <p className="text-sm font-bold text-slate-900 dark:text-white">{entry.course_title}</p>
+                            <p className="text-[10px] font-mono text-slate-400 uppercase">Ref: #{entry.id}</p>
+                          </td>
+                          <td className="p-6 text-sm text-slate-500 dark:text-slate-400">
+                            {new Date(entry.created_at).toLocaleDateString()}
+                          </td>
+                          <td className="p-6">
+                            <span className="text-sm font-mono font-bold text-slate-700 dark:text-slate-300">{entry.total_score}%</span>
+                          </td>
+                          <td className="p-6 text-right">
+                            <span className={`px-4 py-2 rounded-full text-[9px] font-black uppercase tracking-widest ${isPassed ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}`}>
+                              {entry.STATUS}
+                            </span>
+                          </td>
+                        </tr>
+                      )
+                    })}
                   </tbody>
                 </table>
               </div>

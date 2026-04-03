@@ -59,6 +59,7 @@ export const useCourseStore = create((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const data = await getAllCourses();
+      console.log("Courses Response:", data);
       set({
         courses: (data.data || data).map(c => ({
           ...c,
@@ -181,7 +182,7 @@ export const useCourseStore = create((set, get) => ({
   fetchExamHistory: async () => {
     try {
       const response = await getExamHistory();
-      set({ examHistory: response.data?.data || [] });
+      set({ examHistory: response.data || [] });
     } catch (err) {
       console.error("History fetch error", err);
     }

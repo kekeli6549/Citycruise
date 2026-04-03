@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../context/authStore';
-import { useAdminStore } from '../context/adminStore';
+import { useCertificateStore } from '../context/certificateStore';
 import { useCourseStore } from '../context/courseStore';
 import CertificateGenerator, { downloadCertificate } from '../components/CertificateGenerator';
 import {
@@ -11,11 +11,12 @@ import {
   FileText, RefreshCcw, ClipboardCheck,
   Trophy, AlertTriangle, ShieldCheck, Zap
 } from 'lucide-react';
+import { fetchCertificate } from '../api/courseService';
 
 const Dashboard = () => {
   const { user, logout, updateProfile, certificates = [] } = useAuthStore();
-  const { gradedNotifications = [], clearNotification } = useAdminStore();
   const { enrolledCourses, fetchMyCourses, isLoading } = useCourseStore();
+  const { examHistory, notifications, refreshResults, clearNotification } = useCertificateStore();
   const navigate = useNavigate();
 
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -39,20 +40,17 @@ const Dashboard = () => {
 
   // 4. Lifecycle & Backend Sync
   useEffect(() => {
+    refreshResults();
     fetchMyCourses();
   }, [fetchMyCourses]);
 
-  // Check for new exam results assigned to this student
   useEffect(() => {
-    if (gradedNotifications.length > 0 && user?.id) {
-      const myResult = gradedNotifications.find(n => n.studentId === user.id && !n.viewed);
-      if (myResult) {
-        setActiveNotification(myResult);
-      }
+    const unviewed = notifications.find(n => !n.viewed);
+    if (unviewed) {
+      setActiveNotification(unviewed);
     }
-  }, [gradedNotifications, user?.id]);
+  }, [notifications]);
 
-  // 5. Handlers
   const handleDismissNotification = () => {
     if (activeNotification) {
       clearNotification(activeNotification.id);
@@ -95,10 +93,17 @@ const Dashboard = () => {
   const handleDownload = async (course) => {
     if (!course) return;
 
+    const targetId = course.courseId || course.id;
+
+    if (!targetId) {
+      alert("Invalid course reference.");
+      return;
+    }
+
     setIsDownloading(true);
 
     try {
-      const result = await fetchCertificate(course.id);
+      const result = await fetchCertificate(targetId);
 
       const certData = result.data;
 
