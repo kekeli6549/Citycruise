@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../context/authStore';
 
+// Updated to use logo5.png
+import logo from '../assets/logo6.png';
+
 const Login = () => {
   const navigate = useNavigate();
   const { login, isLoading, error: apiError } = useAuthStore();
@@ -37,11 +40,11 @@ const Login = () => {
     <div className="min-h-screen flex flex-col md:flex-row bg-white">
       <div className="md:w-[45%] bg-brand-blue p-12 lg:p-20 flex flex-col justify-between text-white relative overflow-hidden">
         <div className="relative z-10">
-          <Link to="/" className="flex items-center gap-3 mb-24">
-            <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-brand-blue font-bold text-2xl">C</div>
-            <span className="font-heading text-2xl tracking-tight">City Cruise</span>
+          <Link to="/" className="flex items-center gap-4 mb-24">
+            {/* Magnified & Circular Logo with Soft Shadow */}
+          
           </Link>
-          <h2 className="text-5xl lg:text-6xl font-heading leading-tight mb-8">Your Elite <br />Service Dashboard</h2>
+          <h2 className="text-5xl lg:text-6xl font-heading leading-tight mb-8 text-white">Your Elite <br />Service Dashboard</h2>
           <p className="text-blue-100/70 text-lg max-w-sm">Manage your fleet bookings, cleaning schedules, and professional training certifications in one place.</p>
         </div>
         <div className="glass-card mt-12 p-8 rounded-[2rem] bg-white/10 border-white/20 relative z-10 max-w-sm">
