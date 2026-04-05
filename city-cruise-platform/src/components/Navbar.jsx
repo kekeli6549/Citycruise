@@ -3,6 +3,9 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, ArrowRight } from 'lucide-react';
 
+// Importing the logo ensures the build tool finds the correct path
+import logo from '../assets/logo6.png'; 
+
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -16,12 +19,26 @@ const Navbar = () => {
   return (
     <nav className="fixed top-0 w-full z-50 bg-white border-b border-slate-100 px-8 h-20 flex justify-between items-center">
       {/* Logo Area */}
-      <Link to="/" className="flex items-center gap-2 z-[100]">
-        <div className="w-8 h-8 rounded-lg bg-brand-blue flex items-center justify-center text-white shadow-lg">
-          <span className="font-bold text-lg">C</span>
+      <Link to="/" className="flex items-center gap-4 z-[100]">
+        {/* Magnified Circular Container:
+            - w-16 h-16: Large footprint for legibility
+            - shadow-[0_0_15px_rgba(0,0,0,0.05)]: Soft glow surrounding the blur
+            - border-slate-100/50: Light border to define the edge
+        */}
+        <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center shadow-xl border border-slate-100/50 relative overflow-hidden shrink-0 group">
+          {/* Soft Blur Edge Effect */}
+          <div className="absolute inset-0 rounded-full border-[3px] border-white/40 blur-[2px] z-10 pointer-events-none" />
+          
+          <img 
+            src={logo} 
+            alt="City Cruise Logo" 
+            className="w-full h-full object-contain scale-[1.4] p-1 relative z-0" // scale-140 for maximum legibility
+            onError={(e) => { e.target.src = "/logo6.png"; }}
+          />
         </div>
-        <span className="text-brand-dark font-heading text-xl font-bold tracking-tight">
-          City Cruise International
+        
+        <span className="text-brand-dark font-heading text-xl font-bold tracking-tight leading-tight">
+          City Cruise <br className="sm:hidden" /> International
         </span>
       </Link>
 
@@ -92,7 +109,7 @@ const Navbar = () => {
                 Join the Elite
               </Link>
               <p className="text-center text-[10px] text-slate-400 pt-4 uppercase">
-                © 2026 Excellence Redefined
+                © 2026 City Cruise International
               </p>
             </div>
           </motion.div>

@@ -23,6 +23,9 @@ import AdminLogin from './pages/AdminLogin';
 import { useAuthStore } from './context/authStore';
 import ErrorBoundary from './components/ErrorBoundary';
 
+// Updated to use logo6.png
+import logo from './assets/logo6.png';
+
 const ScrollToTop = () => {
   const { pathname } = useLocation();
   useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
@@ -52,9 +55,19 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
   const SidebarContent = () => (
     <div className="h-full flex flex-col p-8">
       <div className="flex justify-between items-center mb-12">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-brand-blue rounded-lg flex items-center justify-center text-white font-bold text-lg">C</div>
-          <span className="font-heading font-bold dark:text-white uppercase tracking-tighter">City Cruise</span>
+        <div className="flex items-center gap-4">
+          {/* Increased size and adjusted scale so logo isn't blocked */}
+          <div className="w-20 h-20 rounded-full flex items-center justify-center relative overflow-hidden shrink-0">
+            <img 
+              src={logo} 
+              alt="City Cruise Logo" 
+              className="w-full h-full object-contain scale-110" 
+              onError={(e) => { e.target.src = "/logo6.png"; }}
+            />
+          </div>
+          <span className="font-heading font-bold dark:text-white uppercase tracking-tighter text-sm leading-tight">
+            City Cruise <br/> International
+          </span>
         </div>
         <button onClick={() => setIsOpen(false)} className="lg:hidden p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors dark:text-white">
           <X size={20} />
@@ -178,8 +191,11 @@ const AppLayout = ({ darkMode, setDarkMode }) => {
           {/* Links Section */}
           <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-12 pb-16 border-b border-slate-100 dark:border-slate-800">
             <div className="col-span-1 md:col-span-2">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-8 h-8 bg-brand-blue rounded-lg flex items-center justify-center text-white font-heading text-lg font-bold">C</div>
+              <div className="flex items-center gap-4 mb-6">
+                {/* Fixed container and scaling for footer logo */}
+                <div className="w-24 h-24 rounded-full flex items-center justify-center shrink-0 overflow-hidden">
+                   <img src={logo} alt="City Cruise" className="w-full h-full object-contain scale-110" />
+                </div>
                 <span className="text-slate-900 dark:text-white font-heading text-xl font-bold tracking-tight uppercase">City Cruise International</span>
               </div>
               <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed max-w-sm font-body">
