@@ -14,9 +14,9 @@ import {
 import { fetchCertificate } from '../api/courseService';
 
 const Dashboard = () => {
-  const { user, logout, updateProfile, certificates = [] } = useAuthStore();
+  const { user, logout, updateProfile } = useAuthStore();
   const { enrolledCourses, fetchMyCourses, isLoading } = useCourseStore();
-  const { examHistory, notifications, refreshResults, clearNotification } = useCertificateStore();
+  const { certificates, notifications, refreshResults, clearNotification } = useCertificateStore();
   const navigate = useNavigate();
 
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -239,7 +239,7 @@ const Dashboard = () => {
           >
             Welcome & Progress, <br />
             <span className="text-brand-blue bg-clip-text inline-block italic">
-              {user?.username || 'Innovator'}.
+              {user?.username || 'Student'}.
             </span>
           </motion.h1>
         </header>
@@ -247,7 +247,7 @@ const Dashboard = () => {
         {/* Dynamic Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mb-20">
           {[
-            { label: "Mastery Progress", val: (enrolledCourses?.length || 0).toString().padStart(2, '0'), icon: BookOpen, color: "text-blue-500", bg: "bg-blue-50/50" },
+            { label: "Mastery Progress", val: (enrolledCourses?.length).toString().padStart(2, '0'), icon: BookOpen, color: "text-blue-500", bg: "bg-blue-50/50" },
             { label: "Global Badges", val: (certificates?.length || 0).toString().padStart(2, '0'), icon: Award, color: "text-amber-500", bg: "bg-amber-50/50" },
             { label: "Completion Rate", val: enrolledCourses.length > 0 ? `${Math.round((certificates?.length || 0) / enrolledCourses.length * 100)}%` : "0%", icon: ClipboardCheck, color: "text-emerald-500", bg: "bg-emerald-50/50" },
           ].map((stat, i) => (

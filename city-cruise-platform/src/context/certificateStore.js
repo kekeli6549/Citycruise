@@ -7,6 +7,7 @@ export const useCertificateStore = create(
     (set, get) => ({
       examHistory: [],
       notifications: [], 
+      certificates: [], 
       isLoading: false,
 
       refreshResults: async () => {
@@ -20,6 +21,8 @@ export const useCertificateStore = create(
           const newResults = history.filter(h => 
             !previousHistory.some(prev => prev.id === h.id)
           );
+
+          const allPassed = history.filter(res => res.passed === true || res.STATUS === 'approved');
 
           if (newResults.length > 0) {
             const newNotifs = newResults.map(res => ({
@@ -36,7 +39,11 @@ export const useCertificateStore = create(
             }));
           }
 
-          set({ examHistory: history, isLoading: false });
+          set({ 
+            examHistory: history, 
+            certificates: allPassed, 
+            isLoading: false 
+          });
         } catch (err) {
           console.error("Result sync error:", err);
           set({ isLoading: false });
