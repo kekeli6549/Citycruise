@@ -3,28 +3,15 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Edit2, Trash2, DollarSign, Image as ImageIcon, X, ChevronRight, Save, Power, Users, Video, PlusCircle, Trash } from 'lucide-react';
 import { useCourseStore } from '../context/courseStore';
 import {
+  adminCreateCourse,
   adminCreateLesson,
+  adminUpdateCourse,
   adminUpdateLesson
 } from '../api/adminService';
 import ConfirmationModal from '../components/ConfirmationModal';
 
 const AdminCourseManager = () => {
-  // Integrated addCourse and updateCourse from the store
-  const {
-    courses,
-    courseLessons,
-    categories,
-    toggleStatus,
-    fetchCourses,
-    fetchCourseLessons,
-    fetchCategories,
-    addCategory,
-    deleteCourse,
-    addCourse,
-    updateCourse,
-    isLoading
-  } = useCourseStore();
-
+  const { courses, userCourseLessons, categories, toggleStatus, fetchCourses, fetchCourseLessons, fetchCategories, addCategory, deleteCourse, isLoading } = useCourseStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [modalStep, setModalStep] = useState(1);
@@ -32,9 +19,14 @@ const AdminCourseManager = () => {
   const fileInputRef = useRef(null);
   const [previewUrl, setPreviewUrl] = useState(null);
 
+  // Custom Delete Modal State
   const [deleteConfig, setDeleteConfig] = useState({ isOpen: false, courseId: null, courseTitle: '' });
+
+  // Discipline Management
   const [newDisciplineName, setNewDisciplineName] = useState("");
   const [isAddingDiscipline, setIsAddingDiscipline] = useState(false);
+
+  // Edit Mode States
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingCourseId, setEditingCourseId] = useState(null);
   const [editingLessonId, setEditingLessonId] = useState(null);
@@ -47,7 +39,6 @@ const AdminCourseManager = () => {
   const [newCourseData, setNewCourseData] = useState({
     title: '',
     description: '',
-    intro: '',
     price: '',
     category_tag: '',
     lessons: []
@@ -92,13 +83,12 @@ const AdminCourseManager = () => {
     setNewCourseData({
       title: course.title || '',
       description: course.description || '',
-      intro: course.intro || '',
       price: course.price || '',
       category_tag: course.category_tag || '',
-      lessons: course.lessons || []
+      lessons: userCourseLessons || []
     });
-    setPreviewUrl(course.cover_image ? `${import.meta.env.VITE_API_URL}${course.cover_image}` : null);
-    setImageFile(null);
+    setPreviewUrl(course.cover_image || null);
+    setImageFile(null); // Reset file selection for new uploads
     setModalStep(1);
     setIsModalOpen(true);
   };
@@ -109,9 +99,8 @@ const AdminCourseManager = () => {
     setNewCourseData({
       title: '',
       description: '',
-      intro: '',
       price: '',
-      category_tag: categories?.[0]?.category_tag || '',
+      category: categories[0]?.category_tag || '',
       lessons: []
     });
     setPreviewUrl(null);
@@ -138,19 +127,20 @@ const AdminCourseManager = () => {
 
   const addLessonToCourse = () => {
     if (!currentLesson.title) return;
-    const lessonsList = newCourseData.lessons ?? [];
+
     if (editingLessonId) {
-      const updatedLessons = lessonsList.map((l) =>
+      const updatedLessons = newCourseData.lessons.map((l) =>
         l.id === editingLessonId ? { ...currentLesson, id: editingLessonId } : l
       );
       setNewCourseData({ ...newCourseData, lessons: updatedLessons });
-      setEditingLessonId(null);
+      setEditingLessonId(null); // Reset edit mode
     } else {
       setNewCourseData({
         ...newCourseData,
-        lessons: [...lessonsList, { ...currentLesson, id: Date.now() }]
+        lessons: [...newCourseData.lessons, { ...currentLesson, id: Date.now() }]
       });
     }
+
     setCurrentLesson({ title: '', content: '', video_link: '', resources: [] });
   };
 
@@ -165,11 +155,11 @@ const AdminCourseManager = () => {
   };
 
   const removeLesson = async (id) => {
-    const lessonsList = newCourseData.lessons ?? [];
     setNewCourseData({
       ...newCourseData,
-      lessons: lessonsList.filter(l => l.id !== id)
+      lessons: newCourseData.lessons.filter(l => l.id !== id)
     });
+
     if (typeof id !== 'number') {
       try {
         const { deleteLesson } = useCourseStore.getState();
@@ -184,36 +174,32 @@ const AdminCourseManager = () => {
     setIsSubmitting(true);
     try {
       const courseForm = new FormData();
-      courseForm.append('title', newCourseData.title);
-      courseForm.append('description', newCourseData.description);
-      courseForm.append('price', String(newCourseData.price || 0));
+      courseForm.append('title', newCourseData.title || "");
+      courseForm.append('description', newCourseData.description || "");
+      courseForm.append('price', newCourseData.price || 0);
       courseForm.append('category_tag', newCourseData.category_tag || "");
 
       if (imageFile) {
-        courseForm.append('cover_image', imageFile || " ");
+        courseForm.append('cover_image', imageFile);
       }
 
       let currentCourseId = editingCourseId;
 
       if (isEditMode) {
-        // Use store action
-        await updateCourse(editingCourseId, courseForm);
+        await adminUpdateCourse(editingCourseId, courseForm);
       } else {
-        // Use store action
-        const courseResponse = await addCourse(courseForm);
-        currentCourseId = courseResponse.id;
+        const courseResponse = await adminCreateCourse(courseForm);
+        currentCourseId = courseResponse.data?.id || courseResponse.id;
       }
 
-      // Sync Lessons sequentially
-      const lessonsToSync = newCourseData.lessons ?? [];
-      for (let i = 0; i < lessonsToSync.length; i++) {
-        const lesson = lessonsToSync[i];
+      // Sync Lessons
+      for (let i = 0; i < newCourseData.lessons.length; i++) {
+        const lesson = newCourseData.lessons[i];
         const lessonForm = new FormData();
-        lessonForm.append('title', lesson.title);
-        lessonForm.append('content', lesson.content);
-        lessonForm.append('orderIndex', String(i));
-        lessonForm.append('videoLink', lesson.video_link);
-        lessonForm.append('video_link', lesson.video_link);
+        lessonForm.append('title', lesson.title || "");
+        lessonForm.append('content', lesson.content || "");
+        lessonForm.append('orderIndex', i);
+        lessonForm.append('video_link', lesson.video_link || "");
 
         if (isEditMode && lesson.id && typeof lesson.id !== 'number') {
           await adminUpdateLesson(lesson.id, lessonForm);
@@ -222,18 +208,13 @@ const AdminCourseManager = () => {
         }
       }
 
+      fetchCourses();
       setIsModalOpen(false);
       setModalStep(1);
       setIsEditMode(false);
-
-      await fetchCourses();
     } catch (err) {
       console.error("Course Sync Error:", err);
-      if (err.response?.status === 500) {
-        alert("Failed to process the request.");
-      } else {
-        alert("Action failed. Please verify Network connection.");
-      }
+      alert("Action failed. Please verify API connection.");
     } finally {
       setIsSubmitting(false);
     }
@@ -255,7 +236,7 @@ const AdminCourseManager = () => {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-        {(courses ?? []).map((course) => (
+        {courses.map((course) => (
           <div key={course.id} className="bg-white rounded-[32px] border border-slate-200 shadow-sm overflow-hidden group hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-500">
             <div className="h-48 bg-slate-100 relative overflow-hidden">
               {course.cover_image ? (
@@ -267,12 +248,12 @@ const AdminCourseManager = () => {
               )}
               <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
               <div className="absolute top-4 left-4 flex flex-wrap gap-2 pr-4">
-                <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest backdrop-blur-md shadow-lg ${course.status === 'active' || course.status === 'Published' ? 'bg-emerald-500 text-white' : 'bg-slate-900/80 text-white'}`}>
-                  {course.status === 'active' || course.status === 'Published' ? 'Active' : 'Inactive'}
+                <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest backdrop-blur-md shadow-lg ${course.STATUS === 'active' || course.STATUS === 'Published' ? 'bg-emerald-500 text-white' : 'bg-slate-900/80 text-white'}`}>
+                  {course.STATUS === 'active' || course.STATUS === 'Published' ? 'Active' : 'Inactive'}
                 </span>
               </div>
 
-              {(course.status === 'inactive') && (
+              {(course.STATUS === 'inactive') && (
                 <button
                   onClick={() => openDeleteModal(course.id, course.title)}
                   className="absolute top-4 right-4 p-2.5 bg-white/90 backdrop-blur-md text-red-500 rounded-xl shadow-lg hover:bg-red-500 hover:text-white transition-all z-10"
@@ -288,7 +269,7 @@ const AdminCourseManager = () => {
                   <Users size={14} className="text-slate-400" />
                   <p className="text-xs font-bold text-slate-500">{course.students || 0} Learners</p>
                 </div>
-                <p className="text-lg font-black text-slate-900">₦{course.price}</p>
+                <p className="text-lg font-black text-slate-900">${course.price}</p>
               </div>
               <div className="flex gap-3">
                 <button onClick={() => { handleEditClick(course); fetchCourseLessons(course.id) }} className="flex-1 flex items-center justify-center gap-2 py-3.5 bg-slate-50 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-100 transition-all">
@@ -296,10 +277,10 @@ const AdminCourseManager = () => {
                 </button>
                 <button
                   onClick={async () => {
-                    const newStatus = (course.status === 'Published' || course.status === 'active') ? 'inactive' : 'active';
+                    const newStatus = (course.STATUS === 'Published' || course.STATUS === 'active') ? 'inactive' : 'active';
                     await toggleStatus(course.id, newStatus);
                   }}
-                  className={`p-3.5 rounded-xl transition-all ${course.status === 'Published' || course.status === 'active' ? 'text-red-500 bg-red-50 hover:bg-red-100' : 'text-emerald-500 bg-emerald-50 hover:bg-emerald-100'}`}
+                  className={`p-3.5 rounded-xl transition-all ${course.STATUS === 'Published' || course.STATUS === 'active' ? 'text-red-500 bg-red-50 hover:bg-red-100' : 'text-emerald-500 bg-emerald-50 hover:bg-emerald-100'}`}
                 >
                   <Power size={18} />
                 </button>
@@ -349,7 +330,7 @@ const AdminCourseManager = () => {
                   <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="space-y-6 md:space-y-8">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-3">
-                        <span className="text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em]">Investment (Amount)</span>
+                        <span className="text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em]">Investment (USD)</span>
                         <div className="relative">
                           <DollarSign className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={20} />
                           <input
@@ -387,7 +368,7 @@ const AdminCourseManager = () => {
                             className="w-full p-4 md:p-5 bg-slate-50 border-transparent border-2 rounded-[20px] md:rounded-[24px] focus:border-brand-blue/20 outline-none appearance-none font-bold"
                           >
                             <option value="" disabled>Select Discipline</option>
-                            {(categories ?? []).map(cat => (
+                            {categories.map(cat => (
                               <option key={cat.id} value={cat.category_tag}>{cat.NAME}</option>
                             ))}
                           </select>
@@ -414,61 +395,10 @@ const AdminCourseManager = () => {
                     <div className="space-y-4">
                       <div className="flex justify-between items-center">
                         <span className="text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em]">
-                          New Curriculum Stack ({(newCourseData?.lessons?.length ?? 0)})
-                        </span>
-                        {editingLessonId && (
-                          <button
-                            onClick={() => { setEditingLessonId(null); setCurrentLesson({ title: '', content: '', video_link: '', resources: [] }); }}
-                            className="text-[9px] font-black text-amber-600 uppercase"
-                          >
-                            Cancel Edit
-                          </button>
-                        )}
-                      </div>
-
-                      <div className="max-h-[300px] overflow-y-auto space-y-3 pr-2">
-                        {(newCourseData?.lessons?.length ?? 0) > 0 ? (
-                          newCourseData.lessons.map((lesson, idx) => (
-                            <div
-                              key={lesson.id}
-                              onClick={() => handleEditLesson(lesson)}
-                              className={`flex items-center justify-between p-4 bg-white border rounded-2xl shadow-sm cursor-pointer transition-all hover:border-brand-blue/50 ${editingLessonId === lesson.id ? 'border-brand-blue ring-2 ring-brand-blue/10 bg-blue-50/20' : 'border-slate-100'
-                                }`}
-                            >
-                              <div className="flex items-center gap-4 min-w-0">
-                                <div className={`w-8 h-8 shrink-0 rounded-lg flex items-center justify-center font-bold text-xs ${editingLessonId === lesson.id ? 'bg-brand-blue text-white' : 'bg-slate-50 text-slate-400'
-                                  }`}>
-                                  {idx + 1}
-                                </div>
-                                <div className="min-w-0 text-left">
-                                  <p className="font-bold text-slate-900 text-sm truncate">{lesson.title}</p>
-                                  <p className="text-[10px] text-slate-400 uppercase font-medium">Click to edit</p>
-                                </div>
-                              </div>
-                              <button
-                                onClick={(e) => { e.stopPropagation(); removeLesson(lesson.id); }}
-                                className="p-2 text-red-400 hover:bg-red-50 rounded-xl transition-all shrink-0"
-                              >
-                                <Trash size={16} />
-                              </button>
-                            </div>
-                          ))
-                        ) : (
-                          <div className="w-full p-5 my-2 mb-5 flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-[24px] text-center">
-                            <p className="text-xs font-bold text-slate-500">No lessons added yet</p>
-                            <p className="text-[10px] text-slate-400 uppercase tracking-widest mt-1">Register your first lesson above</p>
-                          </div>
-                        )}
-                      </div>
-
-                      {editingCourseId && (
-                        <>
-                          <span className="text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em] mt-6 block">
-                            Existing Curriculum Stack ({(courseLessons?.length ?? 0)})
-                          </span>
+                          New Curriculum Stack ({newCourseData.lessons.length})
                           <div className="max-h-[300px] overflow-y-auto space-y-3 pr-2">
-                            {(courseLessons?.length ?? 0) > 0 ? (
-                              courseLessons.map((lesson, idx) => (
+                            {newCourseData.lessons.length > 0 ? (
+                              newCourseData.lessons.map((lesson, idx) => (
                                 <div
                                   key={lesson.id}
                                   onClick={() => handleEditLesson(lesson)}
@@ -495,12 +425,56 @@ const AdminCourseManager = () => {
                               ))
                             ) : (
                               <div className="w-full p-5 my-2 mb-5 flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-[24px] text-center">
-                                <p className="text-xs font-bold text-slate-500">No previous lessons available</p>
+                                <p className="text-xs font-bold text-slate-500">No lessons added yet</p>
+                                <p className="text-[10px] text-slate-400 uppercase tracking-widest mt-1">Register your first lesson above</p>
                               </div>
                             )}
                           </div>
-                        </>
-                      )}
+                          {editingCourseId && `Existing Curriculum Stack (${userCourseLessons.length})`}
+                        </span>
+                        {editingLessonId && (
+                          <button
+                            onClick={() => { setEditingLessonId(null); setCurrentLesson({ title: '', content: '', video_link: '', resources: [] }); }}
+                            className="text-[9px] font-black text-amber-600 uppercase"
+                          >
+                            Cancel Edit
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="max-h-[300px] overflow-y-auto space-y-3 pr-2">
+                        {editingCourseId && userCourseLessons.length > 0 ? (
+                          userCourseLessons.map((lesson, idx) => (
+                            <div
+                              key={lesson.id}
+                              onClick={() => handleEditLesson(lesson)}
+                              className={`flex items-center justify-between p-4 bg-white border rounded-2xl shadow-sm cursor-pointer transition-all hover:border-brand-blue/50 ${editingLessonId === lesson.id ? 'border-brand-blue ring-2 ring-brand-blue/10 bg-blue-50/20' : 'border-slate-100'
+                                }`}
+                            >
+                              <div className="flex items-center gap-4 min-w-0">
+                                <div className={`w-8 h-8 shrink-0 rounded-lg flex items-center justify-center font-bold text-xs ${editingLessonId === lesson.id ? 'bg-brand-blue text-white' : 'bg-slate-50 text-slate-400'
+                                  }`}>
+                                  {idx + 1}
+                                </div>
+                                <div className="min-w-0 text-left">
+                                  <p className="font-bold text-slate-900 text-sm truncate">{lesson.title}</p>
+                                  <p className="text-[10px] text-slate-400 uppercase font-medium">Click to edit</p>
+                                </div>
+                              </div>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); removeLesson(lesson.id); }}
+                                className="p-2 text-red-400 hover:bg-red-50 rounded-xl transition-all shrink-0"
+                              >
+                                <Trash size={16} />
+                              </button>
+                            </div>
+                          ))
+                        ) : editingCourseId && (
+                          <div className="w-full p-5 my-2 mb-5 flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-[24px] text-center">
+                            <p className="text-xs font-bold text-slate-500">No lessons previous lessons available</p>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </motion.div>
                 )}
@@ -539,7 +513,7 @@ const AdminCourseManager = () => {
                 <button
                   disabled={modalStep === 1}
                   onClick={() => setModalStep(s => s - 1)}
-                  className={`order-2 sm:order-1 px-10 py-4 md:py-5 rounded-2xl font-black text-xs uppercase tracking-widest transition-all ${modalStep === 1 ? 'invisible' : 'bg-white text-slate-600 border border-slate-200 hover:shadow-md'}`}
+                  className={`order-2 sm:order-1 px-10 py-4 md:py-5 rounded-2xl font-black text-xs uppercase tracking-widest transition-all ${modalStep === 1 ? 'hidden' : 'bg-white text-slate-600 border border-slate-200 hover:shadow-md'}`}
                 >
                   Back
                 </button>

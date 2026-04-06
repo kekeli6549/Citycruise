@@ -15,15 +15,7 @@ export const adminUpdateUser = async (id, userData) => {
 
 // Courses
 export const adminCreateCourse = async (formData) => {
-    // If we're sending a plain object but the header says multipart, 
-    // we need to ensure it's actual FormData to prevent a 500 error.
-    let data = formData;
-    if (!(formData instanceof FormData) && typeof formData === 'object') {
-        data = new FormData();
-        Object.keys(formData).forEach(key => data.append(key, formData[key]));
-    }
-
-    const response = await apiClient.post('/admin/courses', data, {
+    const response = await apiClient.post('/admin/courses', formData, {
         headers: {
             'Content-Type': 'multipart/form-data',
         },
@@ -31,18 +23,13 @@ export const adminCreateCourse = async (formData) => {
     return response.data;
 };
 
+
 export const adminUpdateCourse = async (courseId, formData) => {
     if (!courseId || courseId === 'undefined') {
         throw new Error("Missing Course ID in frontend request.");
     }
 
-    let data = formData;
-    if (!(formData instanceof FormData) && typeof formData === 'object') {
-        data = new FormData();
-        Object.keys(formData).forEach(key => data.append(key, formData[key]));
-    }
-
-    const response = await apiClient.patch(`/admin/courses/${courseId}`, data, {
+    const response = await apiClient.patch(`/admin/courses/${courseId}`, formData, {
         headers: {
             'Content-Type': 'multipart/form-data',
         },
@@ -50,6 +37,7 @@ export const adminUpdateCourse = async (courseId, formData) => {
     });
     return response.data;
 };
+
 
 export const adminGetCourses = async () => {
     const response = await apiClient.get('/admin/courses');
@@ -101,6 +89,11 @@ export const adminDeleteCategory = async (categoryId) => {
 };
 
 // Exams & Grading
+export const adminGetCertificates = async () => {
+    const response = await apiClient.get('/admin/certificates');
+    return response.data;
+};
+
 export const getPendingExams = async () => {
     const response = await apiClient.get('/admin/exams/pending');
     return response.data;
