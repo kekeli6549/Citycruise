@@ -36,11 +36,11 @@ const CoursesPage = () => {
     fetchCategories();
   }, [userFetchCourses, fetchMyCourses, fetchCategories]);
 
-  const occupations = ["All", ...categories.map(cat => cat.name)];
+  const occupations = ["All", ...categories.map(cat => cat.category_tag)];
   const filterOptions = ["Alphabetical", "Most Viewed"];
 
   const filteredCourses = (courses || [])
-    .filter(c => (occupation === "All" || c.category === occupation))
+    .filter(c => (occupation === "All" || c.category_tag === occupation))
     .filter(c => c.title?.toLowerCase().includes(searchQuery.toLowerCase()))
     .sort((a, b) => {
       if (filter === "Alphabetical") return a.title?.localeCompare(b.title);
@@ -59,6 +59,7 @@ const CoursesPage = () => {
         </header>
 
         <div className="bg-slate-50 dark:bg-slate-900/40 p-4 rounded-[2rem] md:rounded-[2.5rem] border border-slate-100 dark:border-slate-800 flex flex-col lg:flex-row gap-6 items-center mb-12 backdrop-blur-xl relative z-40">
+          {/* Search Section */}
           <div className="relative flex-1 w-full">
             <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
             <input
@@ -70,8 +71,10 @@ const CoursesPage = () => {
             />
           </div>
 
-          <div className="flex flex-col md:flex-row items-center gap-4 w-full lg:w-auto">
-            <div className="flex items-center gap-4 w-full md:w-auto">
+          <div className="flex flex-col md:flex-row items-center gap-4 w-full lg:w-auto min-w-0 overflow-hidden">
+
+            <div className="flex items-center gap-4 w-full md:w-auto min-w-0">
+
               <div className="relative shrink-0">
                 <button
                   onClick={() => setIsFilterOpen(!isFilterOpen)}
@@ -102,8 +105,8 @@ const CoursesPage = () => {
                               setIsFilterOpen(false);
                             }}
                             className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-colors ${filter === opt
-                              ? 'bg-brand-blue/10 text-brand-blue'
-                              : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white'
+                                ? 'bg-brand-blue/10 text-brand-blue'
+                                : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white'
                               }`}
                           >
                             {opt}
@@ -116,12 +119,17 @@ const CoursesPage = () => {
                 </AnimatePresence>
               </div>
 
-              <div className="flex gap-2 overflow-x-auto no-scrollbar py-1 w-full md:w-auto">
+              {/* Horizontally Scrollable Buttons */}
+              {/* 'overflow-x-auto' handles the scroll, 'no-scrollbar' hides visual bar, 'min-w-0' allows container to be smaller than contents */}
+              <div className="flex gap-2 py-1 w-full overflow-x-auto no-scrollbar scroll-smooth min-w-0">
                 {occupations.map(occ => (
                   <button
                     key={occ}
                     onClick={() => setOccupation(occ)}
-                    className={`px-5 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap shrink-0 ${occupation === occ ? 'bg-brand-blue text-white shadow-lg' : 'bg-white dark:bg-brand-dark text-slate-400 border border-slate-100 dark:border-slate-800'}`}
+                    className={`px-5 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap shrink-0 ${occupation === occ
+                        ? 'bg-brand-blue text-white shadow-lg'
+                        : 'bg-white dark:bg-brand-dark text-slate-400 border border-slate-100 dark:border-slate-800'
+                      }`}
                   >
                     {occ}
                   </button>
@@ -130,7 +138,6 @@ const CoursesPage = () => {
             </div>
           </div>
         </div>
-
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {isLoading ? (
             Array(6).fill(0).map((_, i) => <CourseSkeleton key={i} />)
@@ -138,7 +145,7 @@ const CoursesPage = () => {
             <AnimatePresence mode="popLayout">
               {filteredCourses.length > 0 ? filteredCourses.map((course) => {
                 const isOwned = enrolledCourses?.some(enrolled => String(enrolled.id) === String(course.id));
-                 return (
+                return (
                   <motion.div
                     layout
                     key={course.id}
@@ -167,10 +174,10 @@ const CoursesPage = () => {
 
                       <h3 className="text-xs mb-4 font-heading font-light text-slate-900 dark:text-white group-hover:text-brand-blue transition-colors leading-tight">{course.description}</h3>
                       <div className="flex items-center gap-6 mb-8">
-                        <div className="flex items-center gap-2">
+                        {/* <div className="flex items-center gap-2">
                           <Users size={14} className="text-slate-400 group-hover:text-brand-blue transition-colors" />
                           <span className="text-[11px] text-slate-400 font-bold uppercase tracking-tighter">{(course.enrollment_count / 1000).toFixed(1)} Students</span>
-                        </div>
+                        </div> */}
                         <div className="flex items-center gap-2">
                           <Star size={14} className="text-amber-400 fill-amber-400" />
                           <span className="text-[11px] text-slate-400 font-bold uppercase tracking-tighter">5.0 Rating</span>

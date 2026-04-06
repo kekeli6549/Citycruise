@@ -10,19 +10,19 @@ import ConfirmationModal from '../components/ConfirmationModal';
 
 const AdminCourseManager = () => {
   // Integrated addCourse and updateCourse from the store
-  const { 
-    courses, 
-    courseLessons, 
-    categories, 
-    toggleStatus, 
-    fetchCourses, 
-    fetchCourseLessons, 
-    fetchCategories, 
-    addCategory, 
-    deleteCourse, 
-    addCourse, 
-    updateCourse, 
-    isLoading 
+  const {
+    courses,
+    courseLessons,
+    categories,
+    toggleStatus,
+    fetchCourses,
+    fetchCourseLessons,
+    fetchCategories,
+    addCategory,
+    deleteCourse,
+    addCourse,
+    updateCourse,
+    isLoading
   } = useCourseStore();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -98,7 +98,7 @@ const AdminCourseManager = () => {
       lessons: course.lessons || []
     });
     setPreviewUrl(course.cover_image ? `${import.meta.env.VITE_API_URL}${course.cover_image}` : null);
-    setImageFile(null); 
+    setImageFile(null);
     setModalStep(1);
     setIsModalOpen(true);
   };
@@ -186,11 +186,11 @@ const AdminCourseManager = () => {
       const courseForm = new FormData();
       courseForm.append('title', newCourseData.title);
       courseForm.append('description', newCourseData.description);
-      courseForm.append('price', String(newCourseData.price || 0)); 
-      courseForm.append('category_tag', newCourseData.category_tag);
-      
+      courseForm.append('price', String(newCourseData.price || 0));
+      courseForm.append('category_tag', newCourseData.category_tag || "");
+
       if (imageFile) {
-        courseForm.append('cover_image', imageFile);
+        courseForm.append('cover_image', imageFile || " ");
       }
 
       let currentCourseId = editingCourseId;
@@ -212,7 +212,8 @@ const AdminCourseManager = () => {
         lessonForm.append('title', lesson.title);
         lessonForm.append('content', lesson.content);
         lessonForm.append('orderIndex', String(i));
-        lessonForm.append('video_link', lesson.video_link || '');
+        lessonForm.append('videoLink', lesson.video_link);
+        lessonForm.append('video_link', lesson.video_link);
 
         if (isEditMode && lesson.id && typeof lesson.id !== 'number') {
           await adminUpdateLesson(lesson.id, lessonForm);
@@ -224,14 +225,14 @@ const AdminCourseManager = () => {
       setIsModalOpen(false);
       setModalStep(1);
       setIsEditMode(false);
-      // Final fetch to ensure UI is perfect
+
       await fetchCourses();
     } catch (err) {
       console.error("Course Sync Error:", err);
       if (err.response?.status === 500) {
-        alert("Server Error (500): The backend failed to process the request.");
+        alert("Failed to process the request.");
       } else {
-        alert("Action failed. Please verify API connection.");
+        alert("Action failed. Please verify Network connection.");
       }
     } finally {
       setIsSubmitting(false);
@@ -294,7 +295,7 @@ const AdminCourseManager = () => {
                   <Edit2 size={14} /> Edit
                 </button>
                 <button
-                  onClick={async() => {
+                  onClick={async () => {
                     const newStatus = (course.status === 'Published' || course.status === 'active') ? 'inactive' : 'active';
                     await toggleStatus(course.id, newStatus);
                   }}
@@ -385,7 +386,7 @@ const AdminCourseManager = () => {
                             onChange={(e) => setNewCourseData({ ...newCourseData, category_tag: e.target.value })}
                             className="w-full p-4 md:p-5 bg-slate-50 border-transparent border-2 rounded-[20px] md:rounded-[24px] focus:border-brand-blue/20 outline-none appearance-none font-bold"
                           >
-                            <option value="" disabled>Select Discipline</option>                            
+                            <option value="" disabled>Select Discipline</option>
                             {(categories ?? []).map(cat => (
                               <option key={cat.id} value={cat.category_tag}>{cat.NAME}</option>
                             ))}
