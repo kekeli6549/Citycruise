@@ -205,7 +205,7 @@ const AppLayout = ({ darkMode, setDarkMode }) => {
                 <span className="text-slate-900 dark:text-white font-heading text-xl font-bold tracking-tight uppercase">City Cruise International</span>
               </div>
               <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed max-w-sm font-body">
-                Leading the standard in elite car hire, corporate logistics, and professional service training across the African Diaspora. Guzape, FCT Abuja.
+                Leading the standard in elite car hire, corporate logistics, and professional service training across the African Diaspora. Central Business District, FCT Abuja.
               </p>
             </div>
             

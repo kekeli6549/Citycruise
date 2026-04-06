@@ -2,8 +2,6 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../context/authStore';
 
-
-
 const Login = () => {
   const navigate = useNavigate();
   const { login, isLoading, error: apiError } = useAuthStore();
@@ -40,21 +38,28 @@ const Login = () => {
       <div className="md:w-[45%] bg-brand-blue p-12 lg:p-20 flex flex-col justify-between text-white relative overflow-hidden">
         <div className="relative z-10">
           <Link to="/" className="flex items-center gap-4 mb-24">
-             {/* Logo container if needed */}
+              {/* Logo container if needed */}
           </Link>
           <h2 className="text-5xl lg:text-6xl font-heading leading-tight mb-8 text-white">Your Elite <br />Service Dashboard</h2>
           <p className="text-blue-100/70 text-lg max-w-sm">Manage your fleet bookings, cleaning schedules, and professional training certifications in one place.</p>
         </div>
+        
+        {/* Updated Testimonial Section with fixed image link */}
         <div className="glass-card mt-12 p-8 rounded-[2rem] bg-white/10 border-white/20 relative z-10 max-w-sm">
-          <p className="text-sm italic mb-6 leading-relaxed text-blue-50">"The standard for vehicle hire and professional cleaning training in Nigeria. Truly a world-class experience."</p>
+          <p className="text-sm italic mb-6 leading-relaxed text-blue-50">"I've used several services in Lagos, but the professionalism here is unmatched. My fleet is always handled with care, and the training programs have truly empowered my staff."</p>
           <div className="flex items-center gap-4">
-            <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=100&h=100&auto=format&fit=crop" className="w-12 h-12 rounded-full border-2 border-white/30" alt="Corporate Client" />
+            <img 
+              src="https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?q=80&w=200&h=200&auto=format&fit=crop" 
+              className="w-12 h-12 rounded-full border-2 border-white/30 object-cover" 
+              alt="Amaka Adeleke" 
+            />
             <div>
-              <div className="text-sm font-bold">Musa Ibrahim</div>
-              <div className="text-[10px] uppercase tracking-widest opacity-60">Logistics Manager</div>
+              <div className="text-sm font-bold">Amaka Adeleke</div>
+              <div className="text-[10px] uppercase tracking-widest opacity-60">Operations Director</div>
             </div>
           </div>
         </div>
+
         <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-white/5 rounded-full blur-[100px]" />
       </div>
 

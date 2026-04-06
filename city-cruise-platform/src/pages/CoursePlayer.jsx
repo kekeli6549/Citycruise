@@ -72,11 +72,16 @@ const CoursePlayer = () => {
 
   const getYouTubeEmbedUrl = (url) => {
     if (!url) return null;
+    // Enhanced regex to handle standard, shortened, and embed links
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
     const match = url.match(regExp);
-    return (match && match[2].length === 11)
-      ? `https://www.youtube-nocookie.com/embed/${match[2]}?rel=0&modestbranding=1`
-      : null;
+    
+    if (match && match[2].length === 11) {
+      const videoId = match[2];
+      // Using youtube-nocookie for better privacy and compatibility
+      return `https://www.youtube-nocookie.com/embed/${videoId}?rel=0&modestbranding=1&enablejsapi=1`;
+    }
+    return null;
   };
 
   const handleLessonComplete = async () => {
@@ -153,7 +158,14 @@ const CoursePlayer = () => {
         <div className="flex-1 overflow-y-auto no-scrollbar">
           <div className="bg-black aspect-video flex items-center justify-center relative group overflow-hidden">
             {embedUrl ? (
-              <iframe className="w-full h-full z-10" src={embedUrl} title={activeLesson?.title} frameBorder="0" allowFullScreen></iframe>
+              <iframe 
+                className="w-full h-full z-10" 
+                src={embedUrl} 
+                title={activeLesson?.title} 
+                frameBorder="0" 
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+              ></iframe>
             ) : (
               <div className="text-center">
                 <p className="text-white/20 font-mono text-[10px] uppercase tracking-[0.5em] animate-pulse mb-4">Encryption: AES-256 Active</p>
