@@ -7,7 +7,9 @@ import {
   adminDeleteCourse,
   adminToggleCourseStatus,
   adminDeleteLesson,
-  adminGetCourses
+  adminGetCourses,
+  adminCreateCourse,
+  adminUpdateCourse
 } from '../api/adminService';
 import { getExamHistory } from '../api/examService';
 
@@ -26,28 +28,26 @@ export const useCourseStore = create((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const data = await getMyCourses();
-      console.log("Raw Backend Response:", data);
       set({ enrolledCourses: data.data || data, isLoading: false });
     } catch (err) {
       set({ error: err.message, isLoading: false });
     }
   },
 
-
-
   fetchCourses: async () => {
     set({ isLoading: true, error: null });
     try {
       const data = await adminGetCourses();
+      const courseList = data.data || data;
       set({
-        courses: (data.data || data).map(c => ({
+        courses: Array.isArray(courseList) ? courseList.map(c => ({
           ...c,
           progress: c.progress || 0,
           examStatus: c.examStatus || 'not_started',
           students: c.students || 0,
           status: c.status || 'Published',
           submissions: c.submissions || []
-        })),
+        })) : [],
         isLoading: false
       });
     } catch (err) {
@@ -55,20 +55,52 @@ export const useCourseStore = create((set, get) => ({
     }
   },
 
+  addCourse: async (formData) => {
+    set({ isLoading: true, error: null });
+    try {
+      const data = await adminCreateCourse(formData);
+      const newCourse = data.data || data;
+      set((state) => ({
+        courses: [newCourse, ...state.courses],
+        isLoading: false
+      }));
+      return newCourse;
+    } catch (err) {
+      set({ error: err.message, isLoading: false });
+      throw err;
+    }
+  },
+
+  updateCourse: async (id, formData) => {
+    set({ isLoading: true, error: null });
+    try {
+      const data = await adminUpdateCourse(id, formData);
+      const updatedCourse = data.data || data;
+      set((state) => ({
+        courses: state.courses.map(c => c.id === id ? updatedCourse : c),
+        isLoading: false
+      }));
+      return updatedCourse;
+    } catch (err) {
+      set({ error: err.message, isLoading: false });
+      throw err;
+    }
+  },
+
   userFetchCourses: async () => {
     set({ isLoading: true, error: null });
     try {
       const data = await getAllCourses();
-      console.log("Courses Response:", data);
+      const courseList = data.data || data;
       set({
-        courses: (data.data || data).map(c => ({
+        courses: Array.isArray(courseList) ? courseList.map(c => ({
           ...c,
           progress: c.progress || 0,
           examStatus: c.examStatus || 'not_started',
           students: c.students || 0,
           status: c.status || 'Published',
           submissions: c.submissions || []
-        })),
+        })) : [],
         isLoading: false
       });
     } catch (err) {
@@ -90,7 +122,7 @@ export const useCourseStore = create((set, get) => ({
       const data = await GetCourseLessons(id);
       set({ userCourseLessons: data.data || data });
     } catch (err) {
-      console.warn("Categories fetch failed:", err.message);
+      console.warn("Lessons fetch failed:", err.message);
     }
   },
 
@@ -128,10 +160,9 @@ export const useCourseStore = create((set, get) => ({
 
   toggleStatus: async (id, newStatus) => {
     const previousCourses = get().courses;
-
     set((state) => ({
       courses: state.courses.map((c) =>
-        c.id === id ? { ...c, STATUS: newStatus } : c
+        c.id === id ? { ...c, status: newStatus } : c
       ),
     }));
     try {
@@ -148,11 +179,9 @@ export const useCourseStore = create((set, get) => ({
   completeLesson: async (lessonId, addCompletedLesson) => {
     try {
       await markLessonComplete(lessonId);
-
       if (addCompletedLesson) {
         addCompletedLesson(lessonId);
       }
-
       return true;
     } catch (err) {
       console.error("Store error marking lesson complete:", err);
@@ -187,5 +216,4 @@ export const useCourseStore = create((set, get) => ({
       console.error("History fetch error", err);
     }
   },
-
 }));

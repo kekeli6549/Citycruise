@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, ArrowRight } from 'lucide-react';
 
 // Importing the logo ensures the build tool finds the correct path
-import logo from '../assets/logo6.png'; 
+import logo from '../assets/logo7.png'; 
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -17,27 +17,24 @@ const Navbar = () => {
   ];
 
   return (
-    <nav className="fixed top-0 w-full z-50 bg-white border-b border-slate-100 px-8 h-20 flex justify-between items-center">
+    <nav className="fixed top-0 w-full z-50 bg-white border-b border-slate-100 px-8 h-24 flex justify-between items-center transition-all duration-300">
       {/* Logo Area */}
       <Link to="/" className="flex items-center gap-4 z-[100]">
-        {/* Magnified Circular Container:
-            - w-16 h-16: Large footprint for legibility
-            - shadow-[0_0_15px_rgba(0,0,0,0.05)]: Soft glow surrounding the blur
-            - border-slate-100/50: Light border to define the edge
+        {/* Container:
+            - Borders and Shadows removed entirely for a clean, integrated look
+            - Transparent background to blend with the navbar
+            - Removed overflow restrictions to allow text legibility
         */}
-        <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center shadow-xl border border-slate-100/50 relative overflow-hidden shrink-0 group">
-          {/* Soft Blur Edge Effect */}
-          <div className="absolute inset-0 rounded-full border-[3px] border-white/40 blur-[2px] z-10 pointer-events-none" />
-          
+        <div className="h-20 min-w-[8rem] flex items-center justify-center relative shrink-0">
           <img 
             src={logo} 
             alt="City Cruise Logo" 
-            className="w-full h-full object-contain scale-[1.4] p-1 relative z-0" // scale-140 for maximum legibility
-            onError={(e) => { e.target.src = "/logo6.png"; }}
+            className="h-full w-auto object-contain scale-[1.8]" // Significant magnification for text legibility
+            onError={(e) => { e.target.src = "/logo7.png"; }}
           />
         </div>
         
-        <span className="text-brand-dark font-heading text-xl font-bold tracking-tight leading-tight">
+        <span className="text-brand-dark font-heading text-xl font-bold tracking-tight leading-tight uppercase">
           City Cruise <br className="sm:hidden" /> International
         </span>
       </Link>

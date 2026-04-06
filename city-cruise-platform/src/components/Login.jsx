@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../context/authStore';
 
-// Updated to use logo5.png
-import logo from '../assets/logo6.png';
+
 
 const Login = () => {
   const navigate = useNavigate();
@@ -41,8 +40,7 @@ const Login = () => {
       <div className="md:w-[45%] bg-brand-blue p-12 lg:p-20 flex flex-col justify-between text-white relative overflow-hidden">
         <div className="relative z-10">
           <Link to="/" className="flex items-center gap-4 mb-24">
-            {/* Magnified & Circular Logo with Soft Shadow */}
-          
+             {/* Logo container if needed */}
           </Link>
           <h2 className="text-5xl lg:text-6xl font-heading leading-tight mb-8 text-white">Your Elite <br />Service Dashboard</h2>
           <p className="text-blue-100/70 text-lg max-w-sm">Manage your fleet bookings, cleaning schedules, and professional training certifications in one place.</p>
@@ -78,7 +76,7 @@ const Login = () => {
             <div className="space-y-2">
               <div className="flex justify-between">
                 <label className="text-[10px] font-mono uppercase tracking-[0.2em] text-slate-400">Password</label>
-                <a href="#" className="text-xs text-brand-blue font-bold">Forgot?</a>
+                <Link to="/forgot-password" size={14} className="text-xs text-brand-blue font-bold hover:underline">Forgot?</Link>
               </div>
               <input type="password" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} placeholder="••••••••" className={`w-full p-4 bg-slate-50 border ${errors.password ? 'border-red-400' : 'border-slate-100'} rounded-xl focus:ring-2 focus:ring-brand-blue outline-none transition-all`} />
               {errors.password && <p className="text-[10px] text-red-500 font-mono italic">{errors.password}</p>}

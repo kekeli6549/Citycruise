@@ -1,7 +1,14 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { registerUser, loginUser, updateUserInfo, logoutUser } from '../api/authService';
-import {getUserCourseProgress} from '../api/courseService'
+import { 
+  registerUser, 
+  loginUser, 
+  updateUserInfo, 
+  logoutUser, 
+  forgotPassword, 
+  resetPassword 
+} from '../api/authService';
+import { getUserCourseProgress } from '../api/courseService'
 
 export const useAuthStore = create(
   persist(
@@ -10,12 +17,16 @@ export const useAuthStore = create(
       isAuthenticated: false,
       isLoading: false,
       error: null,
+      isOnline: navigator.onLine, // Initial browser check
       purchasedCourses: [],
       completedCourses: [],
       completedLessons: [],
       certificates: [],
       examResults: [],
       activityLog: [],
+
+      // Action to update connectivity status
+      setOnlineStatus: (status) => set({ isOnline: status }),
 
       signup: async (formData) => {
         set({ isLoading: true, error: null });
@@ -49,6 +60,32 @@ export const useAuthStore = create(
           return { success: true };
         } catch (err) {
           const message = err.response?.message || "Invalid credentials (Check you internet connection)";
+          set({ error: message, isLoading: false });
+          return { success: false, message };
+        }
+      },
+
+      requestPasswordReset: async (email) => {
+        set({ isLoading: true, error: null });
+        try {
+          const response = await forgotPassword(email);
+          set({ isLoading: false });
+          return { success: true, message: response.message || "Reset link sent to your email" };
+        } catch (err) {
+          const message = err.response?.data?.message || "Failed to send reset link";
+          set({ error: message, isLoading: false });
+          return { success: false, message };
+        }
+      },
+
+      confirmPasswordReset: async (token, newPassword) => {
+        set({ isLoading: true, error: null });
+        try {
+          const response = await resetPassword(token, newPassword);
+          set({ isLoading: false });
+          return { success: true, message: "Password updated successfully" };
+        } catch (err) {
+          const message = err.response?.data?.message || "Failed to reset password";
           set({ error: message, isLoading: false });
           return { success: false, message };
         }
@@ -121,10 +158,6 @@ export const useAuthStore = create(
           activityLog: [newLog, ...(state.activityLog || [])].slice(0, 50)
         };
       }),
-
-      addCompletedLesson: (lessonId) => set((state) => ({
-        completedLessons: [...new Set([...(state.completedLessons || []), lessonId])]
-      })),
 
       completeCourse: (courseId) => set((state) => {
         const newLog = {

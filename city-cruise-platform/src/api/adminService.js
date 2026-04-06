@@ -15,7 +15,15 @@ export const adminUpdateUser = async (id, userData) => {
 
 // Courses
 export const adminCreateCourse = async (formData) => {
-    const response = await apiClient.post('/admin/courses', formData, {
+    // If we're sending a plain object but the header says multipart, 
+    // we need to ensure it's actual FormData to prevent a 500 error.
+    let data = formData;
+    if (!(formData instanceof FormData) && typeof formData === 'object') {
+        data = new FormData();
+        Object.keys(formData).forEach(key => data.append(key, formData[key]));
+    }
+
+    const response = await apiClient.post('/admin/courses', data, {
         headers: {
             'Content-Type': 'multipart/form-data',
         },
@@ -28,7 +36,13 @@ export const adminUpdateCourse = async (courseId, formData) => {
         throw new Error("Missing Course ID in frontend request.");
     }
 
-    const response = await apiClient.patch(`/admin/courses/${courseId}`, formData, {
+    let data = formData;
+    if (!(formData instanceof FormData) && typeof formData === 'object') {
+        data = new FormData();
+        Object.keys(formData).forEach(key => data.append(key, formData[key]));
+    }
+
+    const response = await apiClient.patch(`/admin/courses/${courseId}`, data, {
         headers: {
             'Content-Type': 'multipart/form-data',
         },

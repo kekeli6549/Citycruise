@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Users, BookOpen, TrendingUp, LayoutGrid, ClipboardCheck, SearchX, Menu, X, Trophy, Info, Trash2
+  Users, BookOpen, TrendingUp, LayoutGrid, ClipboardCheck, SearchX, Menu, X, Trophy, Info, Trash2, Award, ExternalLink
 } from 'lucide-react';
 import { useAdminStore } from '../context/adminStore'; 
 import { useCourseStore } from '../context/courseStore'; 
@@ -14,7 +14,6 @@ const AdminDashboard = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   
-  // Guard to prevent repeat notifications on re-renders/refresh
   const hasAnnouncedSession = useRef(false);
 
   const { 
@@ -27,12 +26,9 @@ const AdminDashboard = () => {
   } = useAdminStore(); 
   const { courses, fetchCourses } = useCourseStore();
 
-  // Optimized Helper to add a notification
   const addNotification = (message, type = 'info') => {
     const id = Math.random().toString(36).substr(2, 9);
     setNotifications(prev => [...prev, { id, message, type }]);
-    
-    // Auto-dismiss after 5 seconds
     setTimeout(() => {
       setNotifications(prev => prev.filter(n => n.id !== id));
     }, 5000);
@@ -46,7 +42,6 @@ const AdminDashboard = () => {
     fetchStudents();
     fetchCourses();
 
-    // Only run these once per session
     if (!hasAnnouncedSession.current) {
       setTimeout(() => {
         addNotification("System synchronization complete. All nodes active.", "info");
@@ -54,6 +49,19 @@ const AdminDashboard = () => {
       hasAnnouncedSession.current = true;
     }
   }, []);
+
+  // Filter students who have earned certificates
+  const certifiedUsersList = useMemo(() => {
+    if (!students) return [];
+    return students
+      .filter(s => s.certificates && s.certificates.length > 0)
+      .flatMap(user => user.certificates.map(cert => ({
+        ...cert,
+        username: user.username,
+        email: user.email,
+        userId: user._id
+      })));
+  }, [students]);
 
   const starPerformer = useMemo(() => {
     if (!students || students.length === 0) return null;
@@ -72,7 +80,6 @@ const AdminDashboard = () => {
     }, 0);
   }, [courses]);
 
-  // Actual financial info is pulled directly from adminStats which is updated via fetchStats
   const stats = useMemo(() => [
     { 
       label: "Total Students", 
@@ -107,7 +114,6 @@ const AdminDashboard = () => {
   return (
     <div className="min-h-screen bg-[#F8FAFC] p-4 md:p-10 font-body text-slate-900 overflow-x-hidden relative">
       
-      {/* --- LIVE NOTIFICATION SYSTEM --- */}
       <div className="fixed bottom-6 right-6 z-[100] flex flex-col gap-3 pointer-events-none w-full max-w-sm">
         <AnimatePresence>
           {notifications.length > 1 && (
@@ -209,7 +215,7 @@ const AdminDashboard = () => {
             <div className="flex flex-col lg:flex-row gap-6 md:gap-8 items-stretch">
               <div className="flex-1 bg-white rounded-[24px] md:rounded-[32px] border border-slate-200 shadow-sm overflow-hidden flex flex-col">
                 <div className="p-6 md:p-8 border-b border-slate-100 flex justify-between items-center bg-white sticky top-0 z-10">
-                  <h3 className="font-bold text-slate-900 flex items-center gap-3">
+                  <h3 className="font-bold text-slate-900 flex items-center gap-3 font-heading uppercase text-xs tracking-widest">
                     <div className={`w-2 h-2 rounded-full ${activityLogs.length > 0 ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`} />
                     System Logs
                   </h3>
@@ -256,8 +262,8 @@ const AdminDashboard = () => {
                   
                   <div className="inline-block px-4 py-1.5 bg-emerald-500/20 border border-emerald-500/30 rounded-full mb-6">
                     <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest flex items-center gap-2">
-                       <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
-                       Active Leader
+                        <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
+                        Active Leader
                     </p>
                   </div>
 
@@ -288,6 +294,76 @@ const AdminDashboard = () => {
 
                 <TrendingUp className="absolute bottom-[-60px] right-[-60px] text-white/5 group-hover:text-white/10 transition-all duration-700 pointer-events-none" size={350} />
                 <div className="absolute top-[-20px] left-[-20px] w-40 h-40 bg-white/5 blur-[80px] rounded-full" />
+              </div>
+            </div>
+
+            {/* --- NEW CERTIFIED USERS SECTION --- */}
+            <div className="bg-white rounded-[24px] md:rounded-[32px] border border-slate-200 shadow-sm overflow-hidden">
+              <div className="p-6 md:p-8 border-b border-slate-100 flex justify-between items-center bg-white sticky top-0 z-10">
+                <div>
+                  <h3 className="font-bold text-slate-900 flex items-center gap-3 font-heading uppercase text-xs tracking-widest">
+                    <Award size={18} className="text-brand-blue" />
+                    Certification Ledger
+                  </h3>
+                  <p className="text-[9px] text-slate-400 uppercase font-bold tracking-widest mt-1">Verified professionals within the ecosystem</p>
+                </div>
+                <div className="bg-brand-blue/5 text-brand-blue px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-tighter border border-brand-blue/10">
+                  {certifiedUsersList.length} ISSUED
+                </div>
+              </div>
+              
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50/50">
+                      <th className="p-6 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 border-b border-slate-100">Professional</th>
+                      <th className="p-6 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 border-b border-slate-100">Course / Credentials</th>
+                      <th className="p-6 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 border-b border-slate-100 text-center">Score</th>
+                      <th className="p-6 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 border-b border-slate-100 text-right">Verification</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {certifiedUsersList.length > 0 ? certifiedUsersList.map((cert, idx) => (
+                      <tr key={idx} className="hover:bg-slate-50/50 transition-colors group">
+                        <td className="p-6">
+                          <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-xs uppercase group-hover:bg-brand-blue group-hover:text-white transition-colors">
+                              {cert.username?.charAt(0)}
+                            </div>
+                            <div>
+                              <p className="text-sm font-bold text-slate-900">{cert.username}</p>
+                              <p className="text-[10px] text-slate-400 font-medium">{cert.email}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="p-6">
+                          <p className="text-sm font-bold text-slate-700">{cert.courseName || "Professional Certification"}</p>
+                          <p className="text-[10px] text-brand-blue font-black uppercase tracking-widest mt-0.5">ID: {cert.certificateId || cert._id?.slice(-8)}</p>
+                        </td>
+                        <td className="p-6 text-center">
+                          <span className="inline-block px-3 py-1 bg-emerald-50 text-emerald-600 rounded-lg text-xs font-black">
+                            {cert.score}%
+                          </span>
+                        </td>
+                        <td className="p-6 text-right">
+                          <button 
+                            className="p-2.5 bg-slate-50 text-slate-400 rounded-xl hover:bg-brand-blue hover:text-white transition-all active:scale-95 inline-flex items-center gap-2"
+                            title="View Certificate"
+                          >
+                            <ExternalLink size={16} />
+                          </button>
+                        </td>
+                      </tr>
+                    )) : (
+                      <tr>
+                        <td colSpan="4" className="py-20 text-center opacity-30">
+                          <Trophy size={48} className="mx-auto mb-4 text-slate-300" />
+                          <p className="text-[10px] font-bold uppercase tracking-[0.3em]">No Certificates Issued Yet</p>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
           </motion.div>

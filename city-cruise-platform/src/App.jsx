@@ -12,6 +12,7 @@ import Mentors from './components/Mentors';
 import Contact from './components/Contact';
 import Login from './components/Login';
 import Signup from './components/Signup';
+import ForgotPassword from './pages/ForgotPassword';
 import Dashboard from './pages/Dashboard';
 import CoursesPage from './pages/CoursesPage';
 import Checkout from './pages/Checkout';
@@ -23,8 +24,12 @@ import AdminLogin from './pages/AdminLogin';
 import { useAuthStore } from './context/authStore';
 import ErrorBoundary from './components/ErrorBoundary';
 
+// Connectivity Components
+import NetworkStatus from './components/NetworkStatus';
+import OfflineOverlay from './components/OfflineOverlay';
+
 // Updated to use logo6.png
-import logo from './assets/logo6.png';
+import logo from './assets/logo7.png';
 
 const ScrollToTop = () => {
   const { pathname } = useLocation();
@@ -56,13 +61,12 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     <div className="h-full flex flex-col p-8">
       <div className="flex justify-between items-center mb-12">
         <div className="flex items-center gap-4">
-          {/* Increased size and adjusted scale so logo isn't blocked */}
           <div className="w-20 h-20 rounded-full flex items-center justify-center relative overflow-hidden shrink-0">
             <img 
               src={logo} 
               alt="City Cruise Logo" 
               className="w-full h-full object-contain scale-110" 
-              onError={(e) => { e.target.src = "/logo6.png"; }}
+              onError={(e) => { e.target.src = "/logo7.png"; }}
             />
           </div>
           <span className="font-heading font-bold dark:text-white uppercase tracking-tighter text-sm leading-tight">
@@ -131,6 +135,10 @@ const AppLayout = ({ darkMode, setDarkMode }) => {
 
   return (
     <div className="relative min-h-screen bg-white dark:bg-brand-dark transition-colors duration-500">
+      {/* Network Monitors */}
+      <NetworkStatus />
+      <OfflineOverlay />
+
       {!isInternalAppPath && !isAdminArea && <Navbar darkMode={darkMode} setDarkMode={setDarkMode} />}
       
       {isInternalAppPath && !isFocusMode && !isAdminArea && (
@@ -152,6 +160,7 @@ const AppLayout = ({ darkMode, setDarkMode }) => {
             <Route path="/" element={<><Hero /><Features /><Mentors /><Contact /></>} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
             
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/courses" element={<ProtectedRoute><CoursesPage /></ProtectedRoute>} />
@@ -168,7 +177,6 @@ const AppLayout = ({ darkMode, setDarkMode }) => {
 
       {showGlobalFooter && (
         <footer className="bg-white dark:bg-brand-dark border-t border-slate-100 dark:border-slate-800 relative overflow-hidden">
-          {/* CTA Section */}
           <div className="max-w-7xl mx-auto px-6 pt-24 pb-16">
             <div className="bg-brand-blue rounded-[32px] p-8 md:p-16 text-center relative overflow-hidden group shadow-2xl shadow-brand-blue/20">
               <div className="relative z-10">
@@ -188,11 +196,9 @@ const AppLayout = ({ darkMode, setDarkMode }) => {
             </div>
           </div>
 
-          {/* Links Section */}
           <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-12 pb-16 border-b border-slate-100 dark:border-slate-800">
             <div className="col-span-1 md:col-span-2">
               <div className="flex items-center gap-4 mb-6">
-                {/* Fixed container and scaling for footer logo */}
                 <div className="w-24 h-24 rounded-full flex items-center justify-center shrink-0 overflow-hidden">
                    <img src={logo} alt="City Cruise" className="w-full h-full object-contain scale-110" />
                 </div>
@@ -206,8 +212,8 @@ const AppLayout = ({ darkMode, setDarkMode }) => {
             <div>
               <h4 className="text-slate-900 dark:text-white font-heading font-bold uppercase text-[10px] tracking-[0.2em] mb-6">Services</h4>
               <ul className="space-y-4">
-                <li><Link to="/courses" className="text-slate-500 dark:text-slate-400 text-xs font-bold hover:text-brand-blue transition-colors uppercase tracking-widest">Fleet Academy</Link></li>
-                <li><Link to="/exams" className="text-slate-500 dark:text-slate-400 text-xs font-bold hover:text-brand-blue transition-colors uppercase tracking-widest">Certifications</Link></li>
+                <li><Link to="/login" className="text-slate-500 dark:text-slate-400 text-xs font-bold hover:text-brand-blue transition-colors uppercase tracking-widest">Fleet Academy</Link></li>
+                <li><Link to="/login" className="text-slate-500 dark:text-slate-400 text-xs font-bold hover:text-brand-blue transition-colors uppercase tracking-widest">Certifications</Link></li>
                 <li><Link to="/login" className="text-slate-500 dark:text-slate-400 text-xs font-bold hover:text-brand-blue transition-colors uppercase tracking-widest">Car Fleet Services</Link></li>
               </ul>
             </div>
