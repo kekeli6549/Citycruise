@@ -8,12 +8,13 @@ import { useCourseStore } from '../context/courseStore';
 import AdminUserManagement from './AdminUserManagement';
 import AdminCourseManager from './AdminCourseManager';
 import AdminExamBuilder from './AdminExamBuilder';
+import { useCertificateStore } from '../context/certificateStore';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
-  
+  const {allCertificates, adminFetchCertificates} = useCertificateStore();
   const hasAnnouncedSession = useRef(false);
 
   const { 
@@ -41,6 +42,7 @@ const AdminDashboard = () => {
     fetchActivityLogs();
     fetchStudents();
     fetchCourses();
+    adminFetchCertificates();
 
     if (!hasAnnouncedSession.current) {
       setTimeout(() => {
@@ -50,18 +52,6 @@ const AdminDashboard = () => {
     }
   }, []);
 
-  // Filter students who have earned certificates
-  const certifiedUsersList = useMemo(() => {
-    if (!students) return [];
-    return students
-      .filter(s => s.certificates && s.certificates.length > 0)
-      .flatMap(user => user.certificates.map(cert => ({
-        ...cert,
-        username: user.username,
-        email: user.email,
-        userId: user._id
-      })));
-  }, [students]);
 
   const starPerformer = useMemo(() => {
     if (!students || students.length === 0) return null;
@@ -308,7 +298,7 @@ const AdminDashboard = () => {
                   <p className="text-[9px] text-slate-400 uppercase font-bold tracking-widest mt-1">Verified professionals within the ecosystem</p>
                 </div>
                 <div className="bg-brand-blue/5 text-brand-blue px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-tighter border border-brand-blue/10">
-                  {certifiedUsersList.length} ISSUED
+                  {allCertificates.length} - ISSUED
                 </div>
               </div>
               
@@ -317,13 +307,13 @@ const AdminDashboard = () => {
                   <thead>
                     <tr className="bg-slate-50/50">
                       <th className="p-6 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 border-b border-slate-100">Professional</th>
-                      <th className="p-6 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 border-b border-slate-100">Course / Credentials</th>
-                      <th className="p-6 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 border-b border-slate-100 text-center">Score</th>
-                      <th className="p-6 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 border-b border-slate-100 text-right">Verification</th>
+                      <th className="p-6 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 border-b border-slate-100">Course</th>
+                      <th className="p-6 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 border-b border-slate-100 text-center">Date Issued</th>
+                      <th className="p-6 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 border-b border-slate-100 text-right">Verification ID</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50">
-                    {certifiedUsersList.length > 0 ? certifiedUsersList.map((cert, idx) => (
+                    {allCertificates.length > 0 ? allCertificates.map((cert, idx) => (
                       <tr key={idx} className="hover:bg-slate-50/50 transition-colors group">
                         <td className="p-6">
                           <div className="flex items-center gap-4">
@@ -337,21 +327,15 @@ const AdminDashboard = () => {
                           </div>
                         </td>
                         <td className="p-6">
-                          <p className="text-sm font-bold text-slate-700">{cert.courseName || "Professional Certification"}</p>
-                          <p className="text-[10px] text-brand-blue font-black uppercase tracking-widest mt-0.5">ID: {cert.certificateId || cert._id?.slice(-8)}</p>
+                          <p className="text-sm font-bold text-slate-700">{cert.course_title || "Professional Certification"}</p>        
                         </td>
                         <td className="p-6 text-center">
                           <span className="inline-block px-3 py-1 bg-emerald-50 text-emerald-600 rounded-lg text-xs font-black">
-                            {cert.score}%
+                            {cert.issue_date ? new Date(cert.issue_date).toLocaleDateString() : "Unknown Date"}
                           </span>
                         </td>
                         <td className="p-6 text-right">
-                          <button 
-                            className="p-2.5 bg-slate-50 text-slate-400 rounded-xl hover:bg-brand-blue hover:text-white transition-all active:scale-95 inline-flex items-center gap-2"
-                            title="View Certificate"
-                          >
-                            <ExternalLink size={16} />
-                          </button>
+                          <p className="text-sm text-brand-blue font-black uppercase tracking-widest mt-0.5">{cert.certificate_uuid.slice(0, 8) || cert._id?.slice(-8)}</p>
                         </td>
                       </tr>
                     )) : (

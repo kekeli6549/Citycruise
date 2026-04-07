@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { getExamHistory } from '../api/examService';
+import { adminGetCertificates } from '../api/adminService';
 
 export const useCertificateStore = create(
   persist(
@@ -8,7 +9,15 @@ export const useCertificateStore = create(
       examHistory: [],
       notifications: [], 
       certificates: [], 
+      allCertificates:[],
       isLoading: false,
+
+      adminFetchCertificates: async () => {
+        const response = await adminGetCertificates();
+         set({ allCertificates: response.data || [] });
+         console.log("Fetched certificates:", response);
+         return response.data;
+      },
 
       refreshResults: async () => {
         set({ isLoading: true });
