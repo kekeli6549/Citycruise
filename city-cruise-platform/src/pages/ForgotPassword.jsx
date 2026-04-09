@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Mail, CheckCircle } from 'lucide-react';
-import { useAuthStore } from '../context/authStore';
+import { useAuthStore } from '../context/authstore';
 
 const ForgotPassword = () => {
   const { requestPasswordReset, isLoading, error: apiError } = useAuthStore();
