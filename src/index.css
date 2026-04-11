@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-blue: #1E40AF;
+  --font-heading: "Recoleta", serif;
+  --font-body: "Neue Haas Grotesk", sans-serif;
+  --font-mono: "Space Mono", monospace;
+}
+
+@layer base {
+  body {
+    /* Solid White Background - No Gradients */
+    @apply bg-white dark:bg-[#0B0F1A] text-slate-900 dark:text-slate-100 antialiased;
+    font-family: var(--font-body);
+  }
+}
+
+/* The "Stitch" Card Format: Clean White, Sharp, Subtle Elevation */
+.ui-card {
+  @apply bg-white dark:bg-[#161B22] border border-slate-100 dark:border-slate-800 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_10px_20px_-2px_rgba(0,0,0,0.04)];
+}
+
+/* Input Styles for that Google/Stitch Look */
+.input-field {
+  @apply w-full px-5 py-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/20 transition-all text-sm;
+}
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
