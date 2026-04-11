@@ -24,11 +24,8 @@ import AdminLogin from './pages/AdminLogin';
 import { useAuthStore } from './context/authstore';
 import ErrorBoundary from './components/ErrorBoundary';
 
-// Connectivity Components
 import NetworkStatus from './components/NetworkStatus';
 import OfflineOverlay from './components/OfflineOverlay';
-
-// Updated to use logo6.png
 import logo from './assets/logo7.png';
 
 const ScrollToTop = () => {
@@ -38,7 +35,7 @@ const ScrollToTop = () => {
 };
 
 const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated } = useAuthStore();
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   return isAuthenticated ? children : <Navigate to="/login" replace />;
 };
 
@@ -135,7 +132,6 @@ const AppLayout = ({ darkMode, setDarkMode }) => {
 
   return (
     <div className="relative min-h-screen bg-white dark:bg-brand-dark transition-colors duration-500">
-      {/* Network Monitors */}
       <NetworkStatus />
       <OfflineOverlay />
 

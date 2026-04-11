@@ -8,7 +8,7 @@ import {
   forgotPassword, 
   resetPassword 
 } from '../api/authService';
-import { getUserCourseProgress } from '../api/courseService'
+import { getUserCourseProgress } from '../api/courseService';
 
 export const useAuthStore = create(
   persist(
@@ -17,7 +17,7 @@ export const useAuthStore = create(
       isAuthenticated: false,
       isLoading: false,
       error: null,
-      isOnline: navigator.onLine, // Initial browser check
+      isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
       purchasedCourses: [],
       completedCourses: [],
       completedLessons: [],
@@ -25,7 +25,6 @@ export const useAuthStore = create(
       examResults: [],
       activityLog: [],
 
-      // Action to update connectivity status
       setOnlineStatus: (status) => set({ isOnline: status }),
 
       signup: async (formData) => {
@@ -59,7 +58,7 @@ export const useAuthStore = create(
           });
           return { success: true };
         } catch (err) {
-          const message = err.response?.message || "Invalid credentials (Check you internet connection)";
+          const message = err.response?.data?.message || err.response?.message || "Invalid credentials (Check your connection)";
           set({ error: message, isLoading: false });
           return { success: false, message };
         }
@@ -96,12 +95,11 @@ export const useAuthStore = create(
         try {
           const response = await updateUserInfo(updateData);
           const updatedUser = response.data || response;
-
           set((state) => ({
             user: { ...state.user, ...updatedUser },
             isLoading: false,
           }));
-          return { success: true, message: response };
+          return { success: true, message: "Profile updated" };
         } catch (err) {
           const message = err.response?.data?.message || "Update failed";
           set({ error: message, isLoading: false });
@@ -114,7 +112,7 @@ export const useAuthStore = create(
         try {
           await logoutUser();
         } catch (err) {
-          console.warn("Server-side logout failed, clearing local state anyway.");
+          console.warn("Server-side logout failed, clearing local state.");
         } finally {
           set({
             user: null,
@@ -137,7 +135,7 @@ export const useAuthStore = create(
           const response = await getUserCourseProgress(courseId);
           set({ completedLessons: response.data || [] });
         } catch (err) {
-          console.error("Failed to fetch progress from DB:", err);
+          console.error("Failed to fetch progress:", err);
         }
       },
 
@@ -199,4 +197,4 @@ export const useAuthStore = create(
     }),
     { name: 'city-cruise-auth' }
   )
-);a
+);
