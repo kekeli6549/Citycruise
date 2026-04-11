@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, Play, CheckCircle, Award, FileText, Info, Download, ArrowRight, ShieldCheck } from 'lucide-react';
-import { useAuthStore } from '../context/authStore';
+import { useAuthStore } from '../context/authstore';
 import { useCourseStore } from '../context/courseStore';
 import { getLessonDetails } from '../api/courseService';
 

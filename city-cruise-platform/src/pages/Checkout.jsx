@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useAuthStore } from '../context/authStore';
+import { useAuthStore } from '../context/authstore';
 import { initializePayment } from '../api/paymentService';
 import { ShieldCheck, CreditCard, Lock, ChevronLeft, CheckCircle2, Globe, ArrowRight, ExternalLink } from 'lucide-react';
 import confetti from 'canvas-confetti';

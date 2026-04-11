@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Search, SlidersHorizontal, PlayCircle, Star, Users, ArrowUpRight, SearchX, ChevronDown, Check } from 'lucide-react';
 import { useCourseStore } from '../context/courseStore';
-import { useAuthStore } from '../context/authStore';
+import { useAuthStore } from '../context/authstore';
 
 const CourseSkeleton = () => (
   <div className="bg-slate-50 dark:bg-slate-900/40 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 overflow-hidden flex flex-col animate-pulse">

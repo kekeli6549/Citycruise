@@ -2,7 +2,7 @@ import React, { useRef } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { Award, ChevronRight, RefreshCcw, Home, Download, CheckCircle2, XCircle, Clock } from 'lucide-react';
 import { useCourseStore } from '../context/courseStore';
-import { useAuthStore } from '../context/authStore';
+import { useAuthStore } from '../context/authstore';
 import CertificateGenerator, { downloadCertificate } from './CertificateGenerator';
 
 const ResultsPage = () => {

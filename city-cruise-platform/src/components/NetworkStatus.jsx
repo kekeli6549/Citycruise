@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useAuthStore } from '../context/authStore';
+import { useAuthStore } from '../context/authstore';
 
 const NetworkStatus = () => {
   const setOnlineStatus = useAuthStore((state) => state.setOnlineStatus);

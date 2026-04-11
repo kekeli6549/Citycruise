@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ShieldCheck, ArrowRight } from 'lucide-react';
-import { useAuthStore } from '../context/authStore'; // Imported to link session
+import { useAuthStore } from '../context/authstore'; // Imported to link session
 
 const AdminLogin = () => {
   const [email, setEmail] = useState('');

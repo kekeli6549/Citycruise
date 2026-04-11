@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAdminStore } from '../context/adminStore';
-import { useAuthStore } from '../context/authStore';
+import { useAuthStore } from '../context/authstore';
 import { RefreshCcw, ChevronRight, User } from 'lucide-react';
 
 const AdminGradingQueue = () => {

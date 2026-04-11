@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ChevronLeft, Timer, AlertCircle } from 'lucide-react';
 import { useCourseStore } from '../context/courseStore';
-import { useAuthStore } from '../context/authStore';
+import { useAuthStore } from '../context/authstore';
 import { getCourseExam, submitExam } from '../api/examService';
 
 const ExamPage = () => {

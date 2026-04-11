@@ -24,7 +24,7 @@ The application follows a specific state-driven journey:
 
 | Directory / File | Responsibility | Backend Action Required |
 |:--- |:--- |:--- |
-| `src/context/authStore.js` | Manages User/Session | Replace mock login with JWT Auth calls. |
+| `src/context/authstore.js` | Manages User/Session | Replace mock login with JWT Auth calls. |
 | `src/context/adminStore.js` | Handles Grading/Notifications | Connect to a WebSocket or Poll API for real-time alerts. |
 | `src/data/coursesData.js` | Static Course Content | Move this structure to a MongoDB 'Courses' Collection. |
 | `src/pages/Dashboard.jsx` | User Stats & Enrolled Courses | Fetch `user.enrolledCourses` and `user.certificates`. |

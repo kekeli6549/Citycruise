@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { useAuthStore } from '../context/authStore';
+import { useAuthStore } from '../context/authstore';
 import { useCertificateStore } from '../context/certificateStore';
 import { useCourseStore } from '../context/courseStore';
 import CertificateGenerator, { downloadCertificate } from '../components/CertificateGenerator';

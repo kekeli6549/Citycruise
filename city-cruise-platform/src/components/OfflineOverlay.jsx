@@ -1,6 +1,6 @@
 import React from 'react';
 import { WifiOff } from 'lucide-react';
-import { useAuthStore } from '../context/authStore';
+import { useAuthStore } from '../context/authstore';
 
 const OfflineOverlay = () => {
   const isOnline = useAuthStore((state) => state.isOnline);

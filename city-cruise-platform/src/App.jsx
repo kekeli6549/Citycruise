@@ -11,7 +11,7 @@ import Features from './components/Features';
 import Mentors from './components/Mentors';
 import Contact from './components/Contact';
 import Login from './components/Login';
-import Signup from './components/SignUp';
+import Signup from './components/Signup';
 import ForgotPassword from './pages/ForgotPassword';
 import Dashboard from './pages/Dashboard';
 import CoursesPage from './pages/CoursesPage';

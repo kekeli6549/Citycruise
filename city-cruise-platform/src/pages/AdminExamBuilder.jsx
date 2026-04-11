@@ -15,7 +15,7 @@ import {
 } from '../api/adminService';
 import { useCourseStore } from '../context/courseStore';
 import { useAdminStore } from '../context/adminStore';
-import { useAuthStore } from '../context/authStore';
+import { useAuthStore } from '../context/authstore';
 
 const AdminExamBuilder = () => {
   const { courses, fetchCourses, isLoading: storeLoading } = useCourseStore();
