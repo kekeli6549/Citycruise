@@ -35,8 +35,9 @@ const CoursesPage = () => {
     fetchCategories();
   }, [userFetchCourses, fetchMyCourses, fetchCategories]);
 
-  const occupations = ["All", ...categories.map(cat => cat.name)];
-  const filterOptions = ["Alphabetical", "Most Viewed"];
+const occupations = categories 
+    ? ["All", ...categories.map(cat => cat.name)] 
+    : ["All"];  const filterOptions = ["Alphabetical", "Most Viewed"];
 
   const filteredCourses = (courses || [])
     .filter(c => (occupation === "All" || c.category === occupation))
