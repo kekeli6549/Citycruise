@@ -23,7 +23,7 @@ const CourseSkeleton = () => (
 
 const CoursesPage = () => {
   const navigate = useNavigate();
-  const { courses, userFetchCourses, enrolledCourses, fetchMyCourses, fetchCategories, isLoading } = useCourseStore();
+  const { courses, categories, userFetchCourses, enrolledCourses, fetchMyCourses, fetchCategories, isLoading } = useCourseStore();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState("Alphabetical");
