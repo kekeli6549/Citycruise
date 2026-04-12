@@ -28,6 +28,7 @@ const CoursesPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState("Alphabetical");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [occupation, setOccupation] = useState("All");
 
   useEffect(() => {
     userFetchCourses();
