@@ -23,7 +23,6 @@ const Contact = () => {
 
     try {
       await sendEnquiry(formData.email, formData.fullname, formData.message);
-
       setStatus('Message sent successfully!');
       setFormData({ fullname: '', email: '', message: '' });
     } catch (error) {
@@ -34,16 +33,16 @@ const Contact = () => {
   };
 
   return (
-    <section id="contact" className="py-24 px-6 bg-white relative overflow-hidden">
+    <section id="contact" className="py-16 md:py-24 px-4 md:px-6 bg-white relative overflow-hidden">
       <div className="max-w-7xl mx-auto">
-        <div className="bg-white rounded-[3rem] shadow-2xl overflow-hidden flex flex-col md:flex-row border border-slate-100">
+        <div className="bg-white rounded-[2rem] md:rounded-[3rem] shadow-2xl overflow-hidden flex flex-col lg:flex-row border border-slate-100">
 
           {/* Left Panel: Info */}
-          <div className="md:w-2/5 bg-brand-blue p-12 lg:p-16 text-white flex flex-col justify-between relative">
+          <div className="w-full lg:w-2/5 bg-brand-blue p-8 md:p-12 lg:p-16 text-white flex flex-col justify-between relative overflow-hidden">
             <div className="relative z-10 space-y-8">
               <div>
-                <h2 className="font-heading text-4xl mb-4">Let's shape your future.</h2>
-                <p className="font-body text-blue-100/70">Have questions about our fleet or services? Our team in Abuja is ready to assist you.</p>
+                <h2 className="font-heading text-3xl md:text-4xl mb-4 leading-tight">Let's shape your future.</h2>
+                <p className="font-body text-sm text-blue-100/70">Have questions about our fleet or services? Our team in Abuja is ready to assist you.</p>
               </div>
 
               <div className="space-y-6">
@@ -68,16 +67,15 @@ const Contact = () => {
                 </div>
               </div>
             </div>
-            <div className="absolute top-[-10%] right-[-10%] w-64 h-64 bg-white/10 rounded-full blur-3xl" />
+            <div className="absolute top-[-10%] right-[-10%] w-48 h-48 md:w-64 md:h-64 bg-white/10 rounded-full blur-3xl" />
           </div>
 
           {/* Right Panel: Form */}
-          <div className="md:w-3/5 p-12 lg:p-16 bg-white">
-            <form onSubmit={handleSubmit} className="space-y-8">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+          <div className="w-full lg:w-3/5 p-8 md:p-12 lg:p-16 bg-white">
+            <form onSubmit={handleSubmit} className="space-y-6 md:space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
                 <div className="space-y-2">
-                  {/* Increased size from text-[10px] to text-xs for better legibility */}
-                  <label className="text-xs font-mono uppercase tracking-[0.2em] text-slate-400 font-bold">Full Name</label>
+                  <label className="text-[10px] md:text-xs font-mono uppercase tracking-[0.2em] text-slate-400 font-bold">Full Name</label>
                   <input
                     type="text"
                     name="fullname"
@@ -85,12 +83,11 @@ const Contact = () => {
                     onChange={handleChange}
                     placeholder="John Doe"
                     required
-                    className="w-full bg-slate-50 border border-slate-100 p-4 rounded-xl outline-none focus:ring-2 focus:ring-brand-blue/20 transition-all"
+                    className="w-full bg-slate-50 border border-slate-100 p-4 rounded-xl outline-none focus:ring-2 focus:ring-brand-blue/20 transition-all text-sm"
                   />
                 </div>
                 <div className="space-y-2">
-                  {/* Increased size from text-[10px] to text-xs for better legibility */}
-                  <label className="text-xs font-mono uppercase tracking-[0.2em] text-slate-400 font-bold">Email Address</label>
+                  <label className="text-[10px] md:text-xs font-mono uppercase tracking-[0.2em] text-slate-400 font-bold">Email Address</label>
                   <input
                     type="email"
                     name="email"
@@ -98,14 +95,13 @@ const Contact = () => {
                     onChange={handleChange}
                     placeholder="john@example.com"
                     required
-                    className="w-full bg-slate-50 border border-slate-100 p-4 rounded-xl outline-none focus:ring-2 focus:ring-brand-blue/20 transition-all"
+                    className="w-full bg-slate-50 border border-slate-100 p-4 rounded-xl outline-none focus:ring-2 focus:ring-brand-blue/20 transition-all text-sm"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                {/* Increased size from text-[10px] to text-xs for better legibility */}
-                <label className="text-xs font-mono uppercase tracking-[0.2em] text-slate-400 font-bold">Message</label>
+                <label className="text-[10px] md:text-xs font-mono uppercase tracking-[0.2em] text-slate-400 font-bold">Message</label>
                 <textarea
                   name="message"
                   value={formData.message}
@@ -113,14 +109,14 @@ const Contact = () => {
                   placeholder="How can we help you?"
                   rows="4"
                   required
-                  className="w-full bg-slate-50 border border-slate-100 p-4 rounded-xl outline-none focus:ring-2 focus:ring-brand-blue/20 transition-all resize-none"
+                  className="w-full bg-slate-50 border border-slate-100 p-4 rounded-xl outline-none focus:ring-2 focus:ring-brand-blue/20 transition-all resize-none text-sm"
                 ></textarea>
               </div>
 
               <motion.button
                 disabled={isSubmitting}
                 whileTap={{ scale: 0.98 }}
-                className={`w-full text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-xl shadow-slate-200 ${isSubmitting ? 'bg-slate-400' : 'bg-brand-dark hover:bg-brand-blue'}`}
+                className={`w-full text-white py-4 md:py-5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-xl shadow-slate-200 text-xs md:text-sm uppercase tracking-widest ${isSubmitting ? 'bg-slate-400' : 'bg-brand-dark hover:bg-brand-blue'}`}
               >
                 {isSubmitting ? (
                   <>
@@ -133,7 +129,7 @@ const Contact = () => {
               </motion.button>
 
               {status && (
-                <p className={`font-mono text-xs text-center ${status.includes('Failed') ? 'text-red-500' : 'text-green-600'}`}>
+                <p className={`font-mono text-[10px] text-center ${status.includes('Failed') ? 'text-red-500' : 'text-green-600'}`}>
                   {status}
                 </p>
               )}
