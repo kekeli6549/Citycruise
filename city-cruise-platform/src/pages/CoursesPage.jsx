@@ -23,11 +23,12 @@ const CourseSkeleton = () => (
 
 const CoursesPage = () => {
   const navigate = useNavigate();
-  const { courses, userFetchCourses, enrolledCourses, fetchMyCourses, fetchCategories, isLoading } = useCourseStore();
+  const { courses, categories, userFetchCourses, enrolledCourses, fetchMyCourses, fetchCategories, isLoading } = useCourseStore();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState("Alphabetical");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [occupation, setOccupation] = useState("All");
 
   useEffect(() => {
     userFetchCourses();
@@ -35,8 +36,9 @@ const CoursesPage = () => {
     fetchCategories();
   }, [userFetchCourses, fetchMyCourses, fetchCategories]);
 
-  const occupations = ["All", ...categories.map(cat => cat.name)];
-  const filterOptions = ["Alphabetical", "Most Viewed"];
+const occupations = categories 
+    ? ["All", ...categories.map(cat => cat.name)] 
+    : ["All"];  const filterOptions = ["Alphabetical", "Most Viewed"];
 
   const filteredCourses = (courses || [])
     .filter(c => (occupation === "All" || c.category === occupation))
